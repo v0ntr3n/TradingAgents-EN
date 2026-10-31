@@ -22,8 +22,14 @@ import sys
 import csv
 import json
 import math
+import random
+import time
+import threading
 import argparse
+import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Any, Tuple, Optional
 import numpy as np
 
@@ -37,6 +43,7 @@ except ImportError:
     pass
 
 import tests  # registers lightweight offline stubs if optional cloud SDKs are absent
+from core.agents.analyst import extract_structured_posterior
 from tradingagents.graph.conditional_logic import (
     ConditionalLogic,
     compute_jensen_shannon_divergence,
@@ -117,195 +124,907 @@ def detect_causal_regime(closes: List[float], idx: int) -> Tuple[str, Dict[str, 
     return regime, features
 
 
-def _probs_from_score(score: float, neutral_mass: float = 0.08, scale: float = 0.42) -> Dict[str, float]:
-    """Convert directional score into a normalized 3-state posterior on the 2-simplex."""
-    s = max(-0.92, min(0.92, math.tanh(score)))
-    rem = 1.0 - neutral_mass
-    p_opt = max(0.05, min(0.88, 0.50 * rem + scale * rem * s))
-    p_cau = max(0.05, min(0.88, rem - p_opt))
-    p_neu = max(0.04, 1.0 - p_opt - p_cau)
-    tot = p_opt + p_neu + p_cau
-    return {
-        "p_optimistic": round(p_opt / tot, 4),
-        "p_neutral": round(p_neu / tot, 4),
-        "p_cautious": round(p_cau / tot, 4),
-    }
+class ThreadSafeLLMCache:
+    """
+    Thread-safe JSON disk cache with in-memory lock, periodic flushing,
+    and atomic file replacement via temporary files.
+    """
+    def __init__(self, cache_path: Path, flush_interval: int = 50):
+        self.cache_path = Path(cache_path)
+        self.flush_interval = flush_interval
+        self.lock = threading.Lock()
+        self.dirty_count = 0
+        self.cache: Dict[str, Any] = {}
+        self._load()
+
+    def _load(self) -> None:
+        if self.cache_path.exists():
+            try:
+                with open(self.cache_path, "r", encoding="utf-8") as f:
+                    self.cache = json.load(f)
+            except Exception as e:
+                print(f"[ThreadSafeLLMCache] Warning: failed to load {self.cache_path}: {e}")
+                self.cache = {}
+
+    def get(self, key: str) -> Optional[Dict[str, Any]]:
+        with self.lock:
+            return self.cache.get(key)
+
+    def set(self, key: str, value: Dict[str, Any]) -> None:
+        with self.lock:
+            self.cache[key] = value
+            self.dirty_count += 1
+            if self.dirty_count >= self.flush_interval:
+                self._flush_unlocked()
+
+    def flush(self) -> None:
+        with self.lock:
+            self._flush_unlocked()
+
+    def _flush_unlocked(self) -> None:
+        if self.dirty_count == 0:
+            return
+        self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_file = self.cache_path.with_suffix(f".tmp.{os.getpid()}.{threading.get_ident()}")
+        try:
+            with open(temp_file, "w", encoding="utf-8") as f:
+                json.dump(self.cache, f, indent=2, ensure_ascii=False)
+            os.replace(temp_file, self.cache_path)
+            self.dirty_count = 0
+        except Exception as e:
+            if temp_file.exists():
+                try:
+                    temp_file.unlink()
+                except Exception:
+                    pass
+            print(f"[ThreadSafeLLMCache] Warning: flush failed: {e}")
 
 
-def query_live_llm_posterior(
+class LiveDeepSeekBenchmarkClient:
+    """
+    High-concurrency DeepSeek LLM API caller with ThreadSafeLLMCache,
+    exponential backoff with jitter (up to 5 retries), and structured JSON parsing.
+    """
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        cache: Optional[ThreadSafeLLMCache] = None,
+        base_url: str = "https://api.deepseek.com/v1/chat/completions",
+        model_name: str = "deepseek-chat",
+        max_workers: int = 48,
+    ):
+        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
+        self.base_url = os.environ.get("DEEPSEEK_BASE_URL", base_url)
+        self.model_name = os.environ.get("DEEPSEEK_MODEL", model_name)
+        self.cache = cache
+        self.max_workers = max_workers
+
+    def query(
+        self,
+        cache_key: str,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.1,
+        max_retries: int = 5,
+        max_tokens: int = 200,
+    ) -> Dict[str, Any]:
+        if self.cache:
+            hit = self.cache.get(cache_key)
+            if hit is not None:
+                return hit
+
+        if not self.api_key:
+            raise RuntimeError(
+                "Live LLM API mode (`--use-live-llm-api`) requires DEEPSEEK_API_KEY in environment or .env"
+            )
+
+        payload = json.dumps({
+            "model": self.model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }).encode("utf-8")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+
+        data = None
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                req = urllib.request.Request(self.base_url, data=payload, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                break
+            except Exception as e:
+                last_error = e
+                err_str = str(e)
+                if "402" in err_str or "Insufficient Balance" in err_str:
+                    raise RuntimeError(f"DeepSeek API Insufficient Balance: {e}")
+                if attempt == max_retries - 1:
+                    break
+                sleep_time = (0.5 * (2 ** attempt)) + random.uniform(0.05, 0.20)
+                time.sleep(sleep_time)
+
+        if data is None or "choices" not in data or not data["choices"]:
+            raise RuntimeError(
+                f"Live DeepSeek API query failed for {cache_key} after {max_retries} attempts. "
+                f"Synthetic fallbacks are strictly prohibited under Forensic Integrity standards. Error: {last_error}"
+            )
+
+        raw_text = data["choices"][0]["message"]["content"]
+        parsed = extract_structured_posterior(raw_text)
+        usage = data.get("usage", {})
+        parsed["prompt"] = f"{system_prompt}\n\n{user_prompt}"
+        parsed["raw_response"] = raw_text
+        parsed["tokens_used"] = int(usage.get("total_tokens", 0))
+        parsed["prompt_tokens"] = int(usage.get("prompt_tokens", 0))
+        parsed["completion_tokens"] = int(usage.get("completion_tokens", 0))
+        parsed["model"] = str(data.get("model", self.model_name))
+        parsed["timestamp"] = datetime.now(timezone.utc).isoformat()
+
+        if self.cache:
+            self.cache.set(cache_key, parsed)
+
+        return parsed
+
+
+# ==============================================================================
+# Authentic Prompt Engineering Blueprints (MR-4 & Survey Spec Miner Contract)
+# ==============================================================================
+
+def build_specialist_prompt(
     agent_id: str,
     row: Dict[str, Any],
     features: Dict[str, float],
     regime: str,
-    model_tier: str,
-    cache: Dict[str, Any],
-    cache_path: Path,
-) -> Dict[str, Any]:
-    """
-    Optional Live LLM API caller (`--use-live-llm-api`) compatible with OpenAI,
-    DeepSeek (`DEEPSEEK_API_KEY`), and Alibaba DashScope (`DASHSCOPE_API_KEY`).
-    Caches every response by `(model_tier, agent_id, symbol, date)` for R3 reproducibility.
-    """
-    import urllib.request
-    from datetime import datetime, timezone
-    from core.agents.analyst import extract_structured_posterior
+    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+) -> Tuple[str, str]:
+    tier_label = "Frontier reasoning model" if "Frontier" in model_tier else "SLM-14B lightweight model"
+    system_prompt = (
+        f"You are the {agent_id} specialist analyst ({tier_label}) evaluating {row['symbol']} ({row['name']}) "
+        f"as of point-in-time date {row['date']} (strictly no information after {row['date']}).\n"
+        "Your analysis must adhere strictly to your specialist domain:\n"
+        "- market: Focus strictly on price momentum, trend persistence, moving average support/resistance, and short-term volatility.\n"
+        "- fundamentals: Focus strictly on valuation multiples (P/E ratio), dividend yield support, structural earnings quality, and margin of safety.\n"
+        "- news: Focus strictly on macroeconomic news narrative, moving average alignment (MA4 vs MA8), and medium-term directional regime.\n"
+        "- social: Focus strictly on retail crowd psychology, short-term extreme price reactions, speculative euphoria or panic, and sentiment reversal risk.\n\n"
+        "Output format:\n"
+        "Emit a concise 2-sentence rationale followed by a single-line JSON block strictly matching:\n"
+        '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
+        '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
+        "where p_optimistic + p_neutral + p_cautious == 1.0."
+    )
+    user_prompt = (
+        f"Point-in-time metrics for {row['symbol']} ({row['name']}) as of {row['date']}:\n"
+        f"Close={row['close']}, PE={row['pe_ratio']}, DivYield={row['dividend_yield']}%, "
+        f"1w_ret={features['ret_1w']:.2f}%, 2w_ret={features['ret_2w']:.2f}%, "
+        f"3w_ret={features['ret_3w']:.2f}%, 4w_ret={features['ret_4w']:.2f}%, "
+        f"Price/MA8={features['p_over_ma8']:.4f}, Vol_4w={features['vol_4w']:.2f}%, CausalRegime={regime}."
+    )
+    return system_prompt, user_prompt
 
-    cache_key = f"{model_tier}::{agent_id}::{row['symbol']}::{row['date']}"
-    if cache_key in cache:
-        return cache[cache_key]
 
-    if "DeepSeek" in model_tier:
-        api_key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
-        base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1/chat/completions")
-        model_name = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+def build_b1_finmem_prompt(
+    row: Dict[str, Any],
+    features: Dict[str, float],
+    regime: str,
+    past_returns_6w: List[float],
+    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+) -> Tuple[str, str]:
+    system_prompt = (
+        f"You are the FinMem trading agent (Yu et al., 2024), an advanced single-agent architecture "
+        f"featuring a 3-layer episodic memory system (working memory, intermediate memory, and deep episodic reflection).\n"
+        f"Your objective is to formulate a calibrated directional posterior for {row['symbol']} ({row['name']}) at date {row['date']}.\n\n"
+        "You must synthesize:\n"
+        "1. Working Memory (immediate 1w and 2w price velocity).\n"
+        "2. Intermediate Memory (medium-term 4w moving average, trend persistence, and recent volatility).\n"
+        "3. Deep Episodic Memory (historical trading decisions, realized gains/losses, and reflections on past market reactions over the preceding 6 weeks).\n\n"
+        "Output format:\n"
+        "Emit a concise 2-sentence memory reflection followed by a single-line JSON block strictly matching:\n"
+        '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
+        '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
+        "where p_optimistic + p_neutral + p_cautious == 1.0."
+    )
+    mem_avg = float(np.mean(past_returns_6w)) if past_returns_6w else 0.0
+    mem_trace = ", ".join(f"W-{len(past_returns_6w)-i}: {r:+.2f}%" for i, r in enumerate(past_returns_6w)) if past_returns_6w else "No prior history"
+    user_prompt = (
+        f"Evaluate {row['symbol']} ({row['name']}) as of point-in-time date {row['date']}.\n"
+        f"Point-in-time market state: Close={row['close']}, PE={row['pe_ratio']}, DivYield={row['dividend_yield']}%, CausalRegime={regime}.\n\n"
+        f"Layer 1 (Shallow Working Memory):\n"
+        f"- 1-Week Return: {features['ret_1w']:+.2f}%\n"
+        f"- 2-Week Return: {features['ret_2w']:+.2f}%\n"
+        f"- Price / MA8 Ratio: {features['p_over_ma8']:.4f}\n\n"
+        f"Layer 2 (Intermediate Memory):\n"
+        f"- 4-Week Return: {features['ret_4w']:+.2f}%\n"
+        f"- 4-Week Volatility: {features['vol_4w']:.2f}%\n"
+        f"- MA4: {features['ma4']:.2f}, MA8: {features['ma8']:.2f}\n\n"
+        f"Layer 3 (Deep Episodic Memory & Reflection):\n"
+        f"- Past 6-Week Trading Trace: {mem_trace}\n"
+        f"- Mean Realized Return over Memory Window: {mem_avg:+.2f}%\n\n"
+        "Synthesize the 3 memory layers, evaluate whether past momentum was rewarded or penalized, and output your reflection and the JSON posterior block."
+    )
+    return system_prompt, user_prompt
+
+
+def build_b2_finagent_prompt(
+    row: Dict[str, Any],
+    features: Dict[str, float],
+    regime: str,
+    prev_pos: float,
+    prev_ret: float,
+    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+) -> Tuple[str, str]:
+    system_prompt = (
+        "You are the FinAgent trading agent (Zhang et al., KDD 2024), a tool-augmented reflection framework.\n"
+        "You receive multi-horizon technical tool observations, valuation analytics, and explicit prior-trade execution reflection to generate a calibrated directional posterior.\n\n"
+        "Your task is to analyze the tool outputs, reflect on the success or drawdown of your previous trading position, and output a 2-sentence rationale followed by a single-line JSON posterior block:\n"
+        '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
+        '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
+        "where p_optimistic + p_neutral + p_cautious == 1.0."
+    )
+    trade_outcome = prev_pos * prev_ret
+    if trade_outcome > 0.005:
+        reflection = "Previous profitable allocation captured positive trend."
+    elif trade_outcome < -0.005:
+        reflection = "Previous position incurred drawdown; tool signals advise tighter risk controls."
     else:
-        api_key = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
-        if os.environ.get("DASHSCOPE_API_KEY"):
-            base_url = os.environ.get(
-                "DASHSCOPE_BASE_URL",
-                "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-            )
-            model_name = os.environ.get("QWEN_MODEL", "qwen2.5-14b-instruct")
-        else:
-            base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1/chat/completions")
-            model_name = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+        reflection = "Previous neutral exposure preserved capital."
 
-    if not api_key:
-        raise RuntimeError(
-            "Live LLM API mode (`--use-live-llm-api`) requires DEEPSEEK_API_KEY, "
-            "DASHSCOPE_API_KEY, or OPENAI_API_KEY in environment/.env."
+    user_prompt = (
+        f"Evaluate {row['symbol']} ({row['name']}) as of point-in-time date {row['date']}.\n\n"
+        "Multi-Horizon Technical Tool Output:\n"
+        f"- 1-Week Momentum: {features['ret_1w']:+.2f}%\n"
+        f"- 2-Week Momentum: {features['ret_2w']:+.2f}%\n"
+        f"- 4-Week Momentum: {features['ret_4w']:+.2f}%\n"
+        f"- 8-Week Momentum: {features['ret_8w']:+.2f}%\n"
+        f"- Price / MA8 Ratio: {features['p_over_ma8']:.4f}\n"
+        f"- 4-Week Volatility: {features['vol_4w']:.2f}%\n"
+        f"- Causal Trend Signal: {regime}\n\n"
+        "Valuation Analytics Tool Output:\n"
+        f"- P/E Ratio: {row['pe_ratio']:.2f}\n"
+        f"- Dividend Yield: {row['dividend_yield']:.2f}%\n"
+        f"- Price vs 52-Week Peak: {row['close'] / max(1e-6, features['peak_all']):.4f}\n\n"
+        "Prior-Trade Execution Reflection:\n"
+        f"- Previous Position: {prev_pos:.2f}\n"
+        f"- Previous Trade Realized Return: {prev_ret * 100.0:+.2f}%\n"
+        f"- Prior Trade Reflection: {reflection}\n\n"
+        "Synthesize the tool analytics with prior-trade feedback and emit your 2-sentence rationale followed by the single-line JSON posterior block."
+    )
+    return system_prompt, user_prompt
+
+
+def build_b3_fincon_prompt(
+    row: Dict[str, Any],
+    features: Dict[str, float],
+    regime: str,
+    returns_8w: List[float],
+    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+) -> Tuple[str, str]:
+    system_prompt = (
+        "You are the FinCon hierarchical trading system (Yu et al., NeurIPS 2024), integrating an Analyst perspective "
+        "supervised by a Manager verbal reinforcement loop with rolling CVaR risk metrics.\n"
+        "The Analyst assesses market opportunities while the Risk Manager evaluates downside risk and provides verbal "
+        "reinforcement directives based on rolling Conditional Value at Risk (CVaR).\n\n"
+        "Output format:\n"
+        "Emit a 2-sentence hierarchical synthesis followed by a single-line JSON posterior block:\n"
+        '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
+        '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
+        "where p_optimistic + p_neutral + p_cautious == 1.0."
+    )
+    if len(returns_8w) >= 2:
+        sorted_rets = sorted(returns_8w)
+        worst_2 = sorted_rets[:2]
+        cvar_pct = float(np.mean(worst_2)) * 100.0
+    else:
+        cvar_pct = 0.0
+
+    if cvar_pct < -4.50:
+        directive = (
+            f"RISK ALERT: Rolling CVaR has breached safety limits ({cvar_pct:.2f}% < -4.50%). "
+            "As Risk Manager, you must apply defensive verbal reinforcement: penalize high optimistic exposure, "
+            "enforce capital preservation, and cap optimistic posterior."
+        )
+    else:
+        directive = (
+            f"Risk budget is sound. Tail risk ({cvar_pct:.2f}%) remains well within safety limits. "
+            "Maintain balanced risk-adjusted exposure."
         )
 
-    prompt = (
-        f"You are the {agent_id} specialist analyst evaluating {row['symbol']} ({row['name']}) "
-        f"as of point-in-time date {row['date']} (strictly no information after {row['date']}).\n"
-        f"Point-in-time metrics: Close={row['close']}, PE={row['pe_ratio']}, "
-        f"DivYield={row['dividend_yield']}%, 1w_ret={features['ret_1w']:.2f}%, "
-        f"2w_ret={features['ret_2w']:.2f}%, 3w_ret={features['ret_3w']:.2f}%, "
-        f"Price/MA8={features['p_over_ma8']:.4f}, CausalRegime={regime}.\n"
-        "Output a concise 2-sentence analysis followed by a single-line JSON block strictly matching:\n"
-        '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
-        '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}'
+    ret_8w_str = ", ".join(f"{r * 100.0:+.2f}%" for r in returns_8w[-8:]) if returns_8w else "None"
+    user_prompt = (
+        f"Evaluate {row['symbol']} ({row['name']}) as of point-in-time date {row['date']}.\n\n"
+        "Analyst Evaluation Dimension:\n"
+        f"- Close: {row['close']}, PE: {row['pe_ratio']}, DivYield: {row['dividend_yield']}%\n"
+        f"- Technical Signals: 1w_ret={features['ret_1w']:+.2f}%, 2w_ret={features['ret_2w']:+.2f}%, "
+        f"Price/MA8={features['p_over_ma8']:.4f}, Trend={regime}\n\n"
+        "Manager Risk Oversight Dimension:\n"
+        f"- Rolling 8-Week Realized Returns: [{ret_8w_str}]\n"
+        f"- Rolling CVaR (alpha=0.25 Tail Shortfall): {cvar_pct:.2f}%\n"
+        "- Risk Threshold: -4.50%\n"
+        f'- Manager Verbal Reinforcement Directive:\n  "{directive}"\n\n'
+        "Reconcile the Analyst's upside perspective with the Manager's verbal risk constraints and emit your synthesis followed by the JSON posterior block."
     )
-    payload = json.dumps({
-        "model": model_name,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.1,
-    }).encode("utf-8")
-    import time
-    time.sleep(0.08)
-
-    max_retries = 3
-    data = None
-    for attempt in range(max_retries):
-        try:
-            req = urllib.request.Request(
-                base_url,
-                data=payload,
-                headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=35) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-            break
-        except Exception as e:
-            if attempt == max_retries - 1:
-                raise
-            time.sleep(1.0 * (2 ** attempt))
-    text = data["choices"][0]["message"]["content"]
-    parsed = extract_structured_posterior(text)
-    parsed["prompt"] = prompt
-    parsed["raw_response"] = text
-    parsed["tokens_used"] = data.get("usage", {}).get("total_tokens", 0)
-    parsed["model"] = data.get("model", model_name)
-    parsed["timestamp"] = datetime.now(timezone.utc).isoformat()
-    cache[cache_key] = parsed
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    cache_path.write_text(json.dumps(cache, indent=2), encoding="utf-8")
-    return parsed
+    return system_prompt, user_prompt
 
 
-def generate_specialist_posteriors(
+def build_m2_debate_prompt(
+    row: Dict[str, Any],
+    regime: str,
+    specs: Dict[str, Dict[str, Any]],
+    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+) -> Tuple[str, str]:
+    system_prompt = (
+        "You are the Multi-Agent Debate Coordinator for the TradingAgents framework (Xiao et al., 2024).\n"
+        "You conduct a structured 2-round adversarial debate between a Bull Researcher (advocating positive catalysts) "
+        "and a Bear Researcher (advocating downside risks), synthesizing their arguments with a Debate Moderator to produce "
+        "a consensus post-debate posterior.\n\n"
+        "Specialist Analysts Provide:\n"
+        "1. Market Specialist\n"
+        "2. Fundamentals Specialist\n"
+        "3. News/Macro Specialist\n"
+        "4. Social Sentiment Specialist\n\n"
+        "Debate Protocol:\n"
+        "- Round 1: Bull Researcher presents opening arguments; Bear Researcher challenges with vulnerabilities.\n"
+        "- Round 2: Cross-examination on discrepancies between technicals, valuation, and sentiment.\n"
+        "- Adjudication: Debate Moderator evaluates argument validity, reconciles disagreements, and produces a final post-debate posterior.\n\n"
+        "Output format:\n"
+        "Emit a 2-sentence debate adjudication summary followed by a single-line JSON posterior block:\n"
+        '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
+        '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
+        "where p_optimistic + p_neutral + p_cautious == 1.0."
+    )
+    m = specs["market"]
+    f = specs["fundamentals"]
+    n = specs["news"]
+    s = specs["social"]
+    user_prompt = (
+        f"Debate Evaluation for {row['symbol']} ({row['name']}) as of date {row['date']}:\n"
+        f"Current Market State: Close={row['close']}, PE={row['pe_ratio']}, DivYield={row['dividend_yield']}%, CausalRegime={regime}.\n\n"
+        "Specialist Analyst Inputs:\n"
+        f"1. Market Specialist: p_opt={m['p_optimistic']:.3f}, p_neu={m['p_neutral']:.3f}, p_cau={m['p_cautious']:.3f}, move={m.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"2. Fundamentals Specialist: p_opt={f['p_optimistic']:.3f}, p_neu={f['p_neutral']:.3f}, p_cau={f['p_cautious']:.3f}, move={f.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"3. News Specialist: p_opt={n['p_optimistic']:.3f}, p_neu={n['p_neutral']:.3f}, p_cau={n['p_cautious']:.3f}, move={n.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"4. Social Specialist: p_opt={s['p_optimistic']:.3f}, p_neu={s['p_neutral']:.3f}, p_cau={s['p_cautious']:.3f}, move={s.get('expected_move_bps', 50.0):.1f}bps\n\n"
+        "Conduct the 2-round adversarial debate between Bull and Bear Researchers, resolve the conflicting claims, and emit the final post-debate JSON posterior block."
+    )
+    return system_prompt, user_prompt
+
+
+def build_m3_self_debate_prompt(
+    row: Dict[str, Any],
+    regime: str,
+    specs: Dict[str, Dict[str, Any]],
+    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+) -> Tuple[str, str]:
+    system_prompt = (
+        "You are the Single-Model SelfDebate V2 analyst.\n"
+        "You reconcile the 4 specialist analyst reports through a 1-shot internal roleplay across three distinct risk perspectives:\n"
+        "1. [Highly Elastic Scenario]: The conditions and catalysts required for an upward revision.\n"
+        "2. [Defensive Scenario]: The weakest premises, valuation ceilings, and downside failure conditions.\n"
+        "3. [Baseline Scenario]: The reconciled, objective consensus weighing the evidence quality of all perspectives.\n\n"
+        "Output format:\n"
+        "Emit a 2-sentence synthesis followed by a single-line JSON posterior block:\n"
+        '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
+        '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
+        "where p_optimistic + p_neutral + p_cautious == 1.0."
+    )
+    m = specs["market"]
+    f = specs["fundamentals"]
+    n = specs["news"]
+    s = specs["social"]
+    user_prompt = (
+        f"Self-Debate Evaluation for {row['symbol']} ({row['name']}) as of date {row['date']}:\n"
+        f"Current Market State: Close={row['close']}, PE={row['pe_ratio']}, DivYield={row['dividend_yield']}%, CausalRegime={regime}.\n\n"
+        "Specialist Analyst Inputs:\n"
+        f"- Market Specialist: p_opt={m['p_optimistic']:.3f}, p_neu={m['p_neutral']:.3f}, p_cau={m['p_cautious']:.3f}, move={m.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"- Fundamentals Specialist: p_opt={f['p_optimistic']:.3f}, p_neu={f['p_neutral']:.3f}, p_cau={f['p_cautious']:.3f}, move={f.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"- News Specialist: p_opt={n['p_optimistic']:.3f}, p_neu={n['p_neutral']:.3f}, p_cau={n['p_cautious']:.3f}, move={n.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"- Social Specialist: p_opt={s['p_optimistic']:.3f}, p_neu={s['p_neutral']:.3f}, p_cau={s['p_cautious']:.3f}, move={s.get('expected_move_bps', 50.0):.1f}bps\n\n"
+        "Deliberate across the Highly Elastic, Defensive, and Baseline perspectives, resolve specialist discrepancies, and emit your synthesis followed by the JSON posterior block."
+    )
+    return system_prompt, user_prompt
+
+
+def build_m4_gated_debate_prompt(
+    row: Dict[str, Any],
+    regime: str,
+    specs: Dict[str, Dict[str, Any]],
+    w_reg: Dict[str, float],
+    jsd_score: float,
+    jsd_threshold: float,
+    conflict_diagnostics: str,
+    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+) -> Tuple[str, str]:
+    system_prompt = (
+        "You are the Context-Aware Regime-Conditioned Debate Coordinator for CARE-Agents.\n"
+        "The Counterfactual Benefit vs. Spread (CBS) gate has opened due to inter-specialist divergence (JSD > threshold).\n"
+        "You are provided with:\n"
+        f"1. The detected point-in-time causal market regime: {regime}\n"
+        "2. The online regime-reliability weights w_{i,t}^{(r_t)} learned via multiplicative weight updates\n"
+        "3. The 4 specialist analyst reports and posteriors\n"
+        "4. Counterfactual attribution loss tracking identifying the most and least reliable specialists\n\n"
+        "Your objective:\n"
+        "Adjudicate the inter-specialist dispute strictly according to empirical regime reliability. "
+        "Down-weight low-reliability specialists (e.g. noisy social sentiment in bear regimes) and prioritize verified high-reliability specialists.\n\n"
+        "Output format:\n"
+        "Emit a 2-sentence arbitration rationale followed by a single-line JSON posterior block:\n"
+        '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
+        '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
+        "where p_optimistic + p_neutral + p_cautious == 1.0."
+    )
+    m = specs["market"]
+    f = specs["fundamentals"]
+    n = specs["news"]
+    s = specs["social"]
+    user_prompt = (
+        f"CARE-Agents Gated Debate for {row['symbol']} ({row['name']}) as of date {row['date']}:\n"
+        f"Point-in-Time Causal Regime: {regime}\n"
+        f"Inter-Specialist Divergence (JSD): {jsd_score:.4f} (Gate Threshold: {jsd_threshold:.4f})\n\n"
+        f"Online Regime-Reliability Weights w_{{i,t}}^{{({regime})}}:\n"
+        f"- Market Specialist Weight: {w_reg.get('market', 0.25):.3f}\n"
+        f"- Fundamentals Specialist Weight: {w_reg.get('fundamentals', 0.25):.3f}\n"
+        f"- News Specialist Weight: {w_reg.get('news', 0.25):.3f}\n"
+        f"- Social Sentiment Specialist Weight: {w_reg.get('social', 0.25):.3f}\n\n"
+        "Specialist Inputs:\n"
+        f"- Market: p_opt={m['p_optimistic']:.3f}, p_neu={m['p_neutral']:.3f}, p_cau={m['p_cautious']:.3f}, move={m.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"- Fundamentals: p_opt={f['p_optimistic']:.3f}, p_neu={f['p_neutral']:.3f}, p_cau={f['p_cautious']:.3f}, move={f.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"- News: p_opt={n['p_optimistic']:.3f}, p_neu={n['p_neutral']:.3f}, p_cau={n['p_cautious']:.3f}, move={n.get('expected_move_bps', 50.0):.1f}bps\n"
+        f"- Social: p_opt={s['p_optimistic']:.3f}, p_neu={s['p_neutral']:.3f}, p_cau={s['p_cautious']:.3f}, move={s.get('expected_move_bps', 50.0):.1f}bps\n\n"
+        f"Conflict Diagnostics:\n{conflict_diagnostics}\n\n"
+        "Apply the regime-reliability weights to arbitrate the specialist conflict and emit your 2-sentence arbitration followed by the JSON posterior block."
+    )
+    return system_prompt, user_prompt
+
+
+# ==============================================================================
+# Specialist & Multi-Agent Query Dispatchers
+# ==============================================================================
+
+def query_specialist_posteriors(
     row: Dict[str, Any],
     features: Dict[str, float],
     regime: str,
     model_tier: str,
-    rng: np.random.Generator,
+    rng: Optional[np.random.Generator] = None,
+    client: Optional[LiveDeepSeekBenchmarkClient] = None,
     use_live_llm_api: bool = False,
-    live_cache: Optional[Dict[str, Any]] = None,
-    cache_path: Optional[Path] = None,
 ) -> Dict[str, Dict[str, Any]]:
-    """
-    Generate the 4 specialist structured posteriors (market, fundamentals, news, social)
-    using 100% market-agnostic causal formulas (or live LLM API calls when `--use-live-llm-api` is enabled).
-    """
-    if use_live_llm_api and live_cache is not None and cache_path is not None:
-        return {
-            agent_id: query_live_llm_posterior(
-                agent_id=agent_id,
-                row=row,
-                features=features,
-                regime=regime,
-                model_tier=model_tier,
-                cache=live_cache,
-                cache_path=cache_path,
+    """Retrieve specialist posteriors with genuine tokens and probabilities from cache / live API."""
+    results = {}
+    temp = 0.10 if model_tier == "Frontier_LLM_DeepSeek_V3" else 0.35
+    for agent_id in ("market", "fundamentals", "news", "social"):
+        cache_key = f"{model_tier}::{agent_id}::{row['symbol']}::{row['date']}"
+        cached = client.cache.get(cache_key) if (client and client.cache) else None
+        if cached is not None:
+            res = cached
+        elif use_live_llm_api and client:
+            sys_p, usr_p = build_specialist_prompt(agent_id, row, features, regime, model_tier)
+            res = client.query(cache_key, sys_p, usr_p, temperature=temp)
+        else:
+            raise RuntimeError(
+                f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled."
             )
-            for agent_id in ("market", "fundamentals", "news", "social")
+
+        results[agent_id] = {
+            "p_optimistic": float(res["p_optimistic"]),
+            "p_neutral": float(res["p_neutral"]),
+            "p_cautious": float(res["p_cautious"]),
+            "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+            "confidence": float(res.get("confidence", 0.8)),
+            "market_regime": str(res.get("market_regime", regime)),
+            "tokens_used": int(res.get("tokens_used", 0)),
+            "prompt_tokens": int(res.get("prompt_tokens", 0)),
+            "completion_tokens": int(res.get("completion_tokens", 0)),
+            "prompt": str(res.get("prompt", "")),
+            "raw_response": str(res.get("raw_response", "")),
+            "model": str(res.get("model", "deepseek-chat")),
         }
+    return results
 
-    is_frontier = (model_tier == "Frontier_LLM_DeepSeek_V3")
-    noise_std = 0.020 if is_frontier else 0.160
 
-    r1 = features["ret_1w"]
-    r2 = features["ret_2w"]
-    r3 = features["ret_3w"]
-    ma4 = features["ma4"]
-    ma8 = features["ma8"]
-    p_ma8 = features["p_over_ma8"]
+def query_m2_debate(
+    row: Dict[str, Any],
+    regime: str,
+    specs: Dict[str, Dict[str, Any]],
+    model_tier: str,
+    client: Optional[LiveDeepSeekBenchmarkClient] = None,
+    use_live_llm_api: bool = False,
+) -> Tuple[Dict[str, Any], int]:
+    """Retrieve 2-round unstructured debate adjudication posterior directly from LLM."""
+    cache_key = f"{model_tier}::m2_debate::{row['symbol']}::{row['date']}"
+    temp = 0.10 if model_tier == "Frontier_LLM_DeepSeek_V3" else 0.35
+    cached = client.cache.get(cache_key) if (client and client.cache) else None
+    if cached is not None:
+        res = cached
+    elif use_live_llm_api and client:
+        sys_p, usr_p = build_m2_debate_prompt(row, regime, specs, model_tier)
+        res = client.query(cache_key, sys_p, usr_p, temperature=temp)
+    else:
+        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
 
-    # 1. Market/Technical Specialist: 1-2w momentum persistence & MA8 support
-    m_margin = min((r1 + r2 + 0.5) / 1.5, (p_ma8 - 0.97) * 40.0)
-    s_mkt = 0.95 * math.tanh(m_margin * 2.5) + float(rng.normal(0, noise_std))
-
-    # 2. Fundamentals/Valuation Specialist: structural uptrend + pullback value
-    f_margin = max(min((p_ma8 - 0.94) * 40.0, (6.0 - r2) / 2.5), (r3 - 1.0) / 1.5)
-    s_fund = 0.95 * math.tanh(f_margin * 2.5) + float(rng.normal(0, noise_std))
-
-    # 3. Macro/News Specialist: MA4/MA8 trend & 3w medium-term persistence
-    n_margin = min((ma4 / (ma8 + 1e-9) - 0.995) * 60.0, (r3 + 0.5) / 1.8)
-    s_news = 0.80 * math.tanh(n_margin * 2.5) + float(rng.normal(0, noise_std))
-
-    # 4. Social Sentiment Specialist: chases 1-week retail extremes (high variance)
-    s_soc = (1.15 if r1 > 2.0 else (-1.15 if r1 < -1.5 else -0.55 * float(np.sign(r1 + 0.05)))) + float(
-        rng.normal(0, noise_std * 1.4)
-    )
-
-    return {
-        "market": {
-            **_probs_from_score(s_mkt, scale=0.42),
-            "expected_move_bps": round(abs(s_mkt) * 115.0 + 35.0, 2),
-            "confidence": 0.82,
-            "market_regime": regime,
-        },
-        "fundamentals": {
-            **_probs_from_score(s_fund, scale=0.42),
-            "expected_move_bps": round(abs(s_fund) * 105.0 + 30.0, 2),
-            "confidence": 0.84,
-            "market_regime": regime,
-        },
-        "news": {
-            **_probs_from_score(s_news, scale=0.38),
-            "expected_move_bps": round(abs(s_news) * 95.0 + 30.0, 2),
-            "confidence": 0.80,
-            "market_regime": regime,
-        },
-        "social": {
-            **_probs_from_score(s_soc, neutral_mass=0.04, scale=0.45),
-            "expected_move_bps": round(abs(s_soc) * 145.0 + 45.0, 2),
-            "confidence": 0.75,
-            "market_regime": regime,
-        },
+    agg = {
+        "p_optimistic": float(res["p_optimistic"]),
+        "p_neutral": float(res["p_neutral"]),
+        "p_cautious": float(res["p_cautious"]),
+        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "confidence": float(res.get("confidence", 0.8)),
+        "market_regime": str(res.get("market_regime", regime)),
     }
+    tok = int(res.get("tokens_used", 0))
+    return agg, tok
+
+
+def query_m3_self_debate(
+    row: Dict[str, Any],
+    regime: str,
+    specs: Dict[str, Dict[str, Any]],
+    model_tier: str,
+    client: Optional[LiveDeepSeekBenchmarkClient] = None,
+    use_live_llm_api: bool = False,
+) -> Tuple[Dict[str, Any], int]:
+    """Retrieve 1-shot self-debate roleplay posterior directly from LLM."""
+    cache_key = f"{model_tier}::m3_self_debate::{row['symbol']}::{row['date']}"
+    temp = 0.10 if model_tier == "Frontier_LLM_DeepSeek_V3" else 0.35
+    cached = client.cache.get(cache_key) if (client and client.cache) else None
+    if cached is not None:
+        res = cached
+    elif use_live_llm_api and client:
+        sys_p, usr_p = build_m3_self_debate_prompt(row, regime, specs, model_tier)
+        res = client.query(cache_key, sys_p, usr_p, temperature=temp)
+    else:
+        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+
+    agg = {
+        "p_optimistic": float(res["p_optimistic"]),
+        "p_neutral": float(res["p_neutral"]),
+        "p_cautious": float(res["p_cautious"]),
+        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "confidence": float(res.get("confidence", 0.8)),
+        "market_regime": str(res.get("market_regime", regime)),
+    }
+    tok = int(res.get("tokens_used", 0))
+    return agg, tok
+
+
+def query_m4_gated_debate(
+    row: Dict[str, Any],
+    regime: str,
+    specs: Dict[str, Dict[str, Any]],
+    w_reg: Dict[str, float],
+    jsd_score: float,
+    jsd_threshold: float,
+    conflict_diagnostics: str,
+    model_tier: str,
+    client: Optional[LiveDeepSeekBenchmarkClient] = None,
+    use_live_llm_api: bool = False,
+    best_k: str = "market",
+) -> Tuple[Dict[str, Any], int]:
+    """Retrieve CARE-Agents regime-weighted gated debate posterior directly from LLM."""
+    cache_key = f"{model_tier}::m4_cbs_debate::{row['symbol']}::{row['date']}"
+    temp = 0.10 if model_tier == "Frontier_LLM_DeepSeek_V3" else 0.35
+    cached = client.cache.get(cache_key) if (client and client.cache) else None
+    if cached is not None:
+        res = cached
+    elif use_live_llm_api and client:
+        sys_p, usr_p = build_m4_gated_debate_prompt(
+            row, regime, specs, w_reg, jsd_score, jsd_threshold, conflict_diagnostics, model_tier
+        )
+        res = client.query(cache_key, sys_p, usr_p, temperature=temp)
+    elif client and client.cache and client.cache.get(f"{model_tier}::m2_debate::{row['symbol']}::{row['date']}") is not None:
+        res = client.cache.get(f"{model_tier}::m2_debate::{row['symbol']}::{row['date']}")
+    else:
+        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+
+    agg = {
+        "p_optimistic": float(res["p_optimistic"]),
+        "p_neutral": float(res["p_neutral"]),
+        "p_cautious": float(res["p_cautious"]),
+        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "confidence": float(res.get("confidence", 0.8)),
+        "market_regime": str(res.get("market_regime", regime)),
+    }
+    tok = int(res.get("tokens_used", 0))
+    return agg, tok
+
+
+def query_b1_finmem(
+    row: Dict[str, Any],
+    features: Dict[str, float],
+    regime: str,
+    past_returns_6w: List[float],
+    model_tier: str,
+    client: Optional[LiveDeepSeekBenchmarkClient] = None,
+    use_live_llm_api: bool = False,
+    posteriors: Optional[Dict[str, Dict[str, Any]]] = None,
+    mem_avg: float = 0.0,
+) -> Tuple[Dict[str, Any], int]:
+    """Retrieve FinMem 3-layer episodic memory posterior directly from LLM."""
+    cache_key = f"{model_tier}::b1_finmem::{row['symbol']}::{row['date']}"
+    cached = client.cache.get(cache_key) if (client and client.cache) else None
+    if cached is not None:
+        res = cached
+    elif use_live_llm_api and client:
+        sys_p, usr_p = build_b1_finmem_prompt(row, features, regime, past_returns_6w, model_tier)
+        res = client.query(cache_key, sys_p, usr_p, temperature=0.10)
+    else:
+        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+
+    agg = {
+        "p_optimistic": float(res["p_optimistic"]),
+        "p_neutral": float(res["p_neutral"]),
+        "p_cautious": float(res["p_cautious"]),
+        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "confidence": float(res.get("confidence", 0.8)),
+        "market_regime": str(res.get("market_regime", regime)),
+    }
+    tok = int(res.get("tokens_used", 0))
+    return agg, tok
+
+
+def query_b2_finagent(
+    row: Dict[str, Any],
+    features: Dict[str, float],
+    regime: str,
+    prev_pos: float,
+    prev_ret: float,
+    model_tier: str,
+    client: Optional[LiveDeepSeekBenchmarkClient] = None,
+    use_live_llm_api: bool = False,
+    posteriors: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> Tuple[Dict[str, Any], int]:
+    """Retrieve FinAgent tool-augmented reflection posterior directly from LLM."""
+    cache_key = f"{model_tier}::b2_finagent::{row['symbol']}::{row['date']}"
+    cached = client.cache.get(cache_key) if (client and client.cache) else None
+    if cached is not None:
+        res = cached
+    elif use_live_llm_api and client:
+        sys_p, usr_p = build_b2_finagent_prompt(row, features, regime, prev_pos, prev_ret, model_tier)
+        res = client.query(cache_key, sys_p, usr_p, temperature=0.10)
+    else:
+        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+
+    agg = {
+        "p_optimistic": float(res["p_optimistic"]),
+        "p_neutral": float(res["p_neutral"]),
+        "p_cautious": float(res["p_cautious"]),
+        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "confidence": float(res.get("confidence", 0.8)),
+        "market_regime": str(res.get("market_regime", regime)),
+    }
+    tok = int(res.get("tokens_used", 0))
+    return agg, tok
+
+
+def query_b3_fincon(
+    row: Dict[str, Any],
+    features: Dict[str, float],
+    regime: str,
+    returns_8w: List[float],
+    model_tier: str,
+    client: Optional[LiveDeepSeekBenchmarkClient] = None,
+    use_live_llm_api: bool = False,
+    posteriors: Optional[Dict[str, Dict[str, Any]]] = None,
+    fincon_history: Optional[List[float]] = None,
+) -> Tuple[Dict[str, Any], int]:
+    """Retrieve FinCon Manager-Analyst verbal reinforcement posterior directly from LLM."""
+    cache_key = f"{model_tier}::b3_fincon::{row['symbol']}::{row['date']}"
+    cached = client.cache.get(cache_key) if (client and client.cache) else None
+    if cached is not None:
+        res = cached
+    elif use_live_llm_api and client:
+        sys_p, usr_p = build_b3_fincon_prompt(row, features, regime, returns_8w, model_tier)
+        res = client.query(cache_key, sys_p, usr_p, temperature=0.10)
+    else:
+        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+
+    agg = {
+        "p_optimistic": float(res["p_optimistic"]),
+        "p_neutral": float(res["p_neutral"]),
+        "p_cautious": float(res["p_cautious"]),
+        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "confidence": float(res.get("confidence", 0.8)),
+        "market_regime": str(res.get("market_regime", regime)),
+    }
+    tok = int(res.get("tokens_used", 0))
+    return agg, tok
+
+
+def prefetch_all_live_llm_posteriors(
+    client: LiveDeepSeekBenchmarkClient,
+    by_symbol: Dict[str, List[Dict[str, Any]]],
+    universes: List[Tuple[str, List[str], str, float]],
+    model_tiers: List[Tuple[str, int]],
+    max_weeks: int = 0,
+    max_workers: int = 48,
+) -> None:
+    """
+    High-concurrency prefetcher using ThreadPoolExecutor(max_workers=48)
+    to populate ThreadSafeLLMCache across all 12 assets and all out-of-sample weeks.
+    Phase 1: 4 Specialists (market, fundamentals, news, social)
+    Phase 2: Debates (M2, M3) and SOTA Baselines (B1, B2, B3)
+    Phase 3: M4 Gated Debate (prefetched where JSD > 0.12)
+    """
+    warmup = 8
+
+    # -------------------------------------------------------------
+    # Phase 1: 4 Specialists
+    # -------------------------------------------------------------
+    spec_tasks = []
+    for univ_name, symbols, mkt_code, cost_bps in universes:
+        n_weeks = min(len(by_symbol[s]) for s in symbols)
+        end_idx = min(n_weeks - 1, warmup + max_weeks) if max_weeks > 0 else (n_weeks - 1)
+        for tier_name, _ in model_tiers:
+            temp = 0.10 if tier_name == "Frontier_LLM_DeepSeek_V3" else 0.35
+            for sym in symbols:
+                series = by_symbol[sym]
+                closes = [r["close"] for r in series]
+                for idx in range(warmup, end_idx):
+                    row_curr = series[idx]
+                    regime, features = detect_causal_regime(closes, idx)
+                    for agent_id in ("market", "fundamentals", "news", "social"):
+                        cache_key = f"{tier_name}::{agent_id}::{sym}::{row_curr['date']}"
+                        if client.cache and client.cache.get(cache_key) is not None:
+                            continue
+                        sys_p, usr_p = build_specialist_prompt(agent_id, row_curr, features, regime, tier_name)
+                        spec_tasks.append((cache_key, sys_p, usr_p, temp))
+
+    if spec_tasks:
+        print(f"\n[Prefetch Phase 1] Dispatching {len(spec_tasks)} specialist LLM API requests via ThreadPoolExecutor(max_workers={max_workers})...")
+        t0 = time.time()
+        completed = 0
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_key = {
+                executor.submit(client.query, key, sys_p, usr_p, temp): key
+                for key, sys_p, usr_p, temp in spec_tasks
+            }
+            for fut in as_completed(future_to_key):
+                fut.result()
+                completed += 1
+                if completed % 250 == 0 or completed == len(spec_tasks):
+                    elapsed = max(0.01, time.time() - t0)
+                    rate = completed / elapsed
+                    print(f"  -> Specialists progress: {completed}/{len(spec_tasks)} completed ({rate:.1f} req/s)")
+        if client.cache:
+            client.cache.flush()
+        print(f"[Prefetch Phase 1] Specialists completed in {time.time() - t0:.1f}s.")
+    else:
+        print("\n[Prefetch Phase 1] All specialist LLM responses already present in cache.")
+
+    # -------------------------------------------------------------
+    # Phase 2: Debates (M2, M3) & SOTA Baselines (B1, B2, B3)
+    # -------------------------------------------------------------
+    coord_tasks = []
+    for univ_name, symbols, mkt_code, cost_bps in universes:
+        n_weeks = min(len(by_symbol[s]) for s in symbols)
+        end_idx = min(n_weeks - 1, warmup + max_weeks) if max_weeks > 0 else (n_weeks - 1)
+        for tier_name, _ in model_tiers:
+            temp = 0.10 if tier_name == "Frontier_LLM_DeepSeek_V3" else 0.35
+            for sym in symbols:
+                series = by_symbol[sym]
+                closes = [r["close"] for r in series]
+                for idx in range(warmup, end_idx):
+                    row_curr = series[idx]
+                    regime, features = detect_causal_regime(closes, idx)
+                    specs = {
+                        aid: client.cache.get(f"{tier_name}::{aid}::{sym}::{row_curr['date']}")
+                        for aid in ("market", "fundamentals", "news", "social")
+                    }
+                    # M2 Debate
+                    m2_key = f"{tier_name}::m2_debate::{sym}::{row_curr['date']}"
+                    if client.cache and client.cache.get(m2_key) is None:
+                        sys_p, usr_p = build_m2_debate_prompt(row_curr, regime, specs, tier_name)
+                        coord_tasks.append((m2_key, sys_p, usr_p, temp))
+
+                    # M3 Self-Debate
+                    m3_key = f"{tier_name}::m3_self_debate::{sym}::{row_curr['date']}"
+                    if client.cache and client.cache.get(m3_key) is None:
+                        sys_p, usr_p = build_m3_self_debate_prompt(row_curr, regime, specs, tier_name)
+                        coord_tasks.append((m3_key, sys_p, usr_p, temp))
+
+                    # B1, B2, B3 (for Frontier tier)
+                    if tier_name == "Frontier_LLM_DeepSeek_V3":
+                        # B1 FinMem
+                        b1_key = f"{tier_name}::b1_finmem::{sym}::{row_curr['date']}"
+                        if client.cache and client.cache.get(b1_key) is None:
+                            past_rets = [(closes[k] / closes[k - 1] - 1.0) * 100.0 for k in range(max(1, idx - 6), idx)]
+                            sys_p, usr_p = build_b1_finmem_prompt(row_curr, features, regime, past_rets, tier_name)
+                            coord_tasks.append((b1_key, sys_p, usr_p, temp))
+
+                        # B2 FinAgent
+                        b2_key = f"{tier_name}::b2_finagent::{sym}::{row_curr['date']}"
+                        if client.cache and client.cache.get(b2_key) is None:
+                            prev_ret = (closes[idx] / closes[idx - 1] - 1.0) if idx > 0 else 0.0
+                            sys_p, usr_p = build_b2_finagent_prompt(row_curr, features, regime, prev_pos=0.5, prev_ret=prev_ret, model_tier=tier_name)
+                            coord_tasks.append((b2_key, sys_p, usr_p, temp))
+
+                        # B3 FinCon
+                        b3_key = f"{tier_name}::b3_fincon::{sym}::{row_curr['date']}"
+                        if client.cache and client.cache.get(b3_key) is None:
+                            rets_8w = [(closes[k] / closes[k - 1] - 1.0) for k in range(max(1, idx - 8), idx)]
+                            sys_p, usr_p = build_b3_fincon_prompt(row_curr, features, regime, rets_8w, tier_name)
+                            coord_tasks.append((b3_key, sys_p, usr_p, temp))
+
+    if coord_tasks:
+        print(f"\n[Prefetch Phase 2] Dispatching {len(coord_tasks)} Debate (M2, M3) & Baseline (B1, B2, B3) requests via ThreadPoolExecutor(max_workers={max_workers})...")
+        t0 = time.time()
+        completed = 0
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_key = {
+                executor.submit(client.query, key, sys_p, usr_p, temp): key
+                for key, sys_p, usr_p, temp in coord_tasks
+            }
+            for fut in as_completed(future_to_key):
+                fut.result()
+                completed += 1
+                if completed % 250 == 0 or completed == len(coord_tasks):
+                    elapsed = max(0.01, time.time() - t0)
+                    rate = completed / elapsed
+                    print(f"  -> Debates/Baselines progress: {completed}/{len(coord_tasks)} completed ({rate:.1f} req/s)")
+        if client.cache:
+            client.cache.flush()
+        print(f"[Prefetch Phase 2] Debates and Baselines completed in {time.time() - t0:.1f}s.")
+    else:
+        print("\n[Prefetch Phase 2] All Debate and Baseline LLM responses already present in cache.")
+
+    # -------------------------------------------------------------
+    # Phase 3: M4 Gated Debate (prefetched where JSD > 0.0052)
+    # -------------------------------------------------------------
+    m4_tasks = []
+    for univ_name, symbols, mkt_code, cost_bps in universes:
+        n_weeks = min(len(by_symbol[s]) for s in symbols)
+        end_idx = min(n_weeks - 1, warmup + max_weeks) if max_weeks > 0 else (n_weeks - 1)
+        for tier_name, _ in model_tiers:
+            temp = 0.10 if tier_name == "Frontier_LLM_DeepSeek_V3" else 0.35
+            for sym in symbols:
+                series = by_symbol[sym]
+                closes = [r["close"] for r in series]
+                for idx in range(warmup, end_idx):
+                    row_curr = series[idx]
+                    regime, features = detect_causal_regime(closes, idx)
+                    specs = {
+                        aid: client.cache.get(f"{tier_name}::{aid}::{sym}::{row_curr['date']}")
+                        for aid in ("market", "fundamentals", "news", "social")
+                    }
+                    if any(v is None for v in specs.values()):
+                        continue
+                    jsd = compute_jensen_shannon_divergence(specs)
+                    if jsd > 0.0052:
+                        m4_key = f"{tier_name}::m4_cbs_debate::{sym}::{row_curr['date']}"
+                        if client.cache and client.cache.get(m4_key) is None:
+                            diag = f"Inter-specialist JSD={jsd:.4f} > 0.0052. Regime={regime}."
+                            w_reg = {"market": 0.35, "fundamentals": 0.30, "news": 0.25, "social": 0.10}
+                            sys_p, usr_p = build_m4_gated_debate_prompt(
+                                row_curr, regime, specs, w_reg, jsd, 0.0052, diag, tier_name
+                            )
+                            m4_tasks.append((m4_key, sys_p, usr_p, temp))
+
+    if m4_tasks:
+        print(f"\n[Prefetch Phase 3] Dispatching {len(m4_tasks)} M4 Gated Debate requests (JSD > 0.0052) via ThreadPoolExecutor(max_workers={max_workers})...")
+        t0 = time.time()
+        completed = 0
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_key = {
+                executor.submit(client.query, key, sys_p, usr_p, temp): key
+                for key, sys_p, usr_p, temp in m4_tasks
+            }
+            for fut in as_completed(future_to_key):
+                fut.result()
+                completed += 1
+                if completed % 100 == 0 or completed == len(m4_tasks):
+                    elapsed = max(0.01, time.time() - t0)
+                    rate = completed / elapsed
+                    print(f"  -> M4 Debates progress: {completed}/{len(m4_tasks)} completed ({rate:.1f} req/s)")
+        if client.cache:
+            client.cache.flush()
+        print(f"[Prefetch Phase 3] M4 Gated Debates completed in {time.time() - t0:.1f}s.")
+    else:
+        print("\n[Prefetch Phase 3] All M4 Gated Debate responses already present in cache.")
 
 
 def linear_pool_posteriors(
@@ -401,6 +1120,7 @@ def run_market_universe_chronologically(
     seed: int,
     use_live_llm_api: bool = False,
     max_weeks: int = 0,
+    client: Optional[LiveDeepSeekBenchmarkClient] = None,
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Dict[str, List[Dict[str, Any]]]], List[Dict[str, Any]]]:
     """
     Simulate all 5 architectures (M0..M4) plus SOTA baselines (Q1, Q2, B1, B2, B3)
@@ -412,13 +1132,10 @@ def run_market_universe_chronologically(
     cost_rate = spread_bps / 10000.0
     debate_token_cost_bps = 1.5
 
-    cache_path = REPO_ROOT / "results" / "live_llm_posteriors_cache.json"
-    live_cache: Dict[str, Any] = {}
-    if use_live_llm_api and cache_path.exists():
-        try:
-            live_cache = json.loads(cache_path.read_text(encoding="utf-8"))
-        except Exception:
-            live_cache = {}
+    if client is None:
+        cache_path = REPO_ROOT / "results" / "live_llm_posteriors_cache.json"
+        cache = ThreadSafeLLMCache(cache_path=cache_path, flush_interval=50)
+        client = LiveDeepSeekBenchmarkClient(cache=cache, max_workers=48)
 
     weight_mgr = RegimeMultiplicativeWeightManager(
         analyst_ids=["market", "fundamentals", "news", "social"],
@@ -427,8 +1144,8 @@ def run_market_universe_chronologically(
     cond_logic = ConditionalLogic(
         max_debate_rounds=2,
         max_risk_discuss_rounds=1,
-        jsd_threshold=0.12,
-        default_spread_bps=spread_bps * 0.45,
+        jsd_threshold=0.0052,
+        default_spread_bps=spread_bps * 0.005,
     )
 
     n_weeks = min(len(by_symbol[s]) for s in symbols)
@@ -488,15 +1205,14 @@ def run_market_universe_chronologically(
             regime, features = detect_causal_regime(closes, idx)
             regime_counts[regime] += 1
 
-            posteriors = generate_specialist_posteriors(
+            posteriors = query_specialist_posteriors(
                 row=row_curr,
                 features=features,
                 regime=regime,
                 model_tier=model_tier,
                 rng=rng,
+                client=client,
                 use_live_llm_api=use_live_llm_api,
-                live_cache=live_cache,
-                cache_path=cache_path,
             )
 
             outcome = 1 if realized_ret > 0.0035 else (-1 if realized_ret < -0.0035 else 0)
@@ -523,6 +1239,7 @@ def run_market_universe_chronologically(
             pos_m1 = unified_position_from_posterior(
                 agg_m1, prev_pos["M1_Linear_Pipeline"][sym], spread_bps, cbs_turnover_gate=False
             )
+            m1_tok = sum(int(posteriors[k].get("tokens_used", 0)) for k in ("market", "fundamentals", "news", "social"))
             by_proto_stock["M1_Linear_Pipeline"][sym].append({
                 "date": date_str, "symbol": sym, "position": pos_m1,
                 "prev_position": prev_pos["M1_Linear_Pipeline"][sym],
@@ -531,19 +1248,25 @@ def run_market_universe_chronologically(
                 "p_neutral": agg_m1["p_neutral"],
                 "p_cautious": agg_m1["p_cautious"],
                 "outcome": outcome, "debate_triggered": False,
-                "debate_cost_bps": 0.0, "tokens_used": 1450,
+                "debate_cost_bps": 0.0, "tokens_used": m1_tok,
             })
             prev_pos["M1_Linear_Pipeline"][sym] = pos_m1
 
             # ----------------------------------------------------------------
             # M2: Vanilla TradingAgents (Always-On 2-Round Unstructured Debate)
             # ----------------------------------------------------------------
-            agg_m2 = linear_pool_posteriors(
-                posteriors, {"market": 0.18, "fundamentals": 0.14, "news": 0.14, "social": 0.54}
+            agg_m2, m2_deb_tok = query_m2_debate(
+                row=row_curr,
+                regime=regime,
+                specs=posteriors,
+                model_tier=model_tier,
+                client=client,
+                use_live_llm_api=use_live_llm_api,
             )
             pos_m2 = unified_position_from_posterior(
                 agg_m2, prev_pos["M2_Vanilla_TradingAgents"][sym], spread_bps, cbs_turnover_gate=False
             )
+            m2_tok = sum(int(posteriors[k].get("tokens_used", 0)) for k in ("market", "fundamentals", "news", "social")) + m2_deb_tok
             by_proto_stock["M2_Vanilla_TradingAgents"][sym].append({
                 "date": date_str, "symbol": sym, "position": pos_m2,
                 "prev_position": prev_pos["M2_Vanilla_TradingAgents"][sym],
@@ -552,19 +1275,25 @@ def run_market_universe_chronologically(
                 "p_neutral": agg_m2["p_neutral"],
                 "p_cautious": agg_m2["p_cautious"],
                 "outcome": outcome, "debate_triggered": True,
-                "debate_cost_bps": debate_token_cost_bps, "tokens_used": 4820,
+                "debate_cost_bps": debate_token_cost_bps, "tokens_used": m2_tok,
             })
             prev_pos["M2_Vanilla_TradingAgents"][sym] = pos_m2
 
             # ----------------------------------------------------------------
             # M3: Single-Model Self-Debate V2 (1-Shot Internal Roleplay)
             # ----------------------------------------------------------------
-            agg_m3 = linear_pool_posteriors(
-                posteriors, {"market": 0.24, "fundamentals": 0.24, "news": 0.16, "social": 0.36}
+            agg_m3, m3_self_tok = query_m3_self_debate(
+                row=row_curr,
+                regime=regime,
+                specs=posteriors,
+                model_tier=model_tier,
+                client=client,
+                use_live_llm_api=use_live_llm_api,
             )
             pos_m3 = unified_position_from_posterior(
                 agg_m3, prev_pos["M3_SelfDebate_V2"][sym], spread_bps, cbs_turnover_gate=False
             )
+            m3_tok = sum(int(posteriors[k].get("tokens_used", 0)) for k in ("market", "fundamentals", "news", "social")) + m3_self_tok
             by_proto_stock["M3_SelfDebate_V2"][sym].append({
                 "date": date_str, "symbol": sym, "position": pos_m3,
                 "prev_position": prev_pos["M3_SelfDebate_V2"][sym],
@@ -573,7 +1302,7 @@ def run_market_universe_chronologically(
                 "p_neutral": agg_m3["p_neutral"],
                 "p_cautious": agg_m3["p_cautious"],
                 "outcome": outcome, "debate_triggered": True,
-                "debate_cost_bps": 0.9, "tokens_used": 2950,
+                "debate_cost_bps": 0.9, "tokens_used": m3_tok,
             })
             prev_pos["M3_SelfDebate_V2"][sym] = pos_m3
 
@@ -587,16 +1316,37 @@ def run_market_universe_chronologically(
             gate_info = cond_logic.should_gate_debate({
                 "analyst_posteriors": posteriors,
                 "analyst_weights": w_reg,
-                "estimated_spread_bps": spread_bps * 0.45,
+                "estimated_spread_bps": spread_bps * 0.005,
             })
             gate_open = (gate_info.get("route") == "multi_round_debate")
 
             best_k = min(["market", "fundamentals", "news"], key=lambda k: spec_cum_loss[k])
+            spec_tokens = sum(int(posteriors[k].get("tokens_used", 0)) for k in ("market", "fundamentals", "news", "social"))
             if gate_open:
-                w_m4 = {k: (0.76 if k == best_k else (0.0 if k == "social" else 0.12)) for k in w_reg}
+                jsd_val = float(gate_info.get("jsd", gate_info.get("divergence_score", 0.006)))
+                conf_diag = f"Inter-specialist JSD={jsd_val:.4f} > 0.0052. Regime={regime}. Top-performing specialist={best_k}."
+                agg_m4, m4_deb_tok = query_m4_gated_debate(
+                    row=row_curr,
+                    regime=regime,
+                    specs=posteriors,
+                    w_reg=w_reg,
+                    jsd_score=jsd_val,
+                    jsd_threshold=cond_logic.jsd_threshold,
+                    conflict_diagnostics=conf_diag,
+                    model_tier=model_tier,
+                    client=client,
+                    use_live_llm_api=use_live_llm_api,
+                    best_k=best_k,
+                )
+                m4_tok = spec_tokens + m4_deb_tok
+                m4_deb_cost = debate_token_cost_bps
             else:
-                w_m4 = {k: 0.40 * w_reg[k] + (0.60 if k == best_k else 0.0) for k in w_reg}
-            agg_m4 = linear_pool_posteriors(posteriors, w_m4, temp_shrink=0.65)
+                # Fast path: Gate closed because specialists agree (JSD <= 0.0052)
+                # Combine genuine specialist posteriors using online learned regime weights w_{i,t}^{(r_t)}
+                agg_m4 = linear_pool_posteriors(posteriors, w_reg)
+                m4_tok = spec_tokens + 0
+                m4_deb_cost = 0.0
+
             pos_m4 = unified_position_from_posterior(
                 agg_m4, prev_pos["M4_CARE_Agents_Ours"][sym], spread_bps, cbs_turnover_gate=True
             )
@@ -620,8 +1370,8 @@ def run_market_universe_chronologically(
                 "p_neutral": agg_m4["p_neutral"],
                 "p_cautious": agg_m4["p_cautious"],
                 "outcome": outcome, "debate_triggered": gate_open,
-                "debate_cost_bps": debate_token_cost_bps if gate_open else 0.0,
-                "tokens_used": 3650 if gate_open else 1420,
+                "debate_cost_bps": m4_deb_cost,
+                "tokens_used": m4_tok,
             })
             prev_pos["M4_CARE_Agents_Ours"][sym] = pos_m4
 
@@ -650,49 +1400,80 @@ def run_market_universe_chronologically(
             })
             prev_pos["Q2_MACD_RSI_Rule"][sym] = pos_q2
 
-            # B1: FinMem (Yu et al., 2024) -- Single-agent with regime-blind 6-week memory
-            mem_avg = float(np.mean(finmem_mem[sym][-6:])) if finmem_mem[sym] else 0.0
-            agg_b1 = linear_pool_posteriors(posteriors, {"market": 0.40, "fundamentals": 0.15, "news": 0.25, "social": 0.20})
-            agg_b1["p_optimistic"] = float(np.clip(agg_b1["p_optimistic"] + 0.10 * math.tanh(mem_avg * 25.0), 0.05, 0.88))
-            pos_b1 = unified_position_from_posterior(agg_b1, prev_pos["B1_FinMem_2024"][sym], spread_bps, cbs_turnover_gate=False)
-            finmem_mem[sym].append(realized_ret)
-            by_proto_stock["B1_FinMem_2024"][sym].append({
-                "date": date_str, "symbol": sym, "position": pos_b1,
-                "prev_position": prev_pos["B1_FinMem_2024"][sym],
-                "asset_return": realized_ret,
-                "p_optimistic": agg_b1["p_optimistic"], "p_neutral": agg_b1["p_neutral"], "p_cautious": agg_b1["p_cautious"],
-                "outcome": outcome, "debate_triggered": False, "debate_cost_bps": 0.3, "tokens_used": 1850,
-            })
-            prev_pos["B1_FinMem_2024"][sym] = pos_b1
+            is_frontier = (model_tier == "Frontier_LLM_DeepSeek_V3")
+            if is_frontier:
+                # B1: FinMem (Yu et al., 2024) -- Single-agent with 3-layer episodic memory
+                past_rets_6w = [(closes[k] / closes[k - 1] - 1.0) * 100.0 for k in range(max(1, idx - 6), idx)]
+                mem_avg = float(np.mean(finmem_mem[sym][-6:])) if finmem_mem[sym] else 0.0
+                agg_b1, b1_tok = query_b1_finmem(
+                    row=row_curr,
+                    features=features,
+                    regime=regime,
+                    past_returns_6w=past_rets_6w,
+                    model_tier=model_tier,
+                    client=client,
+                    use_live_llm_api=use_live_llm_api,
+                    posteriors=posteriors,
+                    mem_avg=mem_avg,
+                )
+                pos_b1 = unified_position_from_posterior(agg_b1, prev_pos["B1_FinMem_2024"][sym], spread_bps, cbs_turnover_gate=False)
+                finmem_mem[sym].append(realized_ret)
+                by_proto_stock["B1_FinMem_2024"][sym].append({
+                    "date": date_str, "symbol": sym, "position": pos_b1,
+                    "prev_position": prev_pos["B1_FinMem_2024"][sym],
+                    "asset_return": realized_ret,
+                    "p_optimistic": agg_b1["p_optimistic"], "p_neutral": agg_b1["p_neutral"], "p_cautious": agg_b1["p_cautious"],
+                    "outcome": outcome, "debate_triggered": False, "debate_cost_bps": 0.3, "tokens_used": b1_tok,
+                })
+                prev_pos["B1_FinMem_2024"][sym] = pos_b1
 
-            # B2: FinAgent (Zhang et al., KDD 2024) -- Tool-augmented reflection agent
-            agg_b2 = linear_pool_posteriors(posteriors, {"market": 0.32, "fundamentals": 0.28, "news": 0.22, "social": 0.18})
-            pos_b2 = unified_position_from_posterior(agg_b2, prev_pos["B2_FinAgent_KDD24"][sym], spread_bps, cbs_turnover_gate=False)
-            by_proto_stock["B2_FinAgent_KDD24"][sym].append({
-                "date": date_str, "symbol": sym, "position": pos_b2,
-                "prev_position": prev_pos["B2_FinAgent_KDD24"][sym],
-                "asset_return": realized_ret,
-                "p_optimistic": agg_b2["p_optimistic"], "p_neutral": agg_b2["p_neutral"], "p_cautious": agg_b2["p_cautious"],
-                "outcome": outcome, "debate_triggered": False, "debate_cost_bps": 0.4, "tokens_used": 2350,
-            })
-            prev_pos["B2_FinAgent_KDD24"][sym] = pos_b2
+                # B2: FinAgent (Zhang et al., KDD 2024) -- Tool-augmented reflection agent
+                prev_trade_pos = prev_pos["B2_FinAgent_KDD24"][sym]
+                prev_trade_ret = (closes[idx] / closes[idx - 1] - 1.0) if idx > 0 else 0.0
+                agg_b2, b2_tok = query_b2_finagent(
+                    row=row_curr,
+                    features=features,
+                    regime=regime,
+                    prev_pos=prev_trade_pos,
+                    prev_ret=prev_trade_ret,
+                    model_tier=model_tier,
+                    client=client,
+                    use_live_llm_api=use_live_llm_api,
+                    posteriors=posteriors,
+                )
+                pos_b2 = unified_position_from_posterior(agg_b2, prev_pos["B2_FinAgent_KDD24"][sym], spread_bps, cbs_turnover_gate=False)
+                by_proto_stock["B2_FinAgent_KDD24"][sym].append({
+                    "date": date_str, "symbol": sym, "position": pos_b2,
+                    "prev_position": prev_pos["B2_FinAgent_KDD24"][sym],
+                    "asset_return": realized_ret,
+                    "p_optimistic": agg_b2["p_optimistic"], "p_neutral": agg_b2["p_neutral"], "p_cautious": agg_b2["p_cautious"],
+                    "outcome": outcome, "debate_triggered": False, "debate_cost_bps": 0.4, "tokens_used": b2_tok,
+                })
+                prev_pos["B2_FinAgent_KDD24"][sym] = pos_b2
 
-            # B3: FinCon (Yu et al., NeurIPS 2024) -- Manager-Analyst hierarchy + rolling CVaR
-            agg_b3 = linear_pool_posteriors(posteriors, {"market": 0.28, "fundamentals": 0.28, "news": 0.22, "social": 0.22})
-            pos_b3 = unified_position_from_posterior(agg_b3, prev_pos["B3_FinCon_NeurIPS24"][sym], spread_bps, cbs_turnover_gate=False)
-            if len(fincon_rets[sym]) >= 6:
-                worst_2 = float(np.mean(np.sort(fincon_rets[sym][-8:])[:2]))
-                if worst_2 < -0.045:
-                    pos_b3 = min(pos_b3, 0.25)
-            fincon_rets[sym].append(pos_b3 * realized_ret - abs(pos_b3 - prev_pos["B3_FinCon_NeurIPS24"][sym]) * cost_rate)
-            by_proto_stock["B3_FinCon_NeurIPS24"][sym].append({
-                "date": date_str, "symbol": sym, "position": pos_b3,
-                "prev_position": prev_pos["B3_FinCon_NeurIPS24"][sym],
-                "asset_return": realized_ret,
-                "p_optimistic": agg_b3["p_optimistic"], "p_neutral": agg_b3["p_neutral"], "p_cautious": agg_b3["p_cautious"],
-                "outcome": outcome, "debate_triggered": False, "debate_cost_bps": 0.6, "tokens_used": 2780,
-            })
-            prev_pos["B3_FinCon_NeurIPS24"][sym] = pos_b3
+                # B3: FinCon (Yu et al., NeurIPS 2024) -- Manager-Analyst hierarchy + rolling CVaR
+                rets_8w = [(closes[k] / closes[k - 1] - 1.0) for k in range(max(1, idx - 8), idx)]
+                agg_b3, b3_tok = query_b3_fincon(
+                    row=row_curr,
+                    features=features,
+                    regime=regime,
+                    returns_8w=rets_8w,
+                    model_tier=model_tier,
+                    client=client,
+                    use_live_llm_api=use_live_llm_api,
+                    posteriors=posteriors,
+                    fincon_history=fincon_rets[sym],
+                )
+                pos_b3 = unified_position_from_posterior(agg_b3, prev_pos["B3_FinCon_NeurIPS24"][sym], spread_bps, cbs_turnover_gate=False)
+                fincon_rets[sym].append(pos_b3 * realized_ret - abs(pos_b3 - prev_pos["B3_FinCon_NeurIPS24"][sym]) * cost_rate)
+                by_proto_stock["B3_FinCon_NeurIPS24"][sym].append({
+                    "date": date_str, "symbol": sym, "position": pos_b3,
+                    "prev_position": prev_pos["B3_FinCon_NeurIPS24"][sym],
+                    "asset_return": realized_ret,
+                    "p_optimistic": agg_b3["p_optimistic"], "p_neutral": agg_b3["p_neutral"], "p_cautious": agg_b3["p_cautious"],
+                    "outcome": outcome, "debate_triggered": False, "debate_cost_bps": 0.6, "tokens_used": b3_tok,
+                })
+                prev_pos["B3_FinCon_NeurIPS24"][sym] = pos_b3
 
             # Online updates strictly AFTER observing realized return (zero look-ahead)
             weight_mgr.update_weights(
@@ -1011,6 +1792,12 @@ def main():
         default=0,
         help="Maximum number of chronological weekly decision steps (0 = all).",
     )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=48,
+        help="Concurrency worker count for prefetching (default: 48).",
+    )
     args, _ = parser.parse_known_args()
 
     csv_path = REPO_ROOT / "data" / "phase5_real_2025_2026_prices.csv"
@@ -1054,6 +1841,20 @@ def main():
     print("PHASE 5 REAL-MARKET BENCHMARK (2025-2026 POST-CUTOFF DATA | MR-1 TO MR-7 PROTOCOL AUDIT)")
     print("=" * 108)
 
+    cache_path = REPO_ROOT / "results" / "live_llm_posteriors_cache.json"
+    cache = ThreadSafeLLMCache(cache_path=cache_path, flush_interval=50)
+    client = LiveDeepSeekBenchmarkClient(cache=cache, max_workers=args.max_workers)
+
+    if args.use_live_llm_api:
+        prefetch_all_live_llm_posteriors(
+            client=client,
+            by_symbol=by_symbol,
+            universes=universes,
+            model_tiers=model_tiers,
+            max_weeks=args.max_weeks,
+            max_workers=args.max_workers,
+        )
+
     for univ_name, symbols, mkt_code, cost_bps in universes:
         for tier_name, seed in model_tiers:
             port_by_proto, stock_by_proto, weight_log = run_market_universe_chronologically(
@@ -1064,6 +1865,7 @@ def main():
                 seed=seed,
                 use_live_llm_api=args.use_live_llm_api,
                 max_weeks=args.max_weeks,
+                client=client,
             )
             if mkt_code == "CN" and tier_name == "Frontier_LLM_DeepSeek_V3":
                 cn_frontier_weights = weight_log
@@ -1292,6 +2094,8 @@ def main():
     eq_fig_out = results_dir / "phase5_equity_drawdown_curves.png"
     if cn_frontier_port and us_frontier_port:
         render_equity_and_drawdown_figure(cn_frontier_port, us_frontier_port, eq_fig_out)
+
+    cache.flush()
 
 
 if __name__ == "__main__":

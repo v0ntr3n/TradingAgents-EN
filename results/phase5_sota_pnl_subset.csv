@@ -1,17 +1,9 @@
 universe,market,method_code,method_label,initial_capital_usd,final_equity_usd,net_pnl_usd,gross_return_pct,net_return_pct,gross_sharpe,net_sharpe,net_sortino,max_drawdown_pct,turnover_rate,brier_score,avg_tokens,p_value_vs_tradingagents
-CN_CSI300_A_Shares,CN,M0_Buy_And_Hold,Buy & Hold (Market Benchmark),100000,100040.0,40.0,0.04,0.04,0.104,0.104,0.265,9.13,0.0,0.3,0.0,0.426
-CN_CSI300_A_Shares,CN,Q1_SMA_Crossover,SMA Crossover (Quant Rule),100000,99780.0,-220.0,0.08,-0.22,0.088,-0.048,-0.072,3.69,2.0,0.2317,0.0,0.196
-CN_CSI300_A_Shares,CN,Q2_MACD_RSI_Rule,MACD + RSI Filter (Quant Rule),100000,104280.0,4280.0,4.59,4.28,2.987,2.773,30684409.739,0.08,2.0,0.2088,0.0,0.0001
-CN_CSI300_A_Shares,CN,B1_FinMem_2024,"FinMem (Yu et al., 2024)",100000,99530.0,-470.0,-0.09,-0.47,0.009,-0.169,-0.259,3.77,2.55,0.2396,1850.0,0.274
-CN_CSI300_A_Shares,CN,B2_FinAgent_KDD24,"FinAgent (Zhang et al., KDD'24)",100000,98980.0,-1020.0,-0.57,-1.02,-0.215,-0.423,-0.672,4.3,3.0,0.2394,2350.0,0.032
-CN_CSI300_A_Shares,CN,B3_FinCon_NeurIPS24,"FinCon (Yu et al., NeurIPS'24)",100000,98980.0,-1020.0,-0.57,-1.02,-0.215,-0.423,-0.672,4.3,3.0,0.2396,2780.0,0.032
-CN_CSI300_A_Shares,CN,M2_Vanilla_TradingAgents,"TradingAgents (Xiao et al., 2024)",100000,99740.0,-260.0,0.04,-0.26,0.068,-0.068,-0.108,3.73,2.0,0.2395,4820.0,1.0
-CN_CSI300_A_Shares,CN,M4_CARE_Agents_Ours,"CARE-Agents (Ours, Full)",100000,99690.0,-310.0,-0.02,-0.31,0.044,-0.092,-0.148,3.78,2.0,0.221,1420.0,0.196
-US_Tech_Benchmark,US,M0_Buy_And_Hold,Buy & Hold (Market Benchmark),100000,88410.0,-11590.0,-11.59,-11.59,-1.039,-1.039,-1.57,18.35,0.0,0.4,0.0,0.182
-US_Tech_Benchmark,US,Q1_SMA_Crossover,SMA Crossover (Quant Rule),100000,95110.0,-4890.0,-4.84,-4.89,-1.967,-1.988,-1.197,5.35,1.0,0.177,0.0,0.234
-US_Tech_Benchmark,US,Q2_MACD_RSI_Rule,MACD + RSI Filter (Quant Rule),100000,100000.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.1467,0.0,0.086
-US_Tech_Benchmark,US,B1_FinMem_2024,"FinMem (Yu et al., 2024)",100000,96850.0,-3150.0,-3.06,-3.15,-2.687,-2.781,-2.205,2.57,2.0,0.2163,1850.0,1.0
-US_Tech_Benchmark,US,B2_FinAgent_KDD24,"FinAgent (Zhang et al., KDD'24)",100000,93930.0,-6070.0,-5.98,-6.07,-2.538,-2.588,-1.784,5.51,2.0,0.2118,2350.0,0.454
-US_Tech_Benchmark,US,B3_FinCon_NeurIPS24,"FinCon (Yu et al., NeurIPS'24)",100000,94680.0,-5320.0,-5.2,-5.32,-3.342,-3.401,-2.896,2.58,2.45,0.2117,2780.0,0.214
-US_Tech_Benchmark,US,M2_Vanilla_TradingAgents,"TradingAgents (Xiao et al., 2024)",100000,96850.0,-3150.0,-3.06,-3.15,-2.687,-2.781,-2.205,2.57,2.0,0.2114,4820.0,1.0
-US_Tech_Benchmark,US,M4_CARE_Agents_Ours,"CARE-Agents (Ours, Full)",100000,93930.0,-6070.0,-5.98,-6.07,-2.538,-2.588,-1.784,5.51,2.0,0.1876,1420.0,0.454
+US_Tech_Benchmark,US,M0_Buy_And_Hold,Buy & Hold (Market Benchmark),100000,93380.0,-6620.0,-6.62,-6.62,-0.173,-0.173,-0.438,22.49,0.0,0.3333,0.0,0.202
+US_Tech_Benchmark,US,Q1_SMA_Crossover,SMA Crossover (Quant Rule),100000,100000.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.1983,0.0,0.192
+US_Tech_Benchmark,US,Q2_MACD_RSI_Rule,MACD + RSI Filter (Quant Rule),100000,100000.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.1867,0.0,0.192
+US_Tech_Benchmark,US,B1_FinMem_2024,"FinMem (Yu et al., 2024)",100000,105030.0,5030.0,5.08,5.03,3.292,3.299,35850646.565,0.0,1.0,0.192,682.0,0.008
+US_Tech_Benchmark,US,B2_FinAgent_KDD24,"FinAgent (Zhang et al., KDD'24)",100000,99430.0,-570.0,-0.43,-0.57,-0.109,-0.164,-0.166,5.33,2.8,0.1849,576.0,0.164
+US_Tech_Benchmark,US,B3_FinCon_NeurIPS24,"FinCon (Yu et al., NeurIPS'24)",100000,94540.0,-5460.0,-5.27,-5.46,-1.159,-1.202,-0.911,9.99,3.9,0.1886,600.0,0.222
+US_Tech_Benchmark,US,M2_Vanilla_TradingAgents,"TradingAgents (Xiao et al., 2024)",100000,92760.0,-7240.0,-7.0,-7.24,-1.523,-1.575,-1.257,11.68,5.0,0.2055,2055.0,1.0
+US_Tech_Benchmark,US,M4_CARE_Agents_Ours,"CARE-Agents (Ours, Full)",100000,105030.0,5030.0,5.08,5.03,3.292,3.299,35850646.565,0.0,1.0,0.1521,1564.0,0.008
