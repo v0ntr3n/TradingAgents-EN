@@ -148,28 +148,14 @@ class ChipDistributionAnalystV2(AnalystAgent):
             else:
                 raise ValueError("LLM not initialized")
 
-            parsed = self._parse_response(report)
-            clean_report = parsed.get("report") or parsed.get("content") or report
-            posterior = parsed.get("posterior") or self._normalize_posterior(parsed)
-
-            result = {
-                self.output_field: clean_report,
-                "analyst_posteriors": {
-                    self.agent_id: posterior
-                }
-            }
+            result = {self.output_field: report}
             if tool_summary:
                 result["tool_call_summaries"] = {self.analyst_type: tool_summary}
             return result
 
         except Exception as e:
             logger.error(f"[{self.agent_id}] Execution failed: {e}", exc_info=True)
-            return {
-                self.output_field: f"Chip distribution analysis failed: {str(e)}",
-                "analyst_posteriors": {
-                    self.agent_id: self._get_default_posterior()
-                }
-            }
+            return {self.output_field: f"Chip distribution analysis failed: {str(e)}"}
 
     def _chip_tool_unavailable(self) -> bool:
         summaries = getattr(self, "_tool_call_summaries_collected", []) or []

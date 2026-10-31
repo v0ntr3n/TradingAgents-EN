@@ -193,5 +193,5 @@ class LLMResponse(BaseModel):
 
 
 # Update forward reference
-Message.model_rebuild()
+Message.model_rebuild() if hasattr(Message, "model_rebuild") else Message.update_forward_refs()
 

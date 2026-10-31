@@ -39,60 +39,6 @@ _AGENT_ID_ALIAS_MAPPING = {
     "risk_manager": ["risk_manager_v2", "risk_manager"],
     "risk_manager_v2": ["risk_manager_v2", "risk_manager"],
 }
-_CIRCUIT_BREAKER_AGENTS = {
-    "bull_researcher",
-    "bull_researcher_v2",
-    "bear_researcher",
-    "bear_researcher_v2",
-    "research_manager",
-    "research_manager_v2",
-    "trader",
-    "trader_v2",
-    "risk_manager",
-    "risk_manager_v2",
-}
-
-
-def circuit_breaker_memory_filter(
-    memories: List[Dict[str, Any]],
-    current_regime: str,
-    regime_confidence: float = 1.0,
-    agent_id: str = "",
-) -> List[Dict[str, Any]]:
-    """Filter memories according to regime circuit-breaker policy.
-
-    For circuit-breaker agents (bull/bear researcher, manager, trader, risk manager):
-    - When regime_confidence >= 0.5: filter out memories whose stored market_regime contradicts current_regime.
-    - When regime_confidence < 0.5: bypass circuit-breaker (allowing cross-regime memory recall under regime ambiguity).
-    For non-circuit agents:
-    - Return memories unfiltered.
-    """
-    if agent_id and agent_id not in _CIRCUIT_BREAKER_AGENTS:
-        return memories
-
-    norm_regime = str(current_regime or "sideways").lower().strip()
-    if norm_regime not in {"bull", "bear", "sideways"}:
-        norm_regime = "sideways"
-
-    try:
-        conf = float(regime_confidence)
-    except (ValueError, TypeError):
-        conf = 1.0
-
-    if conf < 0.5:
-        # Ambiguous regime: bypass circuit breaker to preserve hedging memories
-        return list(memories)
-
-    filtered = []
-    for item in memories:
-        meta = item.get("metadata") if isinstance(item, dict) else getattr(item, "metadata", {})
-        if not isinstance(meta, dict):
-            meta = {}
-        mem_regime = str(meta.get("market_regime") or "sideways").lower().strip()
-        if mem_regime == norm_regime:
-            filtered.append(item)
-
-    return filtered
 
 
 def _is_truthy(value: Any, default: bool = False) -> bool:
@@ -102,10 +48,6 @@ def _is_truthy(value: Any, default: bool = False) -> bool:
 
 
 def _run_async_sync(coro):
-    import inspect
-    if not inspect.isawaitable(coro):
-        return coro
-
     try:
         asyncio.get_running_loop()
     except RuntimeError:
@@ -151,51 +93,68 @@ class Mem0AgentMemory:
             merged.setdefault("object_type", "stock")
             merged.setdefault("object_key", ticker)
         merged.setdefault("source", "legacy_agent_memory_runtime")
-
-        # Enforce mandatory R3 metadata keys
-        regime = str(merged.get("market_regime") or "sideways").strip().lower()
-        merged["market_regime"] = regime if regime in {"bull", "bear", "sideways"} else "sideways"
-
-        try:
-            vol = int(merged.get("volatility_quintile", 3))
-            merged["volatility_quintile"] = max(1, min(5, vol))
-        except (ValueError, TypeError):
-            merged["volatility_quintile"] = 3
-
-        try:
-            brier = float(merged.get("brier_calibration_error", 0.0))
-            merged["brier_calibration_error"] = max(0.0, brier)
-        except (ValueError, TypeError):
-            merged["brier_calibration_error"] = 0.0
-
+        regime = str(merged.get("market_regime") or "unknown").strip().lower()
+        if regime not in ("bull", "bear", "sideways", "unknown"):
+            regime = "unknown"
+        merged["market_regime"] = regime
+        merged["volatility_quintile"] = max(1, min(5, int(merged.get("volatility_quintile", 3))))
+        role = str(merged.get("attribution_role") or "neutral").strip().lower()
+        if role not in ("correct_driver", "overridden_correct", "false_driver", "correct_dissent_ignored", "neutral"):
+            role = "neutral"
+        merged["attribution_role"] = role
+        if "brier_calibration_error" in merged:
+            merged["brier_calibration_error"] = float(merged["brier_calibration_error"])
         return merged
 
     @staticmethod
-    def _normalize_recall_filters(filter_metadata: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        merged = dict(filter_metadata or {})
+    def filter_and_rerank_by_regime(
+        memories: List[Dict[str, Any]],
+        current_regime: Optional[str] = None,
+        drawdown_circuit_breaker: bool = False,
+        n_results: int = 5,
+    ) -> List[Dict[str, Any]]:
+        """
+        Apply regime-aware filtering and re-ranking:
+        - If drawdown_circuit_breaker is True, suspend retrieval (return []) to prevent anchoring bias.
+        - Exclude memories from the opposite regime ('bull' vs 'bear').
+        - Boost similarity by 1.5x for memories matching current_regime.
+        """
+        if drawdown_circuit_breaker:
+            return []
+        if not memories:
+            return []
+        if not current_regime or current_regime.lower() not in ("bull", "bear", "sideways"):
+            return memories[:n_results]
+
+        curr = current_regime.lower()
+        opposite = {"bull": "bear", "bear": "bull"}.get(curr)
+
+        filtered = []
+        for item in memories:
+            meta = item.get("metadata") or {}
+            mem_regime = str(meta.get("market_regime", "unknown")).lower()
+            if opposite and mem_regime == opposite:
+                continue
+            base_sim = float(item.get("similarity", 0.5))
+            boosted_sim = min(1.0, base_sim * 1.5) if mem_regime == curr else base_sim
+            updated = dict(item)
+            updated["similarity"] = round(boosted_sim, 6)
+            updated["distance"] = round(max(0.0, 1.0 - boosted_sim), 6)
+            filtered.append(updated)
+
+        filtered.sort(key=lambda x: x["similarity"], reverse=True)
+        return filtered[:n_results]
+
+    @staticmethod
+    def _normalize_recall_filters(filter_metadata: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        if not filter_metadata:
+            return None
+        merged = dict(filter_metadata)
         ticker = str(merged.get("ticker") or merged.get("symbol") or "").strip().upper()
         if ticker:
             merged["ticker"] = ticker
             merged.setdefault("symbol", ticker)
-
-        regime = str(merged.get("market_regime") or "sideways").strip().lower()
-        merged["market_regime"] = regime if regime in {"bull", "bear", "sideways"} else "sideways"
-
-        try:
-            vol = int(merged.get("volatility_quintile", 3))
-            merged["volatility_quintile"] = max(1, min(5, vol))
-        except (ValueError, TypeError):
-            merged["volatility_quintile"] = 3
-
-        try:
-            brier = float(merged.get("brier_calibration_error", 0.0))
-            merged["brier_calibration_error"] = max(0.0, brier)
-        except (ValueError, TypeError):
-            merged["brier_calibration_error"] = 0.0
-
         return merged
-
-    circuit_breaker_memory_filter = staticmethod(circuit_breaker_memory_filter)
 
     def add_memory(
         self,
@@ -232,10 +191,11 @@ class Mem0AgentMemory:
         query: str,
         n_results: int = 5,
         filter_metadata: Optional[Dict[str, Any]] = None,
-        state: Optional[Dict[str, Any]] = None,
         current_regime: Optional[str] = None,
-        regime_confidence: Optional[float] = None,
+        drawdown_circuit_breaker: bool = False,
     ) -> List[Dict[str, Any]]:
+        if drawdown_circuit_breaker:
+            return []
         try:
             from .service import get_memory_service
 
@@ -243,54 +203,6 @@ class Mem0AgentMemory:
             memories: List[Dict[str, Any]] = []
             seen_memory_ids = set()
             normalized_filters = self._normalize_recall_filters(filter_metadata)
-
-            # Resolve regime and confidence from parameters, state, or filter_metadata
-            resolved_regime = current_regime
-            resolved_conf = regime_confidence
-
-            if state is not None and isinstance(state, dict):
-                if resolved_regime is None:
-                    resolved_regime = state.get("market_regime")
-                if resolved_conf is None:
-                    resolved_conf = state.get("regime_confidence")
-
-            if filter_metadata is not None and isinstance(filter_metadata, dict):
-                if resolved_regime is None:
-                    resolved_regime = filter_metadata.get("current_regime") or filter_metadata.get("market_regime")
-                if resolved_conf is None:
-                    resolved_conf = filter_metadata.get("regime_confidence")
-                if resolved_regime is None and isinstance(filter_metadata.get("state"), dict):
-                    resolved_regime = filter_metadata["state"].get("market_regime")
-                if resolved_conf is None and isinstance(filter_metadata.get("state"), dict):
-                    resolved_conf = filter_metadata["state"].get("regime_confidence")
-
-            resolved_regime = str(resolved_regime or normalized_filters.get("market_regime", "sideways")).strip().lower()
-            if resolved_regime not in {"bull", "bear", "sideways"}:
-                resolved_regime = "sideways"
-
-            if resolved_conf is None:
-                resolved_conf = 1.0
-            else:
-                try:
-                    resolved_conf = float(resolved_conf)
-                except (ValueError, TypeError):
-                    resolved_conf = 1.0
-
-            is_circuit_agent = any(aid in _CIRCUIT_BREAKER_AGENTS for aid in self.agent_ids)
-
-            # Build backend metadata filters (for mem0 recall)
-            # Only pass explicit non-regime filters (e.g. ticker/symbol) to svc.recall,
-            # allowing cross-regime memory candidates to reach client-side circuit breaker.
-            backend_filters = {}
-            if filter_metadata:
-                for k, v in filter_metadata.items():
-                    if k in ("ticker", "symbol"):
-                        backend_filters[k] = v
-                    elif k not in ("market_regime", "current_regime", "regime_confidence", "state", "volatility_quintile", "brier_calibration_error"):
-                        backend_filters[k] = v
-
-            fetch_limit = max(n_results * 3, 15) if is_circuit_agent and resolved_conf >= 0.5 else n_results
-
             for agent_id in self.agent_ids:
                 recalled = _run_async_sync(
                     svc.recall(
@@ -298,8 +210,8 @@ class Mem0AgentMemory:
                         user_id=self._resolve_user_id(),
                         agent_id=agent_id,
                         scopes=["agent_experience"],
-                        metadata_filters=backend_filters or None,
-                        limit=fetch_limit,
+                        metadata_filters=normalized_filters,
+                        limit=n_results,
                     )
                 )
                 for item in recalled or []:
@@ -314,22 +226,18 @@ class Mem0AgentMemory:
                         "similarity": item.score,
                         "distance": max(0.0, 1.0 - float(item.score or 0.0)),
                     })
-                if len(memories) >= fetch_limit:
+                    if len(memories) >= n_results:
+                        break
+                if len(memories) >= n_results:
                     break
-
-            if is_circuit_agent:
-                memories = circuit_breaker_memory_filter(
-                    memories,
-                    current_regime=resolved_regime,
-                    regime_confidence=resolved_conf,
-                    agent_id=self.agent_id,
-                )
-
-            memories = memories[:n_results]
-
             if memories:
-                logger.info("✅ mem0 AgentMemory hit agent_id=%s recalled=%d aliases=%s regime=%s conf=%.2f",
-                            self.agent_id, len(memories), self.agent_ids, resolved_regime, resolved_conf)
+                memories = self.filter_and_rerank_by_regime(
+                    memories,
+                    current_regime=current_regime,
+                    drawdown_circuit_breaker=drawdown_circuit_breaker,
+                    n_results=n_results,
+                )
+                logger.info("✅ mem0 AgentMemory hit agent_id=%s recalled=%d aliases=%s", self.agent_id, len(memories), self.agent_ids)
                 return memories
             logger.info("📭 mem0 AgentMemory miss agent_id=%s aliases=%s", self.agent_id, self.agent_ids)
         except Exception as exc:
@@ -566,7 +474,6 @@ class AgentMemory:
             # Prepare metadata
             if metadata is None:
                 metadata = {}
-            metadata = Mem0AgentMemory._normalize_store_metadata(metadata)
             metadata["agent_id"] = self.agent_id
             metadata["provider"] = provider
 
@@ -589,10 +496,7 @@ class AgentMemory:
         self,
         query: str,
         n_results: int = 5,
-        filter_metadata: Optional[Dict[str, Any]] = None,
-        state: Optional[Dict[str, Any]] = None,
-        current_regime: Optional[str] = None,
-        regime_confidence: Optional[float] = None,
+        filter_metadata: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
         Search for similar memories
@@ -612,41 +516,42 @@ class AgentMemory:
                 logger.warning(f"⚠️ Unable to get query embedding")
                 return []
 
-            # Resolve regime and confidence
-            resolved_regime = current_regime
-            resolved_conf = regime_confidence
-
-            if state is not None and isinstance(state, dict):
-                if resolved_regime is None:
-                    resolved_regime = state.get("market_regime")
-                if resolved_conf is None:
-                    resolved_conf = state.get("regime_confidence")
-
-            if filter_metadata is not None and isinstance(filter_metadata, dict):
-                if resolved_regime is None:
-                    resolved_regime = filter_metadata.get("current_regime") or filter_metadata.get("market_regime")
-                if resolved_conf is None:
-                    resolved_conf = filter_metadata.get("regime_confidence")
-
             # 🔥 Important: Make sure to use the same Embedding model when querying as when storing
-            backend_filter_metadata = dict(filter_metadata or {})
-            backend_filter_metadata.pop("current_regime", None)
-            backend_filter_metadata.pop("regime_confidence", None)
-            backend_filter_metadata.pop("state", None)
+            #
+            # Reason:
+            # 1. The vector dimensions of different models may be different (DashScope 1024 dimensions, OpenAI 1536 dimensions, etc.)
+            # 2. Different models have different semantic spaces and cannot query each other even if they have the same dimensions.
+            # 3. Accurate similarity calculations are only possible using vectors generated by the same model
+            #
+            # Solution: Add provider filtering to metadata filtering and only query memories using the same provider
+            if filter_metadata is None:
+                filter_metadata = {}
 
             # 🔥 Add provider filtering to ensure that only memories using the same Embedding model are queried
-            backend_filter_metadata["provider"] = provider
+            # Note:
+            # - If there are memories in the collection that use different providers, they will be filtered out
+            # - This means that after switching the Embedding model, only the memory stored using the new model can be queried
+            # - The memory of the old model still exists, but will not be queried (unless switching back to the old model)
+            filter_metadata["provider"] = provider
 
             logger.debug(f"🔍 Query memory (using {provider} Embedding Model, only query the memory of the same provider)")
 
+            # 🔥 Fix ChromaDB query syntax issue
+            # ChromaDB The where query syntax requires:
+            # - Single condition:{"key": "value"}
+            # - Multiple conditions:{"$and": [{"key1": "value1"}, {"key2": "value2"}]}
+            # You cannot directly pass a dictionary containing multiple keys
             where_clause = None
-            if len(backend_filter_metadata) == 1:
-                key, value = next(iter(backend_filter_metadata.items()))
+            if len(filter_metadata) == 1:
+                # Single condition, used directly
+                key, value = next(iter(filter_metadata.items()))
                 where_clause = {key: value}
-            elif len(backend_filter_metadata) > 1:
+            elif len(filter_metadata) > 1:
+                # For multiple conditions, use $and Operator
                 where_clause = {
-                    "$and": [{key: value} for key, value in backend_filter_metadata.items()]
+                    "$and": [{key: value} for key, value in filter_metadata.items()]
                 }
+            # If filter_metadata is empty and where_clause is None, no filtering will be performed
 
             # Check if the collection is empty (thread safety is handled internally in the adapter)
             count = self.collection.count()
@@ -655,13 +560,12 @@ class AgentMemory:
                 return []
 
             # Adjust the number of results
-            is_circuit_agent = self.agent_id in _CIRCUIT_BREAKER_AGENTS
-            query_limit = min(max(n_results * 3, 15), count) if is_circuit_agent else min(n_results, count)
+            n_results = min(n_results, count)
 
             # Execute query
             query_kwargs = {
                 "query_embeddings": [query_embedding],
-                "n_results": query_limit,
+                "n_results": n_results,
             }
             if where_clause is not None:
                 query_kwargs["where"] = where_clause
@@ -689,15 +593,7 @@ class AgentMemory:
 
                 logger.debug(f"🔍 found {len(memories)} similar memories")
 
-            if is_circuit_agent and resolved_regime:
-                memories = circuit_breaker_memory_filter(
-                    memories,
-                    current_regime=resolved_regime,
-                    regime_confidence=resolved_conf if resolved_conf is not None else 1.0,
-                    agent_id=self.agent_id,
-                )
-
-            return memories[:n_results]
+            return memories
 
         except Exception as e:
             logger.error(f"❌ Search memory failed: {e}")

@@ -1,21 +1,11 @@
-# TradingAgents/graph/__init__.py
-
-from .trading_graph import TradingAgentsGraph
-from .conditional_logic import ConditionalLogic
-from .setup import GraphSetup
-from .propagation import Propagator
-from .reflection import Reflector
+from .conditional_logic import ConditionalLogic, compute_jensen_shannon_divergence, compute_cbs_bps
+from .reflection import Reflector, compute_counterfactual_attribution
 from .signal_processing import SignalProcessor
-
-# Import unified log system
-from tradingagents.utils.logging_init import get_logger
-logger = get_logger("default")
-
-__all__ = [
-    "TradingAgentsGraph",
-    "ConditionalLogic",
-    "GraphSetup",
-    "Propagator",
-    "Reflector",
-    "SignalProcessor",
-]
+try:
+    from .propagation import Propagator
+    from .trading_graph import TradingAgentsGraph
+    from .setup import GraphSetup
+except (ImportError, KeyError):
+    Propagator = None
+    TradingAgentsGraph = None
+    GraphSetup = None

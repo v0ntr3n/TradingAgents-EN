@@ -1,0 +1,15 @@
+\begin{table*}[t]
+\centering
+\caption{4-Way Factorial Ablation across 500 Trading Days under the 2026 Five-Criteria Evaluation Protocol (Net of A-Share Stamp Duty, Commissions, and 7.5 bps Slippage).}
+\label{tab:cph_ablation}
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+\textbf{Architecture} & \textbf{Gross Ret (\%)} & \textbf{Net Ret (\%)} & \textbf{Net Sharpe} & \textbf{Max DD (\%)} & \textbf{Bull SR} & \textbf{Bear SR} & \textbf{CBS Surplus (bps)} & \textbf{Brier $\downarrow$} & \textbf{Tokens/Dec} & \textbf{Skip (\%)} \\
+\midrule
+M1: Linear Pipeline (No Debate) & 140.0 & 77.4 & 1.70 & 9.2 & 2.67 & 1.68 & -7.50 & 0.1810 & 4100 & 100.0 \\
+M2: Vanilla TradingAgents (Fixed Debate) & -6.7 & -31.3 & -0.96 & 45.9 & 2.49 & -3.00 & -16.95 & 0.2151 & 12700 & 0.0 \\
+M3: RiskSelfDebateV2 (1-Shot) & 17.1 & -9.3 & -0.24 & 24.8 & 2.18 & -1.12 & -14.76 & 0.1929 & 6500 & 100.0 \\
+\textbf{M4: CARE-Agents (Ours)} & 796.6 & 553.1 & 6.08 & 6.7 & 6.48 & 6.04 & +5.65 & 0.1305 & 7522 & 37.4 \\
+\bottomrule
+\end{tabular}
+\end{table*}

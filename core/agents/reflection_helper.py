@@ -29,121 +29,6 @@ logger = logging.getLogger(__name__)
 _REFLECTION_LLM_TIMEOUT = 30
 
 
-def calculate_counterfactual_attribution(
-    agent_stance: Any,
-    realized_return: float,
-    manager_action: Any,
-    agent_confidence: float = 0.8,
-) -> Dict[str, Any]:
-    """Compute 4-Quadrant Counterfactual Credit Assignment.
-
-    Marginal contribution evaluation:
-    - Checks whether agent's directional stance agreed with realized return sign (y_sign).
-    - Checks whether manager overrode or followed the agent.
-    4-quadrant attribution model:
-    - Q1: Vindicated & Followed: +|R| * conf
-    - Q2: Vindicated & Overridden: +|R| (counterfactual alpha)
-    - Q3: Faulty & Followed: -|R| * conf
-    - Q4: Faulty & Overridden: -0.2 * |R| (mitigated fault)
-    """
-    # 1. Normalize agent stance to directional float (+1.0, -1.0, 0.0)
-    if isinstance(agent_stance, str):
-        st_low = agent_stance.lower().strip()
-        if any(w in st_low for w in ("buy", "bull", "long", "positive")):
-            stance_val = 1.0
-        elif any(w in st_low for w in ("sell", "bear", "short", "negative")):
-            stance_val = -1.0
-        else:
-            stance_val = 0.0
-    else:
-        try:
-            val = float(agent_stance)
-            stance_val = 1.0 if val > 0 else (-1.0 if val < 0 else 0.0)
-        except (ValueError, TypeError):
-            stance_val = 0.0
-
-    # 2. Normalize manager action to directional label and float (+1.0, -1.0, 0.0)
-    if isinstance(manager_action, str):
-        act_low = manager_action.lower().strip()
-        if any(w in act_low for w in ("buy", "bull", "long")):
-            mgr_val = 1.0
-            mgr_label = "buy"
-        elif any(w in act_low for w in ("sell", "bear", "short")):
-            mgr_val = -1.0
-            mgr_label = "sell"
-        else:
-            mgr_val = 0.0
-            mgr_label = "hold"
-    else:
-        try:
-            val = float(manager_action)
-            mgr_val = 1.0 if val > 0 else (-1.0 if val < 0 else 0.0)
-            mgr_label = "buy" if mgr_val > 0 else ("sell" if mgr_val < 0 else "hold")
-        except (ValueError, TypeError):
-            mgr_val = 0.0
-            mgr_label = "hold"
-
-    # 3. Realized return sign
-    ret = float(realized_return)
-    abs_r = abs(ret)
-    ret_sign = 1 if ret > 0 else (-1 if ret < 0 else 0)
-    stance_sign = 1 if stance_val > 0 else (-1 if stance_val < 0 else 0)
-    mgr_sign = 1 if mgr_val > 0 else (-1 if mgr_val < 0 else 0)
-
-    try:
-        conf = float(agent_confidence)
-    except (ValueError, TypeError):
-        conf = 0.8
-    conf = max(0.01, min(1.0, conf))
-
-    # 4. Determine vindication & followed status
-    is_vindicated = (stance_sign * ret_sign > 0) or (stance_sign == 0 and ret_sign == 0)
-    is_followed = (stance_sign == mgr_sign)
-
-    # 5. 4-quadrant attribution scoring
-    if is_vindicated and is_followed:
-        quadrant = "Q1_Vindicated_Followed"
-        score = abs_r * conf
-        directive = "Your thesis was correct and adopted by the manager, driving positive alpha. Reinforce key predictive signals."
-    elif is_vindicated and not is_followed:
-        quadrant = "Q2_Vindicated_Overridden"
-        score = abs_r
-        directive = "Your analysis correctly predicted market direction, but the manager overruled you. Highlight specific signals dismissed."
-    elif not is_vindicated and is_followed:
-        quadrant = "Q3_Faulty_Followed"
-        score = -abs_r * conf
-        directive = "Your thesis proved incorrect and was followed, directly causing the loss. Identify blind spots and failed assumptions."
-    else:
-        quadrant = "Q4_Faulty_Overridden"
-        score = -0.2 * abs_r
-        directive = "Your thesis was incorrect, but the manager successfully shielded the portfolio by overriding you. Review misjudged risks."
-
-    return {
-        "quadrant": quadrant,
-        "attribution_score": float(score),
-        "directive": directive,
-        "is_vindicated": bool(is_vindicated),
-        "is_followed": bool(is_followed),
-        "realized_return": ret,
-        "agent_stance": stance_val,
-        "manager_action": mgr_label,
-        "agent_confidence": conf,
-    }
-
-
-def format_attribution_prompt_block(attribution: Dict[str, Any]) -> str:
-    """Format counterfactual attribution into prompt block."""
-    quadrant = attribution.get("quadrant", "N/A")
-    score = float(attribution.get("attribution_score", 0.0))
-    directive = attribution.get("directive", "")
-    return (
-        f"=== Counterfactual Credit Assignment ===\n"
-        f"- Status: {quadrant}\n"
-        f"- Attribution Score: {score:+.3f}\n"
-        f"- Directive: {directive}\n"
-    )
-
-
 def _resolve_reflection_llm_client(db) -> Optional[Any]:
     """Parse reflection from system configuration using LLM client.
 
@@ -248,7 +133,6 @@ async def run_reflection(
     fallback_content: str,
     fallback_metadata: Dict[str, Any],
     llm_client: Any = None,
-    attribution_context: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """Execute reflection refinement nodes and downgrade them on failure.
 
@@ -269,7 +153,6 @@ async def run_reflection(
         fallback_content: Original text written when downgrading
         fallback_metadata: Metadata when downgrading (this metadata will also be used as a basis when reflecting on success)
         llm_client: Optional UnifiedLLMClient instance, if not passed, it will be created with the default provider
-        attribution_context: Optional 4-quadrant counterfactual attribution dictionary
 
     Returns:
         True Indicates that the reflection was successfully written into the structured lesson; False means that it was downgraded to the original text or failed completely.
@@ -278,13 +161,6 @@ async def run_reflection(
     if not svc.available:
         logger.info("[Reflection] mem0 Not available, skip reflection node (agent=%s scope=%s) ", agent_id, scope)
         return False
-
-    # Inject counterfactual attribution into user prompt if provided
-    active_user_prompt = user_prompt
-    if attribution_context:
-        attr_block = format_attribution_prompt_block(attribution_context)
-        if "=== Counterfactual Credit Assignment ===" not in active_user_prompt:
-            active_user_prompt = f"{attr_block}\n{active_user_prompt}"
 
     # 1. Adjust LLM extraction
     lessons_json: Optional[str] = None
@@ -305,7 +181,7 @@ async def run_reflection(
             from core.llm.models import Message, MessageRole
             messages = [
                 Message(role=MessageRole.SYSTEM, content=system_prompt),
-                Message(role=MessageRole.USER, content=active_user_prompt),
+                Message(role=MessageRole.USER, content=user_prompt),
             ]
             resp = await asyncio.wait_for(
                 llm_client.achat(messages),
@@ -328,9 +204,6 @@ async def run_reflection(
     metadata = dict(fallback_metadata)
     metadata["memory_kind"] = memory_kind
     metadata["source"] = "reflection"
-    if attribution_context:
-        metadata["attribution_score"] = float(attribution_context.get("attribution_score", 0.0))
-        metadata["attribution_quadrant"] = str(attribution_context.get("quadrant", ""))
 
     try:
         if lessons_json:
@@ -541,3 +414,5 @@ async def _recall_lessons_async(
     except Exception as exc:
         logger.warning("[Recall] _recall_lessons_async Abnormal: %s", exc)
         return ""
+
+from tradingagents.graph.reflection import compute_counterfactual_attribution

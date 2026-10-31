@@ -71,12 +71,6 @@ DEBATE_REFLECTION_SYSTEM_PROMPT = """You are an expert in debate reflection. Bas
 """
 
 
-from core.agents.reflection_helper import (
-    calculate_counterfactual_attribution,
-    format_attribution_prompt_block,
-)
-
-
 # ============================================================
 # User Prompt builder
 # ============================================================
@@ -84,14 +78,12 @@ from core.agents.reflection_helper import (
 def build_trade_reflection_user_prompt(
     trade_info: Any,
     ai_review: Any,
-    attribution_context: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Construct a user prompt for review and reflection.
 
     Args:
         trade_info: Transaction information object (with attributes such as code/name/first_buy_date)
         ai_review: AI Review conclusion (with summary/strengths/weaknesses/suggestions/plan_deviation attributes)
-        attribution_context: Optional 4-quadrant counterfactual attribution dictionary
 
     Returns:
         user prompt text
@@ -106,11 +98,7 @@ def build_trade_reflection_user_prompt(
     suggestions = list(getattr(ai_review, "suggestions", []) or [])
     plan_deviation = (getattr(ai_review, "plan_deviation", "") or "").strip()
 
-    parts = []
-    if attribution_context:
-        parts.append(format_attribution_prompt_block(attribution_context).strip())
-
-    parts.append(f"## Transaction object:{name}({code}), First time purchase:{first_buy}")
+    parts = [f"## Transaction object:{name}({code}), First time purchase:{first_buy}"]
     if summary:
         parts.append(f"### Review summary\n{summary}")
     if strengths:
@@ -129,7 +117,6 @@ def build_analysis_reflection_user_prompt(
     ticker: str,
     report: Any,
     analysis_date: str = "",
-    attribution_context: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Constructing user prompts for researcher report reflections.
 
@@ -137,7 +124,6 @@ def build_analysis_reflection_user_prompt(
         ticker: Stock code
         report: research report (dict or string)
         analysis_date: Analysis date
-        attribution_context: Optional 4-quadrant counterfactual attribution dictionary
 
     Returns:
         user prompt text
@@ -155,11 +141,7 @@ def build_analysis_reflection_user_prompt(
     if len(content) > max_chars:
         content = content[:max_chars] + "\n...(Content has been truncated)"
 
-    parts = []
-    if attribution_context:
-        parts.append(format_attribution_prompt_block(attribution_context).strip())
-
-    parts.append(f"## Stocks:{ticker}, Analysis date:{analysis_date or 'unknown'}")
+    parts = [f"## Stocks:{ticker}, Analysis date:{analysis_date or 'unknown'}"]
     if stance:
         stance_label = {"bull": "optimistic", "bear": "Prudence", "risky": "High elasticity", "safe": "defense", "neutral": "Baseline scenario"}.get(stance, stance)
         parts.append(f"### Research position:{stance_label}")
@@ -173,7 +155,6 @@ def build_debate_reflection_user_prompt(
     debate_history: str,
     conclusion: str,
     debate_type: str = "",
-    attribution_context: Optional[Dict[str, Any]] = None,
 ) -> str:
     """User prompts for building multi-scenario research reflections.
 
@@ -182,7 +163,6 @@ def build_debate_reflection_user_prompt(
         debate_history: Multi-scenario research on historical texts
         conclusion: final verdict/conclusion
         debate_type: Multiple scenario study types (investment_debate / risk_debate)
-        attribution_context: Optional 4-quadrant counterfactual attribution dictionary
 
     Returns:
         user prompt text
@@ -200,15 +180,11 @@ def build_debate_reflection_user_prompt(
         "risk_debate_state": "Risk multi-scenario research",
     }.get(debate_type, debate_type or "multi-scenario research")
 
-    parts = []
-    if attribution_context:
-        parts.append(format_attribution_prompt_block(attribution_context).strip())
-
-    parts.extend([
+    parts = [
         f"## Stocks:{ticker}",
         f"### Multiple scenario study types:{debate_label}",
         f"### Multi-scenario research history\n{debate_history}",
         f"### final verdict\n{conclusion}",
-    ])
+    ]
 
     return "\n\n".join(parts)

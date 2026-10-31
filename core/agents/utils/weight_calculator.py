@@ -4,8 +4,7 @@ Weight calculation tool
 Automatically calculate the weight of each report based on the analyst selected by the user
 """
 
-import math
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def calculate_report_weights(
@@ -283,11 +282,12 @@ def format_weighted_reports_prompt(
     return "\n".join(prompt_parts)
 
 
-# ==============================================================================
-# Regime-Adaptive Weight Calculator (CARE-Agents R2)
-# ==============================================================================
 
-DEFAULT_ANALYST_IDS: List[str] = [
+
+
+import math
+
+DEFAULT_V2_ANALYSTS = (
     "index_analyst_v2",
     "sector_analyst_v2",
     "market_analyst_v2",
@@ -295,301 +295,189 @@ DEFAULT_ANALYST_IDS: List[str] = [
     "news_analyst_v2",
     "social_analyst_v2",
     "chip_distribution_analyst_v2",
-]
-
-REGIMES: List[str] = ["bull", "bear", "sideways"]
+)
 
 
-class RegimeAdaptiveWeightCalculator:
+class RegimeMultiplicativeWeightManager:
     """
-    Regime-Adaptive Weight Calculator using Multiplicative Weights Update
-    (Exponentially Weighted Forecaster) based on multiclass Brier loss.
-
-    Maintains separate weight vectors w[regime][analyst_id] across three market regimes:
-    'bull', 'bear', and 'sideways'.
+    Online Exponentially Weighted Forecaster (Multiplicative Weights Update)
+    partitioned across market regimes ('bull', 'bear', 'sideways') using
+    multiclass Brier loss calibration.
     """
+
+    REGIMES = ("bull", "bear", "sideways")
 
     def __init__(
         self,
-        analyst_ids: Optional[Sequence[str]] = None,
-        initial_weights: Optional[Dict[str, Dict[str, float]]] = None,
-        learning_rate: float = 0.2,
-        return_threshold: float = 0.005,  # 50 bps deadband
-        w_min: float = 0.0,
+        analyst_ids: Optional[List[str]] = None,
+        w_min: float = 0.03,
     ):
-        """
-        Initialize the regime-adaptive weight calculator.
-
-        Args:
-            analyst_ids: List of analyst identifiers. Defaults to the 7 standard v2 analysts.
-            initial_weights: Optional dictionary mapping regime -> {analyst_id: weight}.
-            learning_rate: Learning rate eta for MWU (default 0.2).
-            return_threshold: Deadband threshold in decimal (0.005 = 50 bps) for Brier loss target classification.
-            w_min: Weight floor for MWU updates (default 0.0).
-        """
-        self.analyst_ids = list(analyst_ids) if analyst_ids is not None else list(DEFAULT_ANALYST_IDS)
-        self.learning_rate = float(learning_rate)
-        self.return_threshold = float(return_threshold)
+        self.analyst_ids = list(analyst_ids or DEFAULT_V2_ANALYSTS)
         self.w_min = float(w_min)
-        self.regimes = list(REGIMES)
-
-        if initial_weights is not None:
-            self.weights: Dict[str, Dict[str, float]] = {}
-            for r in self.regimes:
-                if r in initial_weights:
-                    user_w = initial_weights[r]
-                    sub_w = {aid: float(user_w.get(aid, 0.0)) for aid in self.analyst_ids}
-                    tot = sum(sub_w.values())
-                    if tot > 0:
-                        self.weights[r] = {k: v / tot for k, v in sub_w.items()}
-                    else:
-                        self.weights[r] = {aid: 1.0 / len(self.analyst_ids) for aid in self.analyst_ids}
-                else:
-                    self.weights[r] = {aid: 1.0 / len(self.analyst_ids) for aid in self.analyst_ids}
-        else:
-            self.weights = {
-                r: {aid: 1.0 / len(self.analyst_ids) for aid in self.analyst_ids}
-                for r in self.regimes
-            }
+        n = len(self.analyst_ids)
+        uniform = 1.0 / n if n > 0 else 1.0
+        self.weights: Dict[str, Dict[str, float]] = {
+            r: {a: uniform for a in self.analyst_ids}
+            for r in self.REGIMES
+        }
+        self.history: List[Dict[str, Any]] = []
 
     @staticmethod
-    def _normalize_regime(regime: str) -> str:
-        """Normalize regime name to 'bull', 'bear', or 'sideways'."""
-        if not regime or not isinstance(regime, str):
-            return "sideways"
-        r = regime.lower().strip()
-        return r if r in REGIMES else "sideways"
-
-    def get_weights(
-        self,
-        regime: str,
-        active_analysts: Optional[Sequence[str]] = None,
-    ) -> Dict[str, float]:
-        """
-        Get normalized weights for a given regime across active analysts.
-
-        Args:
-            regime: "bull", "bear", or "sideways".
-            active_analysts: Optional list of active analyst IDs. If None, uses all registered analysts.
-
-        Returns:
-            Dictionary mapping analyst_id to normalized weight (sum == 1.0).
-        """
-        regime = self._normalize_regime(regime)
-        active = list(active_analysts) if active_analysts is not None else list(self.analyst_ids)
-        if not active:
-            return {}
-
-        current_regime_weights = self.weights.get(regime, {})
-        sub = {aid: current_regime_weights.get(aid, 0.0) for aid in active}
-        tot = sum(sub.values())
-        if tot <= 0:
-            return {aid: 1.0 / len(active) for aid in active}
-        return {aid: w / tot for aid, w in sub.items()}
-
     def compute_brier_loss(
-        self,
         posterior: Dict[str, Any],
-        realized_return: float,
-        scaled: bool = False,
+        realized_return_pct: float,
+        threshold_pct: float = 1.0,
     ) -> float:
         """
-        Compute multiclass Brier loss for an analyst's 3-class prediction:
-        [p_optimistic, p_neutral, p_cautious] vs realized market outcome.
-
-        Target y:
-            [1, 0, 0] (optimistic) if realized_return > return_threshold
-            [0, 0, 1] (cautious) if realized_return < -return_threshold
-            [0, 1, 0] (neutral) otherwise
-
-        BrierLoss = sum_{k=1}^3 (p_k - y_k)^2 in [0, 2].
-        If scaled=True, returns Brier / 3.0 in [0, 2/3].
+        Compute multiclass Brier score in [0, 2/3] between (p_optimistic, p_neutral, p_cautious)
+        and the realized return outcome vector.
         """
-        p_opt = float(posterior.get("p_optimistic", 0.3333))
-        p_neu = float(posterior.get("p_neutral", 0.3334))
-        p_caut = float(posterior.get("p_cautious", 0.3333))
-        tot = p_opt + p_neu + p_caut
-        if tot > 0:
-            p_opt, p_neu, p_caut = p_opt / tot, p_neu / tot, p_caut / tot
+        p_opt = float(posterior.get("p_optimistic", 1.0 / 3.0))
+        p_neu = float(posterior.get("p_neutral", 1.0 / 3.0))
+        p_cau = float(posterior.get("p_cautious", 1.0 / 3.0))
+        s = p_opt + p_neu + p_cau
+        if s > 0:
+            p_opt, p_neu, p_cau = p_opt / s, p_neu / s, p_cau / s
         else:
-            p_opt, p_neu, p_caut = 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0
+            p_opt = p_neu = p_cau = 1.0 / 3.0
 
-        if realized_return > self.return_threshold:
-            y = [1.0, 0.0, 0.0]
-        elif realized_return < -self.return_threshold:
-            y = [0.0, 0.0, 1.0]
+        if realized_return_pct > threshold_pct:
+            y = (1.0, 0.0, 0.0)
+        elif realized_return_pct < -threshold_pct:
+            y = (0.0, 0.0, 1.0)
         else:
-            y = [0.0, 1.0, 0.0]
+            y = (0.0, 1.0, 0.0)
 
-        brier = (p_opt - y[0]) ** 2 + (p_neu - y[1]) ** 2 + (p_caut - y[2]) ** 2
-        bounded_brier = float(max(0.0, min(2.0, brier)))
-        return (bounded_brier / 3.0) if scaled else bounded_brier
+        mse = ((p_opt - y[0]) ** 2 + (p_neu - y[1]) ** 2 + (p_cau - y[2]) ** 2) / 3.0
+        return round(mse, 6)
+
+    def get_regime_weights(
+        self,
+        regime: str,
+        active_analysts: Optional[List[str]] = None,
+    ) -> Dict[str, float]:
+        r = regime.lower() if regime and regime.lower() in self.REGIMES else "sideways"
+        base = self.weights[r]
+        keys = [k for k in (active_analysts or list(base.keys())) if k in base or active_analysts]
+        if not keys:
+            return {}
+        raw = {k: base.get(k, 1.0 / len(keys)) for k in keys}
+        total = sum(raw.values())
+        if total <= 0:
+            return {k: 1.0 / len(keys) for k in keys}
+        return {k: v / total for k, v in raw.items()}
 
     def update_weights(
         self,
         regime: str,
-        analyst_posteriors: Dict[str, Dict[str, Any]],
-        realized_return: float,
-        learning_rate: Optional[float] = None,
-        w_min: Optional[float] = None,
+        posteriors: Dict[str, Dict[str, Any]],
+        realized_return_pct: float,
+        eta: float = 0.25,
+        threshold_pct: float = 1.0,
     ) -> Dict[str, float]:
-        """
-        Multiplicative Weights Update (MWU) / Exponentially Weighted Forecaster rule:
-        w_new[i] = max(w_min, w_old[i] * exp(-learning_rate * brier_loss[i]))
-        followed by normalization so sum(w_new) == 1.0.
+        r = regime.lower() if regime and regime.lower() in self.REGIMES else "sideways"
+        regime_table = self.weights[r]
 
-        Args:
-            regime: Current market regime ("bull", "bear", "sideways").
-            analyst_posteriors: Dictionary mapping analyst_id -> posterior dictionary.
-            realized_return: Realized return over the period.
-            learning_rate: Optional learning rate override (eta).
-            w_min: Optional weight floor override.
+        for agent_id in posteriors.keys():
+            if agent_id not in regime_table:
+                regime_table[agent_id] = 1.0 / max(1, len(regime_table) + 1)
 
-        Returns:
-            Updated and normalized weight dictionary for the specified regime.
-        """
-        regime = self._normalize_regime(regime)
-        lr = float(learning_rate) if learning_rate is not None else self.learning_rate
-        floor = self.w_min if w_min is None else float(w_min)
-
-        # Expand analyst_ids if new analysts appear in posteriors
-        for aid in analyst_posteriors.keys():
-            if aid not in self.analyst_ids:
-                self.analyst_ids.append(aid)
-                for r in self.regimes:
-                    if aid not in self.weights[r]:
-                        self.weights[r][aid] = 1.0 / len(self.analyst_ids)
-
-        current_w = self.weights[regime]
-        updated = {}
-
-        for aid in self.analyst_ids:
-            old_w = current_w.get(aid, 1.0 / len(self.analyst_ids))
-            if aid in analyst_posteriors and isinstance(analyst_posteriors[aid], dict):
-                loss = self.compute_brier_loss(analyst_posteriors[aid], realized_return)
-                new_w = old_w * math.exp(-lr * loss)
+        losses = {}
+        unnormalized = {}
+        for agent_id, w_old in regime_table.items():
+            if agent_id in posteriors:
+                loss = self.compute_brier_loss(posteriors[agent_id], realized_return_pct, threshold_pct=threshold_pct)
+                losses[agent_id] = loss
+                w_cand = w_old * math.exp(-float(eta) * loss)
             else:
-                new_w = old_w
-            if floor > 0.0:
-                new_w = max(floor, new_w)
-            updated[aid] = new_w
+                w_cand = w_old
+            unnormalized[agent_id] = max(self.w_min, w_cand)
 
-        tot = sum(updated.values())
-        if tot > 0:
-            normalized = {aid: w / tot for aid, w in updated.items()}
-        else:
-            normalized = {aid: 1.0 / len(self.analyst_ids) for aid in self.analyst_ids}
-
-        self.weights[regime] = normalized
-        return normalized
+        total = sum(unnormalized.values())
+        self.weights[r] = {k: v / total for k, v in unnormalized.items()}
+        self.history.append({
+            "regime": r,
+            "realized_return_pct": realized_return_pct,
+            "losses": losses,
+            "updated_weights": dict(self.weights[r]),
+        })
+        return dict(self.weights[r])
 
     def aggregate_posteriors(
         self,
-        analyst_posteriors: Dict[str, Dict[str, Any]],
-        regime: str = "sideways",
-        weights: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, float]:
-        """Aggregate analyst posteriors using logarithmic opinion pooling and current regime weights."""
-        if weights is None:
-            weights = self.get_weights(regime, active_analysts=list(analyst_posteriors.keys()))
-        return aggregate_posteriors(analyst_posteriors, weights=weights)
+        regime: str,
+        posteriors: Dict[str, Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """
+        Combine analyst probability vectors using a Logarithmic Opinion Pool
+        (weighted geometric mean in probability space / weighted linear combination in log-odds).
+        """
+        if not posteriors:
+            return {
+                "p_optimistic": 1.0 / 3.0,
+                "p_neutral": 1.0 / 3.0,
+                "p_cautious": 1.0 / 3.0,
+                "expected_move_bps": 0.0,
+                "confidence": 0.5,
+                "risk_score": 0.5,
+                "recommended_action": "hold",
+            }
 
-    def reset(self) -> None:
-        """Reset all weights to uniform distribution."""
-        self.weights = {
-            r: {aid: 1.0 / len(self.analyst_ids) for aid in self.analyst_ids}
-            for r in self.regimes
+        active_weights = self.get_regime_weights(regime, list(posteriors.keys()))
+        eps = 1e-6
+        log_opt = 0.0
+        log_neu = 0.0
+        log_cau = 0.0
+        expected_move_bps = 0.0
+
+        for agent_id, post in posteriors.items():
+            w = active_weights.get(agent_id, 1.0 / len(posteriors))
+            p_o = max(eps, float(post.get("p_optimistic", 1.0 / 3.0)))
+            p_n = max(eps, float(post.get("p_neutral", 1.0 / 3.0)))
+            p_c = max(eps, float(post.get("p_cautious", 1.0 / 3.0)))
+            s = p_o + p_n + p_c
+            p_o, p_n, p_c = p_o / s, p_n / s, p_c / s
+
+            log_opt += w * math.log(p_o)
+            log_neu += w * math.log(p_n)
+            log_cau += w * math.log(p_c)
+            expected_move_bps += w * float(post.get("expected_move_bps", 50.0))
+
+        max_log = max(log_opt, log_neu, log_cau)
+        u_opt = math.exp(log_opt - max_log)
+        u_neu = math.exp(log_neu - max_log)
+        u_cau = math.exp(log_cau - max_log)
+        Z = u_opt + u_neu + u_cau
+
+        P_opt = u_opt / Z
+        P_neu = u_neu / Z
+        P_cau = u_cau / Z
+
+        entropy = 0.0
+        for p in (P_opt, P_neu, P_cau):
+            if p > 1e-12:
+                entropy -= p * math.log2(p)
+        norm_entropy = entropy / math.log2(3.0)
+        confidence = max(0.0, min(1.0, 1.0 - norm_entropy))
+        risk_score = max(0.0, min(1.0, 0.5 * norm_entropy + 0.5 * P_cau))
+
+        if P_opt > P_cau and P_opt > P_neu:
+            action = "buy"
+        elif P_cau > P_opt and P_cau > P_neu:
+            action = "sell"
+        else:
+            action = "hold"
+
+        return {
+            "p_optimistic": round(P_opt, 6),
+            "p_neutral": round(P_neu, 6),
+            "p_cautious": round(P_cau, 6),
+            "expected_move_bps": round(expected_move_bps, 2),
+            "confidence": round(confidence, 4),
+            "risk_score": round(risk_score, 4),
+            "recommended_action": action,
+            "weights_used": active_weights,
         }
 
 
-class RegimeMultiplicativeWeightManager(RegimeAdaptiveWeightCalculator):
-    """
-    Online Regime-Conditioned Multiplicative Weights Manager (MWU).
-    Maintains independent analyst reliability weight vectors across market regimes
-    ('bull', 'bear', 'sideways') updated online via the Exponentially Weighted Forecaster
-    with weight floor w_min=0.03.
-    """
-
-    def __init__(
-        self,
-        analyst_ids: Optional[Sequence[str]] = None,
-        initial_weights: Optional[Dict[str, Dict[str, float]]] = None,
-        learning_rate: float = 0.2,
-        return_threshold: float = 0.005,
-        w_min: float = 0.03,
-    ):
-        super().__init__(
-            analyst_ids=analyst_ids,
-            initial_weights=initial_weights,
-            learning_rate=learning_rate,
-            return_threshold=return_threshold,
-            w_min=w_min,
-        )
-
-
-def aggregate_posteriors(
-    posteriors: Union[Dict[str, Dict[str, Any]], Sequence[Dict[str, Any]]],
-    weights: Optional[Dict[str, float]] = None,
-    eps: float = 1e-12,
-) -> Dict[str, float]:
-    """
-    Logarithmic opinion pooling (Log-OP) aggregating analyst 3-class posteriors
-    into a single calibrated consensus distribution:
-        p_{agg, c} ~ exp(sum_i w_i * ln(p_{i, c}))
-
-    Args:
-        posteriors: Dict mapping analyst_id -> posterior dict, or sequence of posterior dicts.
-        weights: Optional dictionary mapping analyst_id -> weight.
-        eps: Epsilon floor for probability clamping before log transform.
-
-    Returns:
-        Dict with "p_optimistic", "p_neutral", "p_cautious" summing to 1.0.
-    """
-    classes = ["p_optimistic", "p_neutral", "p_cautious"]
-    if not posteriors:
-        return {"p_optimistic": 1.0 / 3.0, "p_neutral": 1.0 / 3.0, "p_cautious": 1.0 / 3.0}
-
-    items = (
-        list(posteriors.items())
-        if isinstance(posteriors, dict)
-        else [(f"analyst_{i}", p) for i, p in enumerate(posteriors)]
-    )
-
-    if weights is None:
-        w_dict = {aid: 1.0 / len(items) for aid, _ in items}
-    else:
-        raw_w = {aid: max(0.0, float(weights.get(aid, 0.0))) for aid, _ in items}
-        tot_w = sum(raw_w.values())
-        w_dict = {aid: v / tot_w for aid, v in raw_w.items()} if tot_w > 0 else {aid: 1.0 / len(items) for aid, _ in items}
-
-    log_agg = {c: 0.0 for c in classes}
-    for aid, post in items:
-        if not isinstance(post, dict):
-            continue
-        w = w_dict.get(aid, 0.0)
-        raw_probs = [max(eps, float(post.get(c, 1.0 / 3.0))) for c in classes]
-        sum_p = sum(raw_probs)
-        norm_probs = [p / sum_p for p in raw_probs]
-        for idx, c in enumerate(classes):
-            log_agg[c] += w * math.log(norm_probs[idx])
-
-    max_log = max(log_agg.values())
-    exp_probs = {c: math.exp(log_agg[c] - max_log) for c in classes}
-    tot_exp = sum(exp_probs.values())
-    if tot_exp <= 0:
-        return {"p_optimistic": 1.0 / 3.0, "p_neutral": 1.0 / 3.0, "p_cautious": 1.0 / 3.0}
-
-    return {c: float(exp_probs[c] / tot_exp) for c in classes}
-
-
-__all__ = [
-    "DEFAULT_ANALYST_IDS",
-    "REGIMES",
-    "RegimeAdaptiveWeightCalculator",
-    "RegimeMultiplicativeWeightManager",
-    "aggregate_posteriors",
-    "calculate_report_weights",
-    "format_weighted_reports_prompt",
-]
-
-
+RegimeAdaptiveWeightCalculator = RegimeMultiplicativeWeightManager

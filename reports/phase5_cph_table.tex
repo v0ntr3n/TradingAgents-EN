@@ -1,0 +1,30 @@
+\begin{table*}[t]
+\centering
+\caption{Phase 5 Real-Market 2$\times$4 Factorial Evaluation (Mar 2025 -- Oct 2026) Across China CSI 300 A-Shares ($N=8$) and US Tech Equities ($N=4$) Testing the Coordination Primacy Hypothesis (CPH).}
+\label{tab:phase5_cph_real_market}
+\begin{tabular}{lllrrrrrrrr}
+\toprule
+\textbf{Market} & \textbf{Backbone} & \textbf{Coordination Protocol} & \textbf{Net Ret (\%)} & \textbf{Net SR} & \textbf{Max DD (\%)} & \textbf{Bull SR} & \textbf{Bear SR} & \textbf{CBS Surp.} & \textbf{Brier $\downarrow$} & \textbf{Skip (\%)} \\
+\midrule
+CSI 300 (CN) & Passive & Buy \& Hold & -5.5 & -0.24 & 13.7 & 0.68 & 0.21 & -10.44 & 0.2229 & 100.0 \\
+CSI 300 (CN) & Qwen-2.5-14B & M1: Linear Pipeline & +1.7 & 0.17 & 8.0 & 0.59 & 0.73 & -7.50 & 0.2008 & 100.0 \\
+CSI 300 (CN) & Qwen-2.5-14B & M2: Vanilla Debate & -6.2 & -0.30 & 13.0 & 0.66 & -0.21 & -10.22 & 0.2389 & 0.0 \\
+CSI 300 (CN) & Qwen-2.5-14B & M3: SelfDebate 1-Shot & -5.2 & -0.35 & 10.7 & 0.39 & -1.30 & -8.76 & 0.2277 & 100.0 \\
+CSI 300 (CN) & Qwen-2.5-14B & \textbf{M4: CARE-Agents (Ours)} & -2.2 & -0.11 & 10.6 & 0.49 & -0.03 & -10.49 & 0.2122 & 51.3 \\
+CSI 300 (CN) & DeepSeek-V3 & M1: Linear Pipeline & +1.7 & 0.17 & 8.0 & 0.59 & 0.73 & -7.50 & 0.2033 & 100.0 \\
+CSI 300 (CN) & DeepSeek-V3 & M2: Vanilla Debate & -6.3 & -0.30 & 13.3 & 0.64 & -0.41 & -10.08 & 0.2537 & 0.0 \\
+CSI 300 (CN) & DeepSeek-V3 & M3: SelfDebate 1-Shot & -4.5 & -0.29 & 10.2 & 0.43 & -1.18 & -8.53 & 0.2375 & 100.0 \\
+CSI 300 (CN) & DeepSeek-V3 & \textbf{M4: CARE-Agents (Ours)} & -4.7 & -0.28 & 10.8 & 0.24 & -0.16 & -9.93 & 0.2474 & 47.9 \\
+\midrule
+US Tech (US) & Passive & Buy \& Hold & +58.4 & 1.21 & 19.9 & 1.61 & -0.13 & -3.73 & 0.2102 & 100.0 \\
+US Tech (US) & Qwen-2.5-14B & M1: Linear Pipeline & +50.7 & 1.34 & 13.3 & 1.51 & -0.42 & -4.00 & 0.2314 & 100.0 \\
+US Tech (US) & Qwen-2.5-14B & M2: Vanilla Debate & +47.0 & 1.12 & 18.9 & 1.59 & -1.59 & -7.03 & 0.2376 & 0.0 \\
+US Tech (US) & Qwen-2.5-14B & M3: SelfDebate 1-Shot & +30.2 & 0.95 & 14.9 & 1.48 & -2.92 & -12.82 & 0.2406 & 100.0 \\
+US Tech (US) & Qwen-2.5-14B & \textbf{M4: CARE-Agents (Ours)} & +47.5 & 1.30 & 13.5 & 1.47 & -0.71 & -3.37 & 0.2317 & 80.8 \\
+US Tech (US) & DeepSeek-V3 & M1: Linear Pipeline & +50.7 & 1.34 & 13.3 & 1.51 & -0.42 & -4.00 & 0.2480 & 100.0 \\
+US Tech (US) & DeepSeek-V3 & M2: Vanilla Debate & +47.0 & 1.12 & 18.9 & 1.59 & -1.59 & -7.03 & 0.2559 & 0.0 \\
+US Tech (US) & DeepSeek-V3 & M3: SelfDebate 1-Shot & +29.7 & 0.95 & 13.8 & 1.47 & -2.92 & -13.13 & 0.2591 & 100.0 \\
+US Tech (US) & DeepSeek-V3 & \textbf{M4: CARE-Agents (Ours)} & +47.5 & 1.30 & 13.5 & 1.47 & -0.71 & -3.37 & 0.2487 & 81.1 \\
+\bottomrule
+\end{tabular}
+\end{table*}

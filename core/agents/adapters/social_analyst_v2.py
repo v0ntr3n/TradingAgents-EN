@@ -114,16 +114,7 @@ class SocialMediaAnalystV2(AnalystAgent):
             else:
                 raise ValueError("LLM not initialized")
 
-            parsed = self._parse_response(report)
-            clean_report = parsed.get("report") or parsed.get("content") or report
-            posterior = parsed.get("posterior") or self._normalize_posterior(parsed)
-
-            result = {
-                self.output_field: clean_report,
-                "analyst_posteriors": {
-                    self.agent_id: posterior
-                }
-            }
+            result = {self.output_field: report}
             # 🆕 Comes with tool call summary
             tool_summary = self._format_tool_call_summary()
             if tool_summary:
@@ -132,12 +123,7 @@ class SocialMediaAnalystV2(AnalystAgent):
 
         except Exception as e:
             logger.error(f"[{self.agent_id}] Execution failed: {e}", exc_info=True)
-            return {
-                self.output_field: GENERIC_REPORT_FALLBACK,
-                "analyst_posteriors": {
-                    self.agent_id: self._get_default_posterior()
-                }
-            }
+            return {self.output_field: GENERIC_REPORT_FALLBACK}
 
     def _build_system_prompt(self, market_type: str = None, context=None, state: Dict[str, Any] = None) -> str:
         """

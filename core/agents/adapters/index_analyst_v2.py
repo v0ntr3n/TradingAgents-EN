@@ -261,17 +261,7 @@ The current analysis data source is QMT, please follow the following requirement
         existing_report = state.get("index_report", "")
         if existing_report and len(existing_report) > 100:
             logger.info(f"🌐 [Market Analyst v2] Report already exists ({len(existing_report)} character), Skip duplicate analysis")
-            posteriors = state.get("analyst_posteriors", {})
-            if self.agent_id in posteriors:
-                return {}
-            parsed = self._parse_response(existing_report)
-            posterior = parsed.get("posterior", {})
-            return {
-                "analyst_posteriors": {
-                    self.agent_id: posterior
-                },
-                "market_regime": posterior.get("market_regime", "sideways"),
-            }
+            return {}
 
         # 📦 Check cache: skip cache in debug mode or skip_cache
         if is_debug_mode or skip_cache:
@@ -280,15 +270,8 @@ The current analysis data source is QMT, please follow the following requirement
             cached_report = _get_cached_index_report(analysis_date)
             if cached_report:
                 logger.info(f"🌐 [Market Analyst v2] Use cached reports ({len(cached_report)} character)")
-                parsed = self._parse_response(cached_report)
-                clean_report = parsed.get("report") or parsed.get("content") or cached_report
-                posterior = parsed.get("posterior", {})
                 return {
-                    "index_report": clean_report,
-                    "analyst_posteriors": {
-                        self.agent_id: posterior
-                    },
-                    "market_regime": posterior.get("market_regime", "sideways"),
+                    "index_report": cached_report,
                 }
 
         logger.info(f"🌐 [Market Analyst v2] Start analysis @ {analysis_date}, mode={analysis_mode}")
@@ -300,9 +283,6 @@ The current analysis data source is QMT, please follow the following requirement
         report = result.get("index_report", "")
         if report and isinstance(report, str) and len(report) > 100:
             _save_index_report_to_cache(analysis_date, report)
-
-        posterior = result.get("analyst_posteriors", {}).get(self.agent_id, {})
-        result["market_regime"] = posterior.get("market_regime", "sideways")
 
         return result
 

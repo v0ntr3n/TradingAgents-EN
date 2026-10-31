@@ -1,3 +1,4 @@
+import math
 from core.agents.base import BaseAgent, GENERIC_REPORT_FALLBACK
 """
 Analyst Agent base class
@@ -6,9 +7,7 @@ Used to implement various analyst agents (market analysts, news analysts, fundam
 v2.0 New: configuration-based analyst agent architecture
 """
 
-import json
 import logging
-import re
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -19,14 +18,104 @@ from .config import AgentMetadata, AgentCategory
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_UNINFORMATIVE_POSTERIOR: Dict[str, Any] = {
-    "p_optimistic": 0.3333,
-    "p_neutral": 0.3334,
-    "p_cautious": 0.3333,
-    "expected_move_bps": 0.0,
-    "confidence": 0.0,
-    "market_regime": "sideways",
-}
+
+
+
+def extract_structured_posterior(report_text: str) -> Dict[str, Any]:
+    """
+    Extract or derive a normalized 3-class directional posterior distribution
+    from an analyst report text or embedded JSON block.
+    Schema:
+      {
+        "p_optimistic": float,
+        "p_neutral": float,
+        "p_cautious": float,
+        "expected_move_bps": float,
+        "confidence": float,
+        "market_regime": "bull" | "bear" | "sideways"
+      }
+    """
+    import json
+    import re
+
+    default_posterior = {
+        "p_optimistic": 1.0 / 3.0,
+        "p_neutral": 1.0 / 3.0,
+        "p_cautious": 1.0 / 3.0,
+        "expected_move_bps": 50.0,
+        "confidence": 0.5,
+        "market_regime": "sideways",
+    }
+    if not report_text or not isinstance(report_text, str):
+        return default_posterior
+
+    # 1. Try parsing an explicit JSON block containing p_optimistic
+    json_matches = re.findall(r'\{[^{}]*"p_optimistic"[^{}]*\}', report_text, re.DOTALL)
+    if json_matches:
+        try:
+            raw = json.loads(json_matches[-1])
+            p_opt = max(0.0, float(raw.get("p_optimistic", 1.0 / 3.0)))
+            p_neu = max(0.0, float(raw.get("p_neutral", 1.0 / 3.0)))
+            p_cau = max(0.0, float(raw.get("p_cautious", 1.0 / 3.0)))
+            total = p_opt + p_neu + p_cau
+            if total > 0:
+                p_opt, p_neu, p_cau = p_opt / total, p_neu / total, p_cau / total
+            else:
+                p_opt = p_neu = p_cau = 1.0 / 3.0
+            regime = str(raw.get("market_regime", "sideways")).lower()
+            if regime not in ("bull", "bear", "sideways"):
+                regime = "sideways"
+            return {
+                "p_optimistic": round(p_opt, 6),
+                "p_neutral": round(p_neu, 6),
+                "p_cautious": round(p_cau, 6),
+                "expected_move_bps": float(raw.get("expected_move_bps", 50.0)),
+                "confidence": max(0.0, min(1.0, float(raw.get("confidence", max(p_opt, p_neu, p_cau))))),
+                "market_regime": regime,
+            }
+        except Exception:
+            pass
+
+    # 2. Deterministic keyword-calibrated fallback when free-text report has no JSON block
+    text_lower = report_text.lower()
+    opt_keywords = ["optimistic", "bullish", "growth", "opportunity", "upward", "strong", "positive", "乐观", "看多", "上涨", "增长", "机会", "突破"]
+    cau_keywords = ["cautious", "prudence", "bearish", "risk", "decline", "weak", "downward", "negative", "审慎", "谨慎", "看空", "下跌", "风险", "回撤"]
+    neu_keywords = ["neutral", "balanced", "sideways", "shock", "consolidation", "中性", "震荡", "平衡", "观望"]
+
+    opt_hits = sum(text_lower.count(k) for k in opt_keywords) + 1.0
+    cau_hits = sum(text_lower.count(k) for k in cau_keywords) + 1.0
+    neu_hits = sum(text_lower.count(k) for k in neu_keywords) + 1.0
+    total_hits = opt_hits + cau_hits + neu_hits
+
+    p_opt = opt_hits / total_hits
+    p_neu = neu_hits / total_hits
+    p_cau = cau_hits / total_hits
+    # Ensure exact normalization
+    p_cau = max(0.0, 1.0 - round(p_opt, 6) - round(p_neu, 6))
+
+    if p_opt > p_cau + 0.10:
+        regime = "bull"
+    elif p_cau > p_opt + 0.10:
+        regime = "bear"
+    else:
+        regime = "sideways"
+
+    entropy = 0.0
+    for p in (p_opt, p_neu, p_cau):
+        if p > 1e-12:
+            entropy -= p * math.log2(p)
+    max_entropy = math.log2(3.0)
+    confidence = max(0.0, min(1.0, 1.0 - (entropy / max_entropy)))
+    expected_move_bps = round(40.0 + 160.0 * abs(p_opt - p_cau), 2)
+
+    return {
+        "p_optimistic": round(p_opt, 6),
+        "p_neutral": round(p_neu, 6),
+        "p_cautious": round(p_cau, 6),
+        "expected_move_bps": expected_move_bps,
+        "confidence": round(confidence, 4),
+        "market_regime": regime,
+    }
 
 
 class AnalystAgent(BaseAgent):
@@ -92,20 +181,8 @@ Reporting requirements:
 3. **Multi-caliber data processing**: If the tool returns Summary caliber/detailed caliber  Summary of caliber differences or other multiple sets of statistical calibers. The text must retain both sets of values and clearly write them out. There is a caliber difference ; Compression to a single count is prohibited, and do not write Among them … home This type of inclusion relationship.
 4. Clear structure and rigorous logic
 5. The conclusion is clear and well-founded
-8. **Structured Probability Assessment (Mandatory)**:
-At the very end of your report, append a structured JSON probability signal block in the following format:
-```json:signal
-{
-  "p_optimistic": <float 0.0 to 1.0, probability of price increase > +50 bps>,
-  "p_neutral": <float 0.0 to 1.0, probability of price change in [-50 bps, +50 bps]>,
-  "p_cautious": <float 0.0 to 1.0, probability of price decrease < -50 bps>,
-  "expected_move_bps": <signed float, expected price change in basis points>,
-  "confidence": <float 0.0 to 1.0, confidence score>,
-  "market_regime": "<bull | bear | sideways>"
-}
-```
-Constraints:
-- p_optimistic + p_neutral + p_cautious MUST sum to 1.0.
+6. Use Chinese output
+7. Directly output the report content, do not return the tool call
 
 **Important reminder**: Carefully examine the data returned by the tool and analyze only the dimensions that actually exist in the data. Do not add additional dimensions that are not provided, such as KOL opinions, retail investor sentiment, institutional positions, industry capital flows, etc., and do not generate This report did not obtain the following dimension data and does not conduct relevant analysis. Chapters like this.
 
@@ -261,19 +338,20 @@ Start writing your report now:"""
                 self._retry_report = None  # Clean up to avoid affecting the next call
 
             # 5. Output to state (only newly added fields are returned to avoid concurrency conflicts)
-            parsed = self._parse_response(report)
-            clean_report = parsed.get("report") or parsed.get("content") or report
-            posterior = parsed.get("posterior") or self._normalize_posterior(parsed)
-
             output_key = self.output_field or f"{self.analyst_type}_report"
 
             logger.info(f"analyst Agent {self.agent_id} Executed successfully")
+            posterior = extract_structured_posterior(report if isinstance(report, str) else str(report))
+            existing_posteriors = dict(state.get("analyst_posteriors") or {})
+            existing_posteriors[self.agent_id] = posterior
+            state["analyst_posteriors"] = existing_posteriors
             result = {
-                output_key: clean_report,
-                "analyst_posteriors": {
-                    self.agent_id: posterior
-                }
+                output_key: report,
+                "analyst_posteriors": existing_posteriors,
             }
+            if self.agent_id in ("index_analyst_v2", "index_analyst"):
+                state["market_regime"] = posterior["market_regime"]
+                result["market_regime"] = posterior["market_regime"]
 
             # Quality gate flag (write state.quality_flags, the downstream can know which reports are of poor quality)
             if quality_flag:
@@ -298,8 +376,8 @@ Start writing your report now:"""
                         ticker=ticker,
                         agent_id=self.agent_id,
                         agent_type=self.analyst_type,
-                        report_content=clean_report[:500] if isinstance(clean_report, str) else "",
-                        report_length=len(clean_report) if isinstance(clean_report, str) else 0,
+                        report_content=report[:500] if isinstance(report, str) else "",
+                        report_length=len(report) if isinstance(report, str) else 0,
                         is_low_quality=is_low_quality,
                         quality_flags=[quality_flag] if quality_flag else [],
                         hit_fallback=hit_fallback,
@@ -333,9 +411,6 @@ Start writing your report now:"""
                 output_key: {
                     "error": GENERIC_REPORT_FALLBACK,
                     "success": False
-                },
-                "analyst_posteriors": {
-                    self.agent_id: self._get_default_posterior()
                 }
             }
         finally:
@@ -535,274 +610,22 @@ Start writing your report now:"""
         """
         pass
 
-    @staticmethod
-    def _get_default_posterior() -> Dict[str, Any]:
-        """Return the uninformative prior default posterior."""
-        return {
-            "p_optimistic": 0.3333,
-            "p_neutral": 0.3334,
-            "p_cautious": 0.3333,
-            "expected_move_bps": 0.0,
-            "confidence": 0.0,
-            "market_regime": "sideways",
-        }
-
-    @staticmethod
-    def _normalize_posterior(raw: Dict[str, Any]) -> Dict[str, Any]:
-        """Normalize raw posterior dictionary to guarantee schema and probability sum == 1.0."""
-        # 1. Parse probabilities
-        def _parse_prob(val: Any) -> float:
-            if val is None:
-                return 1.0 / 3.0
-            if isinstance(val, str):
-                val = val.strip().replace("%", "")
-            try:
-                p = float(val)
-                return max(0.0, p)
-            except (ValueError, TypeError):
-                return 1.0 / 3.0
-
-        p_opt = _parse_prob(raw.get("p_optimistic"))
-        p_neu = _parse_prob(raw.get("p_neutral"))
-        p_cau = _parse_prob(raw.get("p_cautious"))
-
-        # Check percentage scale (e.g., [70, 20, 10])
-        if (p_opt + p_neu + p_cau) > 1.5 and (p_opt > 1.0 or p_neu > 1.0 or p_cau > 1.0):
-            p_opt /= 100.0
-            p_neu /= 100.0
-            p_cau /= 100.0
-
-        total = p_opt + p_neu + p_cau
-        if total <= 1e-6:
-            p_opt, p_neu, p_cau = 0.3333, 0.3334, 0.3333
-        else:
-            p_opt /= total
-            p_neu /= total
-            p_cau /= total
-
-        # Enforce sum == 1.0 to within 1e-4 tolerance
-        p_opt = round(p_opt, 4)
-        p_neu = round(p_neu, 4)
-        p_cau = round(1.0 - p_opt - p_neu, 4)
-        if p_cau < 0.0:
-            p_cau = 0.0
-            p_neu = round(1.0 - p_opt, 4)
-
-        # 2. Parse expected_move_bps
-        raw_move = raw.get("expected_move_bps")
-        expected_move = 0.0
-        if raw_move is not None:
-            if isinstance(raw_move, str):
-                cleaned_move = raw_move.strip().lower().replace("bps", "").replace("bp", "").replace("+", "").replace(",", "").strip()
-                if "%" in cleaned_move:
-                    try:
-                        expected_move = float(cleaned_move.replace("%", "").strip()) * 100.0
-                    except (ValueError, TypeError):
-                        expected_move = 0.0
-                else:
-                    try:
-                        expected_move = float(cleaned_move)
-                    except (ValueError, TypeError):
-                        expected_move = 0.0
-            else:
-                try:
-                    expected_move = float(raw_move)
-                except (ValueError, TypeError):
-                    expected_move = 0.0
-        if expected_move == 0.0 and abs(p_opt - p_cau) > 0.1:
-            expected_move = round((p_opt - p_cau) * 100.0, 1)
-
-        # 3. Parse confidence
-        raw_conf = raw.get("confidence")
-        conf = 0.0 if raw.get("_is_fallback") else 0.5
-        if raw_conf is not None:
-            if isinstance(raw_conf, str):
-                raw_conf = raw_conf.strip().replace("%", "")
-            try:
-                conf = float(raw_conf)
-                if conf > 1.0 and conf <= 100.0 and conf >= 5.0:
-                    conf /= 100.0
-            except (ValueError, TypeError):
-                conf = 0.0 if raw.get("_is_fallback") else 0.5
-        conf = max(0.0, min(1.0, round(conf, 4)))
-
-        # 4. Parse market_regime
-        raw_regime = str(raw.get("market_regime", "")).strip().lower()
-        if raw_regime in ("bull", "bullish", "long", "up", "uptrend"):
-            regime = "bull"
-        elif raw_regime in ("bear", "bearish", "short", "down", "downtrend"):
-            regime = "bear"
-        elif raw_regime in ("sideways", "neutral", "range", "range-bound", "flat", "consolidation", "chop"):
-            regime = "sideways"
-        else:
-            if p_opt > p_cau and p_opt > p_neu and expected_move > 20.0:
-                regime = "bull"
-            elif p_cau > p_opt and p_cau > p_neu and expected_move < -20.0:
-                regime = "bear"
-            else:
-                regime = "sideways"
-
-        return {
-            "p_optimistic": p_opt,
-            "p_neutral": p_neu,
-            "p_cautious": p_cau,
-            "expected_move_bps": round(expected_move, 2),
-            "confidence": conf,
-            "market_regime": regime,
-        }
-
-    @staticmethod
-    def _heuristic_extract_posterior(text: str) -> Dict[str, Any]:
-        """Heuristic fallback for plain text when JSON signal block is missing."""
-        if not text or not isinstance(text, str):
-            return AnalystAgent._get_default_posterior()
-
-        lower_text = text.lower()
-        bull_cues = ["看多", "强烈看多", "突破", "买入", "bullish", "overweight", "强劲", "上涨", "增持", "多头"]
-        bear_cues = ["看空", "强烈看空", "破位", "卖出", "bearish", "underweight", "走弱", "下跌", "减持", "空头"]
-
-        bull_score = sum(1 for cue in bull_cues if cue in lower_text)
-        bear_score = sum(1 for cue in bear_cues if cue in lower_text)
-
-        if bull_score > bear_score and bull_score >= 2:
-            return AnalystAgent._normalize_posterior({
-                "p_optimistic": 0.55,
-                "p_neutral": 0.35,
-                "p_cautious": 0.10,
-                "expected_move_bps": 50.0,
-                "confidence": 0.50,
-                "market_regime": "bull",
-            })
-        elif bear_score > bull_score and bear_score >= 2:
-            return AnalystAgent._normalize_posterior({
-                "p_optimistic": 0.10,
-                "p_neutral": 0.35,
-                "p_cautious": 0.55,
-                "expected_move_bps": -50.0,
-                "confidence": 0.50,
-                "market_regime": "bear",
-            })
-        else:
-            return AnalystAgent._get_default_posterior()
-
-    @staticmethod
-    def _parse_response(response: Any) -> Dict[str, Any]:
+    def _parse_response(self, response: str) -> Dict[str, Any]:
         """
-        Parse LLM response to extract structured signal block and clean markdown report.
+        Parse LLM response (can be overridden by subclasses)
 
         Args:
-            response: LLM response text or dictionary
+            response: LLM response text
 
         Returns:
-            Dictionary containing:
-                - content: Clean markdown report text with signal block stripped
-                - report: Same as content
-                - posterior: Normalized probability posterior dictionary
-                - success: True
-                - Unpacked posterior fields (p_optimistic, p_neutral, p_cautious, etc.)
+            Parsed report dictionary
         """
-        if response is None:
-            raw_text = ""
-        elif isinstance(response, dict):
-            if "p_optimistic" in response:
-                posterior = AnalystAgent._normalize_posterior(response)
-                content = str(response.get("content") or response.get("report") or "")
-                return {
-                    "content": content,
-                    "report": content,
-                    "posterior": posterior,
-                    "success": True,
-                    **posterior
-                }
-            raw_text = str(response.get("content") or response.get("report") or "")
-        else:
-            raw_text = str(response)
-
-        raw_posterior: Optional[Dict[str, Any]] = None
-        clean_report = raw_text
-
-        # Search patterns for signal block
-        patterns = [
-            r'<signal_block>\s*({[\s\S]*?})\s*</signal_block>',
-            r'<!--\s*SIGNAL_BLOCK\s*:\s*({[\s\S]*?})\s*-->',
-            r'```(?:json:signal|json|signal_block|signal)?\s*({[\s\S]*?["\']p_optimistic["\'][\s\S]*?})\s*```',
-            r'({[^{}]*["\']p_optimistic["\'][^{}]*})',
-        ]
-
-        for pat in patterns:
-            match = re.search(pat, raw_text, re.DOTALL)
-            if match:
-                candidate = match.group(1).strip()
-                try:
-                    data = json.loads(candidate)
-                    if isinstance(data, dict):
-                        raw_posterior = data
-                        start, end = match.span()
-                        clean_report = (raw_text[:start] + raw_text[end:]).strip()
-                        break
-                except Exception:
-                    # Attempt repairs: single quotes, trailing commas, python literals
-                    repaired = re.sub(r"'([^']*)'", r'"\1"', candidate)
-                    repaired = re.sub(r",\s*([\]}])", r"\1", repaired)
-                    repaired = re.sub(r"\bNone\b", "null", repaired)
-                    repaired = re.sub(r"\bTrue\b", "true", repaired)
-                    repaired = re.sub(r"\bFalse\b", "false", repaired)
-                    try:
-                        data = json.loads(repaired)
-                        if isinstance(data, dict):
-                            raw_posterior = data
-                            start, end = match.span()
-                            clean_report = (raw_text[:start] + raw_text[end:]).strip()
-                            break
-                    except Exception:
-                        continue
-
-        # Fallback to broader search if not found
-        if raw_posterior is None:
-            broad_match = re.search(r"(\{[^{}]*?[\"']p_optimistic[\"'][^{}]*?\})", raw_text, re.DOTALL)
-            if broad_match:
-                candidate = broad_match.group(1).strip()
-                try:
-                    data = json.loads(candidate)
-                    if isinstance(data, dict):
-                        raw_posterior = data
-                        start, end = broad_match.span()
-                        clean_report = (raw_text[:start] + raw_text[end:]).strip()
-                except Exception:
-                    repaired = re.sub(r"'([^']*)'", r'"\1"', candidate)
-                    repaired = re.sub(r",\s*([\]}])", r"\1", repaired)
-                    repaired = re.sub(r"\bNone\b", "null", repaired)
-                    repaired = re.sub(r"\bTrue\b", "true", repaired)
-                    repaired = re.sub(r"\bFalse\b", "false", repaired)
-                    try:
-                        data = json.loads(repaired)
-                        if isinstance(data, dict):
-                            raw_posterior = data
-                            start, end = broad_match.span()
-                            clean_report = (raw_text[:start] + raw_text[end:]).strip()
-                    except Exception:
-                        pass
-
-        if not clean_report:
-            clean_report = raw_text
-
-        if raw_posterior is not None:
-            posterior = AnalystAgent._normalize_posterior(raw_posterior)
-        else:
-            posterior = AnalystAgent._heuristic_extract_posterior(raw_text)
-
+        # Default implementation: return text directly
         return {
-            "content": clean_report,
-            "report": clean_report,
-            "posterior": posterior,
-            "success": True,
-            **posterior
+            "content": response,
+            "posterior": extract_structured_posterior(response),
+            "success": True
         }
-
-    @staticmethod
-    def extract_structured_posterior(report_text: str) -> Dict[str, Any]:
-        """Extract and normalize structured posterior assessment from analyst report text."""
-        return extract_structured_posterior(report_text)
 
     @property
     def agent_id(self) -> str:
@@ -810,17 +633,4 @@ Start writing your report now:"""
         if self.metadata:
             return self.metadata.id
         return self.__class__.__name__.lower()
-
-
-def extract_structured_posterior(report_text: str) -> Dict[str, Any]:
-    """Extract and normalize structured posterior assessment from analyst report text."""
-    parsed = AnalystAgent._parse_response(report_text)
-    return parsed.get("posterior") or AnalystAgent._normalize_posterior(parsed)
-
-
-__all__ = [
-    "DEFAULT_UNINFORMATIVE_POSTERIOR",
-    "AnalystAgent",
-    "extract_structured_posterior",
-]
 
