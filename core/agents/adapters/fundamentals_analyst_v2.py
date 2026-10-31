@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import SystemMessage, HumanMessage
 
+from ..analyst import AnalystAgent
 from ..base import BaseAgent
 from ..config import AgentConfig, AgentMetadata, AgentCategory, LicenseTier, AgentInput, AgentOutput
 from ..registry import register_agent
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 @register_agent
-class FundamentalsAnalystAgentV2(BaseAgent):
+class FundamentalsAnalystAgentV2(AnalystAgent):
     """
     Fundamental Analyst Agent v2.0
 
@@ -206,7 +207,16 @@ class FundamentalsAnalystAgentV2(BaseAgent):
             logger.info(f"✅ Fundamental analysis completed, report length: {len(analysis)} character")
 
             # Only the newly added fields are returned to avoid overwriting the updates of parallel nodes.
-            result = {"fundamentals_report": analysis}
+            parsed = self._parse_response(analysis)
+            clean_report = parsed.get("report") or parsed.get("content") or analysis
+            posterior = parsed.get("posterior") or self._normalize_posterior(parsed)
+
+            result = {
+                self.output_field: clean_report,
+                "analyst_posteriors": {
+                    self.agent_id: posterior
+                }
+            }
             # 🆕 Comes with tool call summary
             tool_summary = self._format_tool_call_summary()
             if tool_summary:

@@ -1,0 +1,202 @@
+diff --git a/core/agents/utils/__init__.py b/core/agents/utils/__init__.py
+index 1234567..abcdef0 100644
+--- a/core/agents/utils/__init__.py
++++ b/core/agents/utils/__init__.py
+@@ -4,9 +4,19 @@ Agent Tool function module
+ 
+ from .weight_calculator import (
++    DEFAULT_ANALYST_IDS,
++    REGIMES,
++    RegimeAdaptiveWeightCalculator,
++    RegimeMultiplicativeWeightManager,
++    aggregate_posteriors,
+     calculate_report_weights,
+     format_weighted_reports_prompt,
+ )
+ 
+ __all__ = [
++    "DEFAULT_ANALYST_IDS",
++    "REGIMES",
++    "RegimeAdaptiveWeightCalculator",
++    "RegimeMultiplicativeWeightManager",
++    "aggregate_posteriors",
+     "calculate_report_weights",
+     "format_weighted_reports_prompt",
+ ]
+diff --git a/core/agents/utils/weight_calculator.py b/core/agents/utils/weight_calculator.py
+index abcdef0..1234567 100644
+--- a/core/agents/utils/weight_calculator.py
++++ b/core/agents/utils/weight_calculator.py
+@@ -5,7 +5,7 @@ Weight calculation tool
+ Automatically calculate the weight of each report based on the analyst selected by the user
+ """
+ 
+ import math
+-from typing import Any, Dict, List, Optional, Sequence, Tuple
++from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+ 
+ 
+@@ -317,6 +317,7 @@ class RegimeAdaptiveWeightCalculator:
+         initial_weights: Optional[Dict[str, Dict[str, float]]] = None,
+         learning_rate: float = 0.2,
+         return_threshold: float = 0.005,  # 50 bps deadband
++        w_min: float = 0.0,
+     ):
+         """
+         Initialize the regime-adaptive weight calculator.
+@@ -327,6 +328,7 @@ class RegimeAdaptiveWeightCalculator:
+             learning_rate: Learning rate eta for MWU (default 0.2).
+             return_threshold: Deadband threshold in decimal (0.005 = 50 bps) for Brier loss target classification.
++            w_min: Weight floor for MWU updates (default 0.0).
+         """
+         self.analyst_ids = list(analyst_ids) if analyst_ids is not None else list(DEFAULT_ANALYST_IDS)
+         self.learning_rate = float(learning_rate)
+         self.return_threshold = float(return_threshold)
++        self.w_min = float(w_min)
+         self.regimes = list(REGIMES)
+ 
+@@ -390,6 +392,7 @@ class RegimeAdaptiveWeightCalculator:
+         self,
+         posterior: Dict[str, Any],
+         realized_return: float,
++        scaled: bool = False,
+     ) -> float:
+         """
+         Compute multiclass Brier loss for an analyst's 3-class prediction:
+@@ -418,7 +421,8 @@ class RegimeAdaptiveWeightCalculator:
+             y = [0.0, 1.0, 0.0]
+ 
+         brier = (p_opt - y[0]) ** 2 + (p_neu - y[1]) ** 2 + (p_caut - y[2]) ** 2
+-        return float(max(0.0, min(2.0, brier)))
++        bounded_brier = float(max(0.0, min(2.0, brier)))
++        return (bounded_brier / 3.0) if scaled else bounded_brier
+ 
+     def update_weights(
+         self,
+@@ -426,6 +430,7 @@ class RegimeAdaptiveWeightCalculator:
+         analyst_posteriors: Dict[str, Dict[str, Any]],
+         realized_return: float,
+         learning_rate: Optional[float] = None,
++        w_min: Optional[float] = None,
+     ) -> Dict[str, float]:
+         """
+         Multiplicative Weights Update (MWU) / Exponentially Weighted Forecaster rule:
+@@ -436,6 +441,7 @@ class RegimeAdaptiveWeightCalculator:
+             analyst_posteriors: Dictionary mapping analyst_id -> posterior dictionary.
+             realized_return: Realized return over the period.
+             learning_rate: Optional learning rate override (eta).
++            w_min: Optional weight floor override.
+ 
+         Returns:
+             Updated and normalized weight dictionary for the specified regime.
+@@ -443,6 +449,7 @@ class RegimeAdaptiveWeightCalculator:
+         regime = self._normalize_regime(regime)
+         lr = float(learning_rate) if learning_rate is not None else self.learning_rate
++        floor = self.w_min if w_min is None else float(w_min)
+ 
+         # Expand analyst_ids if new analysts appear in posteriors
+         for aid in analyst_posteriors.keys():
+@@ -462,6 +469,8 @@ class RegimeAdaptiveWeightCalculator:
+                 new_w = old_w * math.exp(-lr * loss)
+             else:
+                 new_w = old_w
++            if floor > 0.0:
++                new_w = max(floor, new_w)
+             updated[aid] = new_w
+ 
+         tot = sum(updated.values())
+@@ -481,3 +490,95 @@ class RegimeAdaptiveWeightCalculator:
+         }
+ 
++    def aggregate_posteriors(
++        self,
++        analyst_posteriors: Dict[str, Dict[str, Any]],
++        regime: str = "sideways",
++        weights: Optional[Dict[str, float]] = None,
++    ) -> Dict[str, float]:
++        """Aggregate analyst posteriors using logarithmic opinion pooling and current regime weights."""
++        if weights is None:
++            weights = self.get_weights(regime, active_analysts=list(analyst_posteriors.keys()))
++        return aggregate_posteriors(analyst_posteriors, weights=weights)
++
++
++class RegimeMultiplicativeWeightManager(RegimeAdaptiveWeightCalculator):
++    """
++    Online Regime-Conditioned Multiplicative Weights Manager (MWU).
++    Maintains independent analyst reliability weight vectors across market regimes
++    ('bull', 'bear', 'sideways') updated online via the Exponentially Weighted Forecaster
++    with weight floor w_min=0.03.
++    """
++
++    def __init__(
++        self,
++        analyst_ids: Optional[Sequence[str]] = None,
++        initial_weights: Optional[Dict[str, Dict[str, float]]] = None,
++        learning_rate: float = 0.2,
++        return_threshold: float = 0.005,
++        w_min: float = 0.03,
++    ):
++        super().__init__(
++            analyst_ids=analyst_ids,
++            initial_weights=initial_weights,
++            learning_rate=learning_rate,
++            return_threshold=return_threshold,
++            w_min=w_min,
++        )
++
++
++def aggregate_posteriors(
++    posteriors: Union[Dict[str, Dict[str, Any]], Sequence[Dict[str, Any]]],
++    weights: Optional[Dict[str, float]] = None,
++    eps: float = 1e-12,
++) -> Dict[str, float]:
++    """
++    Logarithmic opinion pooling (Log-OP) aggregating analyst 3-class posteriors
++    into a single calibrated consensus distribution.
++    """
++    classes = ["p_optimistic", "p_neutral", "p_cautious"]
++    if not posteriors:
++        return {"p_optimistic": 1.0 / 3.0, "p_neutral": 1.0 / 3.0, "p_cautious": 1.0 / 3.0}
++
++    items = (
++        list(posteriors.items())
++        if isinstance(posteriors, dict)
++        else [(f"analyst_{i}", p) for i, p in enumerate(posteriors)]
++    )
++
++    if weights is None:
++        w_dict = {aid: 1.0 / len(items) for aid, _ in items}
++    else:
++        raw_w = {aid: max(0.0, float(weights.get(aid, 0.0))) for aid, _ in items}
++        tot_w = sum(raw_w.values())
++        w_dict = {aid: v / tot_w for aid, v in raw_w.items()} if tot_w > 0 else {aid: 1.0 / len(items) for aid, _ in items}
++
++    log_agg = {c: 0.0 for c in classes}
++    for aid, post in items:
++        if not isinstance(post, dict):
++            continue
++        w = w_dict.get(aid, 0.0)
++        raw_probs = [max(eps, float(post.get(c, 1.0 / 3.0))) for c in classes]
++        sum_p = sum(raw_probs)
++        norm_probs = [p / sum_p for p in raw_probs]
++        for idx, c in enumerate(classes):
++            log_agg[c] += w * math.log(norm_probs[idx])
++
++    max_log = max(log_agg.values())
++    exp_probs = {c: math.exp(log_agg[c] - max_log) for c in classes}
++    tot_exp = sum(exp_probs.values())
++    if tot_exp <= 0:
++        return {"p_optimistic": 1.0 / 3.0, "p_neutral": 1.0 / 3.0, "p_cautious": 1.0 / 3.0}
++
++    return {c: float(exp_probs[c] / tot_exp) for c in classes}
++
++
++__all__ = [
++    "DEFAULT_ANALYST_IDS",
++    "REGIMES",
++    "RegimeAdaptiveWeightCalculator",
++    "RegimeMultiplicativeWeightManager",
++    "aggregate_posteriors",
++    "calculate_report_weights",
++    "format_weighted_reports_prompt",
++]

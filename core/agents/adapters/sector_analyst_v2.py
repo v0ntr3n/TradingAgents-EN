@@ -299,7 +299,15 @@ The current analysis data source is QMT, please follow the following requirement
         existing_report = state.get("sector_report", "")
         if existing_report and len(existing_report) > 100:
             logger.info(f"🏭 [Sector Analyst v2] Report already exists ({len(existing_report)} character), Skip duplicate analysis")
-            return {}
+            posteriors = state.get("analyst_posteriors", {})
+            if self.agent_id in posteriors:
+                return {}
+            parsed = self._parse_response(existing_report)
+            return {
+                "analyst_posteriors": {
+                    self.agent_id: parsed["posterior"]
+                }
+            }
 
         # ⚠️ Industry reports do not support caching: industry reports contain the codes and names of specific stocks, and caching will cause error messages to appear when analyzing other stocks in the same industry.
         # Therefore, each analysis must be regenerated and caching cannot be used (caching is also skipped in debug mode)

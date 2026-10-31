@@ -1,10 +1,291 @@
-# TradingAgents/graph/conditional_logic.py
-
+import math
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 from tradingagents.agents.utils.agent_states import AgentState
 
 # Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
+
+
+def compute_shannon_entropy(p: Sequence[float]) -> float:
+    """Compute base-2 Shannon entropy for a discrete probability vector.
+
+    H_2(P) = -sum(p * log2(p)) for p > 0.
+    """
+    return -sum(x * math.log2(x) for x in p if x > 0.0)
+
+
+def compute_jensen_shannon_divergence(
+    posteriors: Any,
+    weights: Optional[Any] = None,
+) -> float:
+    """Compute base-2 Jensen-Shannon Divergence across N discrete distributions or analyst posteriors.
+
+    Formula:
+        M = sum(w_i * P_i) where sum(w_i) = 1.0
+        D_JS = H_2(M) - sum(w_i * H_2(P_i))
+
+    Guaranteed properties:
+    - 0.0 <= D_JS <= 1.0 (base-2)
+    - Returns 0.0 for identical distributions/posteriors, empty input, or N <= 1
+    - Returns 1.0 for orthogonal distributions under uniform weights
+    - Pure Python, zero external dependencies
+
+    Args:
+        posteriors: Either:
+            - Dict mapping analyst_id to posterior dict (with p_optimistic, etc.) or prob vector
+            - List of probability vectors (List[List[float]])
+            - List of posterior dicts
+        weights: Optional dict or sequence mapping items to weights. If None, uniform weights apply.
+
+    Returns:
+        float: Base-2 JSD in [0.0, 1.0].
+    """
+    if not posteriors:
+        return 0.0
+
+    parsed_posteriors: List[Tuple[Any, List[float]]] = []
+
+    if isinstance(posteriors, dict):
+        items = list(posteriors.items())
+    elif isinstance(posteriors, (list, tuple)):
+        items = list(enumerate(posteriors))
+    else:
+        return 0.0
+
+    for aid, post in items:
+        if isinstance(post, dict):
+            try:
+                p_opt = max(0.0, float(post.get("p_optimistic", 0.3333)))
+                p_neu = max(0.0, float(post.get("p_neutral", 0.3334)))
+                p_cau = max(0.0, float(post.get("p_cautious", 0.3333)))
+            except (ValueError, TypeError):
+                p_opt, p_neu, p_cau = 0.3333, 0.3334, 0.3333
+            tot = p_opt + p_neu + p_cau
+            dist = [p_opt / tot, p_neu / tot, p_cau / tot] if tot > 0 else [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
+            parsed_posteriors.append((aid, dist))
+        elif isinstance(post, (list, tuple)):
+            try:
+                p_vals = [max(0.0, float(x)) for x in post]
+                tot = sum(p_vals)
+                k = len(p_vals) if len(p_vals) > 0 else 3
+                dist = [x / tot for x in p_vals] if tot > 0 else [1.0 / k] * k
+            except (ValueError, TypeError):
+                dist = [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
+            parsed_posteriors.append((aid, dist))
+
+    n = len(parsed_posteriors)
+    if n <= 1:
+        return 0.0
+
+    k_len = len(parsed_posteriors[0][1])
+    for _, dist in parsed_posteriors:
+        if len(dist) != k_len:
+            raise ValueError(f"Inconsistent distribution dimensions: expected {k_len}, got {len(dist)}")
+
+    raw_weights: List[float] = []
+    if weights and isinstance(weights, dict):
+        for aid, _ in parsed_posteriors:
+            try:
+                w_val = max(0.0, float(weights.get(aid, weights.get(str(aid), 1.0))))
+            except (ValueError, TypeError):
+                w_val = 1.0
+            raw_weights.append(w_val)
+    elif weights and isinstance(weights, (list, tuple)):
+        for idx, _ in enumerate(parsed_posteriors):
+            if idx < len(weights):
+                try:
+                    w_val = max(0.0, float(weights[idx]))
+                except (ValueError, TypeError):
+                    w_val = 1.0
+            else:
+                w_val = 1.0
+            raw_weights.append(w_val)
+    else:
+        raw_weights = [1.0] * n
+
+    total_w = sum(raw_weights)
+    if total_w > 0:
+        norm_weights = [w / total_w for w in raw_weights]
+    else:
+        norm_weights = [1.0 / n] * n
+
+    mixture = [
+        sum(w * dist[k] for (_, dist), w in zip(parsed_posteriors, norm_weights))
+        for k in range(k_len)
+    ]
+
+    h_m = compute_shannon_entropy(mixture)
+    avg_h = sum(
+        w * compute_shannon_entropy(dist)
+        for (_, dist), w in zip(parsed_posteriors, norm_weights)
+    )
+    return max(0.0, min(1.0, h_m - avg_h))
+
+
+def compute_base2_jsd(distributions: List[List[float]]) -> float:
+    """Compute base-2 Jensen-Shannon Divergence across N discrete distributions.
+
+    Formula:
+        M = (1/N) * sum(P_i)
+        JSD = H_2(M) - (1/N) * sum(H_2(P_i))
+
+    Guaranteed properties:
+    - 0 <= JSD <= 1 (base-2)
+    - Returns 0.0 for identical distributions or N <= 1
+    - Pure Python, zero external dependencies
+    """
+    return compute_jensen_shannon_divergence(distributions)
+
+
+def calculate_base2_jsd(
+    posteriors: Dict[str, Any],
+    weights: Optional[Dict[str, float]] = None,
+) -> float:
+    """Compute base-2 JSD from analyst posteriors dictionary."""
+    return compute_jensen_shannon_divergence(posteriors, weights=weights)
+
+
+def compute_cbs_bps(
+    posteriors_or_jsd: Any,
+    weights_or_move: Any = None,
+    estimated_spread_bps: float = 15.0,
+) -> float:
+    """Calculate Coordination Breakeven Spread (CBS) in basis points.
+
+    Formula:
+        CBS_bps = (D_JS * weighted_expected_move_bps) / 2.0
+
+    Supports both:
+        - compute_cbs_bps(posteriors, weights=None, estimated_spread_bps=15.0)
+        - compute_cbs_bps(jsd: float, move_bps: float)
+    """
+    if isinstance(posteriors_or_jsd, (int, float)):
+        jsd = max(0.0, float(posteriors_or_jsd))
+        try:
+            move = abs(float(weights_or_move if weights_or_move is not None else 0.0))
+        except (ValueError, TypeError):
+            move = 0.0
+        return (jsd * move) / 2.0
+
+    posteriors = posteriors_or_jsd
+    weights = weights_or_move
+
+    if not posteriors or not isinstance(posteriors, (dict, list, tuple)):
+        return 0.0
+
+    jsd = compute_jensen_shannon_divergence(
+        posteriors,
+        weights=weights if isinstance(weights, (dict, list, tuple)) else None
+    )
+    if jsd <= 0.0:
+        return 0.0
+
+    moves: List[float] = []
+    w_list: List[float] = []
+
+    items = posteriors.items() if isinstance(posteriors, dict) else enumerate(posteriors)
+    for aid, post in items:
+        if isinstance(post, dict):
+            try:
+                raw_move = post.get("expected_move_bps", 0.0)
+                move = abs(float(raw_move if raw_move is not None else 0.0))
+            except (ValueError, TypeError):
+                move = 0.0
+
+            if weights and isinstance(weights, dict):
+                try:
+                    w = max(0.0, float(weights.get(aid, weights.get(str(aid), 1.0))))
+                except (ValueError, TypeError):
+                    w = 1.0
+            else:
+                try:
+                    raw_conf = post.get("confidence", 0.5)
+                    w = max(0.01, float(raw_conf if raw_conf is not None else 0.5))
+                except (ValueError, TypeError):
+                    w = 0.5
+
+            moves.append(move)
+            w_list.append(w)
+
+    tot_w = sum(w_list)
+    if tot_w > 0:
+        weighted_move = sum(m * w for m, w in zip(moves, w_list)) / tot_w
+    else:
+        weighted_move = sum(moves) / len(moves) if moves else 0.0
+
+    return (jsd * weighted_move) / 2.0
+
+
+def calculate_cbs_routing(
+    posteriors: Dict[str, Any],
+    estimated_spread_bps: float = 15.0,
+    max_debate_rounds: int = 3,
+    weights: Optional[Dict[str, float]] = None,
+) -> Dict[str, Any]:
+    """Calculate Coordination Breakeven Spread (CBS) and determine debate routing.
+
+    Formula:
+        CBS_bps = (JSD * weighted_expected_move_bps) / 2.0
+    Gating:
+        JSD < 0.12 or CBS_bps <= estimated_spread_bps -> fast_path
+        JSD >= 0.12 and CBS_bps > estimated_spread_bps -> multi_round_debate
+    """
+    jsd = compute_jensen_shannon_divergence(posteriors, weights=weights)
+
+    moves: List[float] = []
+    w_list: List[float] = []
+    if posteriors and isinstance(posteriors, dict):
+        for aid, post in posteriors.items():
+            if isinstance(post, dict):
+                try:
+                    raw_move = post.get("expected_move_bps", 0.0)
+                    move = abs(float(raw_move if raw_move is not None else 0.0))
+                except (ValueError, TypeError):
+                    move = 0.0
+                if weights and isinstance(weights, dict):
+                    try:
+                        w = max(0.0, float(weights.get(aid, weights.get(str(aid), 1.0))))
+                    except (ValueError, TypeError):
+                        w = 1.0
+                else:
+                    try:
+                        raw_conf = post.get("confidence", 0.5)
+                        w = max(0.01, float(raw_conf if raw_conf is not None else 0.5))
+                    except (ValueError, TypeError):
+                        w = 0.5
+                moves.append(move)
+                w_list.append(w)
+
+    tot_w = sum(w_list)
+    if tot_w > 0:
+        weighted_move = sum(m * w for m, w in zip(moves, w_list)) / tot_w
+    else:
+        weighted_move = sum(moves) / len(moves) if moves else 0.0
+
+    expected_debate_gain_bps = jsd * weighted_move
+    cbs_bps = expected_debate_gain_bps / 2.0
+
+    if jsd < 0.12 or cbs_bps <= estimated_spread_bps:
+        route = "fast_path"
+        dynamic_rounds = 0
+    else:
+        route = "multi_round_debate"
+        # Dynamic rounds scaled 1 to max_debate_rounds
+        scaling = (jsd - 0.12) / (1.0 - 0.12)
+        scaled_rounds = 1 + (max_debate_rounds - 1) * scaling
+        dynamic_rounds = int(max(1, min(max_debate_rounds, round(scaled_rounds))))
+
+    return {
+        "route": route,
+        "jsd": jsd,
+        "weighted_expected_move_bps": weighted_move,
+        "expected_debate_gain_bps": expected_debate_gain_bps,
+        "cbs_bps": cbs_bps,
+        "estimated_spread_bps": estimated_spread_bps,
+        "dynamic_debate_rounds": dynamic_rounds,
+        "is_fast_path": (route == "fast_path"),
+    }
 
 
 class ConditionalLogic:
@@ -14,6 +295,7 @@ class ConditionalLogic:
         """Initialize with configuration parameters."""
         self.max_debate_rounds = max_debate_rounds
         self.max_risk_discuss_rounds = max_risk_discuss_rounds
+        self.dynamic_debate_rounds = max_debate_rounds
 
     def should_continue_market(self, state: AgentState):
         """Determine if market analysis should continue."""
@@ -270,14 +552,80 @@ class ConditionalLogic:
         logger.info(f"🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Sector Analyst")
         return "Msg Clear Sector Analyst"
 
+    def should_trigger_multi_round_debate(self, state: AgentState) -> str:
+        """Evaluate JSD and CBS against transaction spread to gate multi-round debate.
+
+        Returns:
+            "fast_path" or "multi_round_debate"
+        """
+        posteriors = state.get("analyst_posteriors") if isinstance(state, dict) else getattr(state, "analyst_posteriors", None)
+        raw_spread = state.get("estimated_spread_bps") if isinstance(state, dict) else getattr(state, "estimated_spread_bps", 15.0)
+        try:
+            spread_bps = float(raw_spread if raw_spread is not None else 15.0)
+        except (ValueError, TypeError):
+            spread_bps = 15.0
+
+        weights = state.get("analyst_weights") if isinstance(state, dict) else getattr(state, "analyst_weights", None)
+
+        routing = calculate_cbs_routing(
+            posteriors=posteriors or {},
+            estimated_spread_bps=spread_bps,
+            max_debate_rounds=self.max_debate_rounds,
+            weights=weights,
+        )
+        decision = routing["route"]
+        jsd = routing["jsd"]
+        cbs_bps = routing["cbs_bps"]
+        expected_gain = routing["expected_debate_gain_bps"]
+        weighted_move = routing["weighted_expected_move_bps"]
+        dynamic_rounds = routing["dynamic_debate_rounds"]
+
+        if decision == "fast_path":
+            logger.info(
+                f"🔀 [CBS Debate Gate] -> FAST_PATH | JSD={jsd:.4f} (<0.12: {jsd < 0.12}), "
+                f"CBS={cbs_bps:.2f} bps <= Spread={spread_bps:.2f} bps ({cbs_bps <= spread_bps})"
+            )
+        else:
+            logger.info(
+                f"🔀 [CBS Debate Gate] -> MULTI_ROUND_DEBATE | JSD={jsd:.4f} >= 0.12, "
+                f"CBS={cbs_bps:.2f} bps > Spread={spread_bps:.2f} bps | Dynamic Rounds={dynamic_rounds}/{self.max_debate_rounds}"
+            )
+
+        # Store runtime metrics in state (for observability and downstream logging)
+        if isinstance(state, dict):
+            state["debate_jsd"] = jsd
+            state["cbs_bps"] = cbs_bps
+            state["expected_debate_gain_bps"] = expected_gain
+            state["weighted_expected_move_bps"] = weighted_move
+            state["dynamic_debate_rounds"] = dynamic_rounds
+            state["_max_debate_rounds"] = dynamic_rounds if dynamic_rounds > 0 else 1
+            if decision == "fast_path":
+                state["_risk_self_debate"] = True
+            else:
+                state["_risk_self_debate"] = False
+
+        self.dynamic_debate_rounds = dynamic_rounds if dynamic_rounds > 0 else self.max_debate_rounds
+        return decision
+
+    def should_gate_debate(self, state: Dict[str, Any]) -> str:
+        """Alias for should_trigger_multi_round_debate."""
+        return self.should_trigger_multi_round_debate(state)
+
     def should_continue_debate(self, state: AgentState) -> str:
         """Determine if debate should continue."""
         current_count = state["investment_debate_state"]["count"]
-        max_count = 2 * self.max_debate_rounds
+        # Use dynamic debate rounds if scaled by should_trigger_multi_round_debate, fallback to max_debate_rounds
+        effective_rounds = state.get("dynamic_debate_rounds") if isinstance(state, dict) else None
+        if not effective_rounds or effective_rounds < 1:
+            effective_rounds = getattr(self, "dynamic_debate_rounds", self.max_debate_rounds)
+        if not effective_rounds or effective_rounds < 1:
+            effective_rounds = self.max_debate_rounds
+
+        max_count = 2 * effective_rounds
         current_speaker = state["investment_debate_state"]["current_response"]
 
         # 🔍 Detailed log
-        logger.info(f"🔍 [investment debate control] Current number of speeches: {current_count}, Maximum times: {max_count} (Configuration rounds: {self.max_debate_rounds})")
+        logger.info(f"🔍 [investment debate control] Current number of speeches: {current_count}, Maximum times: {max_count} (Configuration rounds: {self.max_debate_rounds}, Effective: {effective_rounds})")
         logger.info(f"🔍 [investment debate control] current speaker: {current_speaker}")
 
         if current_count >= max_count:
@@ -312,3 +660,15 @@ class ConditionalLogic:
 
         logger.info(f"🔄 [risk discussion control] continue discussion -> {next_speaker}")
         return next_speaker
+
+
+def should_trigger_multi_round_debate(state: AgentState) -> str:
+    """Module-level convenience gateway for conditional debate routing."""
+    logic = ConditionalLogic()
+    return logic.should_trigger_multi_round_debate(state)
+
+
+def should_gate_debate(state: Dict[str, Any]) -> str:
+    """Public alias for should_trigger_multi_round_debate."""
+    logic = ConditionalLogic()
+    return logic.should_gate_debate(state)

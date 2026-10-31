@@ -10,6 +10,18 @@ from langgraph.graph import END, StateGraph, START, MessagesState
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
+try:
+    from core.state.reducers import merge_dict
+except ImportError:
+    def merge_dict(left: dict, right: dict) -> dict:
+        if left is None:
+            return right
+        if right is None:
+            return left
+        res = left.copy()
+        res.update(right)
+        return res
+
 
 # Researcher team state
 class InvestDebateState(TypedDict):
@@ -91,3 +103,10 @@ class AgentState(MessagesState):
     ]
     final_trade_decision: Annotated[str, "Final decision made by the Risk Analysts"]
     agent_context: Annotated[Dict[str, Any], "User context for template selection"]
+
+    # 🆕 CARE-Agents R1: Structured probability posteriors & CBS debate gating
+    analyst_posteriors: Annotated[Dict[str, Any], merge_dict]
+    estimated_spread_bps: Annotated[float, "Estimated round-trip friction in basis points (default 15.0)"]
+    debate_jsd: Annotated[float, "Jensen-Shannon divergence across active analyst posteriors"]
+    cbs_bps: Annotated[float, "Coordination Breakeven Spread in basis points"]
+    dynamic_debate_rounds: Annotated[int, "Dynamically scaled debate rounds (1 to max_debate_rounds)"]

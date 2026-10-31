@@ -1556,6 +1556,13 @@ class WorkflowBuilder:
             # Once injected True will not be overridden by a null return from a parallel node.
             _risk_self_debate: Annotated[bool, keep_non_empty]
 
+            # 🆕 CARE-Agents R1: Structured probability posteriors & CBS debate gating
+            analyst_posteriors: Annotated[dict, merge_dict]
+            estimated_spread_bps: Annotated[float, keep_non_empty]
+            debate_jsd: Annotated[float, keep_non_empty]
+            cbs_bps: Annotated[float, keep_non_empty]
+            dynamic_debate_rounds: Annotated[int, keep_non_empty]
+
             # Analyst-independent message history (to avoid message confusion during parallel execution)
             # NOTE: These fields are used in tool call loops, each analyst uses their own message history
             _market_messages: Annotated[List, keep_latest_list]

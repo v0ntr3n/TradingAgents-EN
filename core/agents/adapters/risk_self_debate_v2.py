@@ -124,12 +124,14 @@ class RiskSelfDebateV2(ResearcherAgent):
             AgentInput(name="sentiment_report", type="string", description="Sentiment Analysis Report", required=False, source="state", state_field="sentiment_report", producer_hint="social_analyst_v2"),
             AgentInput(name="index_report", type="string", description="Market analysis report", required=False, source="state", state_field="index_report", producer_hint="index_analyst_v2"),
             AgentInput(name="sector_report", type="string", description="Sector analysis report", required=False, source="state", state_field="sector_report", producer_hint="sector_analyst_v2"),
+            AgentInput(name="analyst_posteriors", type="object", description="Structured probability posteriors from v2 analysts", required=False, source="state", state_field="analyst_posteriors"),
         ],
         outputs=[
             AgentOutput(name="risky_opinion", type="string", description="Highly resilient scenario perspective"),
             AgentOutput(name="safe_opinion", type="string", description="defensive situational view"),
             AgentOutput(name="neutral_opinion", type="string", description="base case view"),
             AgentOutput(name="risk_debate_state", type="dict", description="Updated status of the risk debate"),
+            AgentOutput(name="investment_plan", type="string", description="Fast-path consensus investment plan if bypassing multi-round debate"),
         ],
         requires_tools=False,
         output_field="risky_opinion",
@@ -211,6 +213,26 @@ Other requirements:
     def _build_user_prompt(self, ticker: str, analysis_date: str, state: Dict[str, Any]) -> str:
         """Construct user prompt words (template system takes priority, failure downgrade is hard-coded)"""
         investment_plan = state.get("investment_plan", "") or state.get("trader_investment_plan", "")
+
+        # Format analyst posteriors summary if present
+        analyst_posteriors = state.get("analyst_posteriors") or {}
+        posteriors_summary = ""
+        if isinstance(analyst_posteriors, dict) and analyst_posteriors:
+            lines = []
+            for aid, post in analyst_posteriors.items():
+                if isinstance(post, dict):
+                    lines.append(
+                        f"- {aid}: Bull={post.get('p_optimistic', 0.0):.2f}, "
+                        f"Neutral={post.get('p_neutral', 0.0):.2f}, "
+                        f"Bear={post.get('p_cautious', 0.0):.2f}, "
+                        f"Expected Move={post.get('expected_move_bps', 0.0):.1f} bps, "
+                        f"Regime={post.get('market_regime', 'unknown')}"
+                    )
+            posteriors_summary = "\n".join(lines)
+
+        if not investment_plan and posteriors_summary:
+            investment_plan = f"Fast-Path Consensus Synthesis: Multi-round debate bypassed due to low divergence. Analyst consensus:\n{posteriors_summary}"
+
         # 🔑 Upstream bull/bear_researcher_v2 writes bull_report/bear_report (dict contains content);
         # state bull_opinion/bear_opinion are historical fields and are always empty.
         bull_opinion = self._report_text(state.get("bull_report"))
@@ -227,6 +249,7 @@ Other requirements:
             "sentiment_report": state.get("sentiment_report", ""),
             "index_report": state.get("index_report", ""),
             "sector_report": state.get("sector_report", ""),
+            "posteriors_summary": posteriors_summary,
         }
 
         logger.info(
@@ -377,19 +400,48 @@ Please output strictly according to the three-paragraph mark format specified by
 
             logger.info("✅ Risk self-debate completed (single node replaces risk triangle multi-round debate)")
 
-            return {
+            result = {
                 "risky_opinion": risky,
                 "safe_opinion": safe,
                 "neutral_opinion": neutral,
                 "risk_debate_state": new_risk_debate_state,
             }
 
+            # Populate investment plan fallback for downstream consumers if empty
+            if not state.get("investment_plan"):
+                result["investment_plan"] = f"Fast-Path Tripartite Synthesis: {neutral[:300]}"
+
+            # Initialize investment_debate_state if bypassing bull/bear debate
+            if not state.get("investment_debate_state"):
+                result["investment_debate_state"] = {
+                    "history": "Fast-Path: Multi-round debate bypassed by CBS gating.",
+                    "bull_history": "Bypassed via Fast-Path",
+                    "bear_history": "Bypassed via Fast-Path",
+                    "current_response": "Fast-Path",
+                    "judge_decision": result.get("investment_plan", ""),
+                    "count": 0,
+                }
+
+            return result
+
         except Exception as e:
             logger.error(f"❌ risk self debate failure: {e}", exc_info=True)
             error_text = f"risk self debate failure: {str(e)}"
-            return {
+            fallback_res = {
                 "risky_opinion": error_text,
                 "safe_opinion": error_text,
                 "neutral_opinion": error_text,
                 "risk_debate_state": risk_debate_state,  # Keep it as it is
             }
+            if not state.get("investment_plan"):
+                fallback_res["investment_plan"] = error_text
+            if not state.get("investment_debate_state"):
+                fallback_res["investment_debate_state"] = {
+                    "history": error_text,
+                    "bull_history": error_text,
+                    "bear_history": error_text,
+                    "current_response": "Error",
+                    "judge_decision": error_text,
+                    "count": 0,
+                }
+            return fallback_res

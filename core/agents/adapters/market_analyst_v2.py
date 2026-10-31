@@ -219,9 +219,17 @@ class MarketAnalystV2(AnalystAgent):
             else:
                 raise ValueError("LLM not initialized")
 
-            report = self._sanitize_report(report)
+            parsed = self._parse_response(report)
+            raw_clean = parsed.get("report") or parsed.get("content") or report
+            clean_report = self._sanitize_report(raw_clean)
+            posterior = parsed.get("posterior") or self._normalize_posterior(parsed)
 
-            result = {self.output_field: report}
+            result = {
+                self.output_field: clean_report,
+                "analyst_posteriors": {
+                    self.agent_id: posterior
+                }
+            }
             # 🆕 Comes with tool call summary
             tool_summary = self._format_tool_call_summary()
             if tool_summary:
@@ -230,7 +238,12 @@ class MarketAnalystV2(AnalystAgent):
 
         except Exception as e:
             logger.error(f"[{self.agent_id}] Execution failed: {e}", exc_info=True)
-            return {self.output_field: GENERIC_REPORT_FALLBACK}
+            return {
+                self.output_field: GENERIC_REPORT_FALLBACK,
+                "analyst_posteriors": {
+                    self.agent_id: self._get_default_posterior()
+                }
+            }
 
     def _build_system_prompt(self, market_type: str = None, context=None, state: Dict[str, Any] = None) -> str:
         """
