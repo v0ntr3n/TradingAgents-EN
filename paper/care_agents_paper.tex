@@ -10,6 +10,9 @@
 \usepackage{xcolor}
 \usepackage{caption}
 \usepackage{fancyhdr}
+\usepackage{balance}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds}
 \usepackage[hidelinks]{hyperref}
 
 \definecolor{primary}{RGB}{20,65,130}
@@ -23,8 +26,12 @@
     urlcolor=primary
 }
 
-\setlength{\parskip}{3.5pt plus 1.5pt minus 0.5pt}
+\setlength{\parskip}{2.5pt plus 1.0pt minus 0.5pt}
 \setlength{\parindent}{1em}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{2pt}
 
 \newtheorem{proposition}{Proposition}
 \newtheorem{theorem}{Theorem}
@@ -47,11 +54,7 @@
 
 \title{\vspace{-8mm}\textbf{\Large CARE-Agents: Cost-Aware, Regime-Adaptive Multi-Agent Coordination\\and Calibrated Episodic Memory for Financial Trading}}
 
-\author{
-  \textbf{Quantitative Multi-Agent Systems Research Group}\\
-  \small Built upon \texttt{TradingAgents-EN} (v3.0) $\cdot$ R3 Reproducibility Audit Compliant (MR-1 to MR-7)\\
-  \small \texttt{run\_phase5\_real\_market\_benchmark.py} $\cdot$ \texttt{apply\_care\_agents\_upgrades.py}
-}
+\author{Anonymous Authors}
 \date{\vspace{-3mm}\small October 2026}
 
 \begin{document}
@@ -107,13 +110,62 @@ Table~\ref{tab:literature_comparison} contrasts CARE-Agents against leading fina
 
 \noindent\textbf{Bottleneck 1: Unconditional Debate Overhead.} In \texttt{tradingagents/graph/conditional\_logic.py}, \texttt{should\_continue\_debate} previously forced $2 \times \texttt{max\_debate\_rounds}$ turns on every stock and bar regardless of specialist consensus. When initial analysts already agree ($D_{JS} \approx 0$), forcing adversarial debate fabricates contrarian arguments; when retail social sentiment is noisy, uncalibrated debate amplifies short-term spike chasing.
 
-\noindent\textbf{Bottleneck 2: Static Heuristic Weighting.} In \texttt{core/agents/utils/weight\_calculator.py}, specialist weights were fixed at $0.40$ (technical), $0.30$ (news), and $0.30$ (sentiment), while \texttt{signal\_processing.py} applied regex price multipliers ($1.15\times$ for buy, $0.95\times$ for sell) with a constant fallback confidence of $0.70$. Recent work on aligning intermediate predictions with downstream optimization \cite{alignopt2026} shows that uncalibrated intermediate probabilities severely degrade portfolio Sharpe ratios.
+\noindent\textbf{Bottleneck 2: Static Heuristic Weighting.} In \texttt{core/agents/utils/weight\_calculator.py}, specialist weights were fixed at $0.40$ (technical), $0.30$ (news), and $0.30$ (sentiment), while \texttt{signal\_processing.py} applied regex price multipliers ($1.15\times$ for buy, $0.95\times$ for sell) with a constant fallback confidence of $0.70$. Recent work on fine-grained task decomposition and intermediate agent alignment in institutional investment teams \cite{alignopt2026} demonstrates that uncalibrated intermediate specialist outputs severely degrade downstream risk-adjusted portfolio performance.
 
 \noindent\textbf{Bottleneck 3: Regime-Blind Memory Drift.} In \texttt{core/memory/memory\_manager.py}, \texttt{Mem0AgentMemory} retrieved top-$k$ past reflections purely by cosine similarity of text embeddings. Consequently, bull-market momentum lessons were recalled during bear-market liquidity contractions, inducing severe drawdowns.
 
 \noindent\textbf{Bottleneck 4: Unattributed Reflection Broadcast.} In \texttt{tradingagents/graph/reflection.py}, realized portfolio losses were broadcast identically to all analysts, corrupting the memory bank of fundamental or risk specialists whose cautious warnings had been overridden by the research manager.
 
 \section{Mathematical Formulation of CARE-Agents}
+
+\begin{figure*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.0cm and 1.2cm,
+  font=\small,
+  box/.style={rectangle, draw=primary!80, fill=lightbg, thick, rounded corners=3pt, align=center, inner sep=6pt},
+  gate/.style={diamond, draw=accent!90, fill=green!8, thick, aspect=1.8, align=center, inner sep=2pt},
+  flow/.style={-Latex, thick, draw=primary!90},
+  fastflow/.style={-Latex, thick, dashed, draw=accent!90}
+]
+
+% Specialists
+\node[box] (tech) {Technical Analyst\\$p_{\text{tech},t} \in \Delta^2, \hat{m}$};
+\node[box, below=0.35cm of tech] (fund) {Fundamental Analyst\\$p_{\text{fund},t} \in \Delta^2, \hat{m}$};
+\node[box, below=0.35cm of fund] (news) {Macro/News Analyst\\$p_{\text{news},t} \in \Delta^2, \hat{m}$};
+\node[box, below=0.35cm of news] (soc) {Social Sentiment\\$p_{\text{soc},t} \in \Delta^2, \hat{m}$};
+
+\begin{scope}[on background layer]
+  \node[draw=gray!50, dashed, fill=gray!5, rounded corners=4pt, fit=(tech) (soc), inner sep=6pt, label=above:{\textbf{1. Structured Specialist Posteriors}}] (analysts) {};
+\end{scope}
+
+% CBS Gate
+\node[gate, right=1.4cm of fund] (gate) {CBS Debate Gate\\$\mathcal{G}_t = \mathbb{I}\{D_{JS} \ge \tau_{JS} \wedge \text{CBS} > s_t\}$};
+
+% Pathways
+\node[box, right=1.6cm of tech] (debate) {\textbf{Adversarial Bull/Bear Debate}\\(Multi-Round Counterfactual Dispute)};
+\node[box, right=1.6cm of soc] (fast) {\textbf{Fast-Path Direct Routing}\\(Single-Pass Execution, 0 Tokens)};
+
+% MWU Aggregator
+\node[box, right=1.6cm of gate] (mwu) {\textbf{Online Regime-MWU Aggregator}\\$w_{t+1}^{(r_t)} \propto w_{t}^{(r_t)} e^{-\eta \ell_{i,t}}$ (Brier Loss)};
+
+% Execution
+\node[box, right=1.2cm of mwu] (exec) {\textbf{Calibrated Execution}\\Drawdown Breaker \& Sizing};
+
+% Arrows
+\draw[flow] (analysts.east) -- (gate.west);
+\draw[flow] (gate.north) |- node[near end, above] {\footnotesize $\mathcal{G}_t = 1$ (High Friction Alpha)} (debate.west);
+\draw[fastflow] (gate.south) |- node[near end, below] {\footnotesize $\mathcal{G}_t = 0$ (Low Disagreement / Whipsaw Risk)} (fast.west);
+\draw[flow] (debate.east) -| (mwu.north);
+\draw[fastflow] (fast.east) -| (mwu.south);
+\draw[flow] (mwu.east) -- (exec.west);
+
+\end{tikzpicture}%
+}
+\caption{\textbf{CARE-Agents Execution DAG}: Specialized analysts emit probability vectors $p_{i,t} \in \Delta^2$. The Coordination Breakeven Spread ($\text{CBS}_t$) gate routes execution to multi-round debate iff expected dispersion surplus exceeds one-way transaction friction $s_t$. Otherwise, single-pass calibrated fast path executes, suppressing transaction drag.}
+\label{fig:care_agents_architecture}
+\end{figure*}
 
 \subsection{Structured Analyst Posteriors and JSD Epistemic Disagreement}
 
@@ -198,7 +250,7 @@ To prevent bull-market episodic memories from contaminating bear-market decision
       0.0 & \text{if } r_m \text{ is opposite to } r_t.
     \end{cases}
   \end{equation}
-  \item \textbf{Volatility-Scaled Drawdown Circuit Breaker:} Let $E_{s,t} = \prod_{\tau=1}^t (1 + R_{s,\tau}^{\text{net}})$ denote the strategy's cumulative net equity on asset $s$, with running peak $M_{s,t} = \max_{1 \le \tau \le t} E_{s,\tau}$ and strategy drawdown $\text{DD}_{s,t} = (M_{s,t} - E_{s,t}) / M_{s,t}$. Using a single asset-agnostic volatility-scaled threshold $\delta_{\text{cap},t} = \max(0.068, \, 2.5 \sigma_{4w,t})$, whenever $\text{DD}_{s,t} > \delta_{\text{cap},t}$ and the asset price $P_{s,t}$ remains below $\rho_{\text{rec}} \cdot \max_{1 \le \tau \le t} P_{s,\tau}$, the circuit breaker overrides bullish exposure ($w_{s,t}^{\text{pos}} \leftarrow 0$), preventing repeated re-entry into secular value traps (such as \texttt{002594.SZ} and \texttt{000858.SZ} in 2025--2026).
+  \item \textbf{Volatility-Scaled Drawdown Circuit Breaker:} Let $E_{s,t} = \prod_{\tau=1}^t (1 + R_{s,\tau}^{\text{net}})$ denote the strategy's cumulative net equity on asset $s$, with running peak $M_{s,t} = \max_{1 \le \tau \le t} E_{s,\tau}$ and strategy drawdown $\text{DD}_{s,t} = (M_{s,t} - E_{s,t}) / M_{s,t}$. Using an asset-agnostic volatility-scaled threshold $\delta_{\text{cap},t} = \max(0.068, 2.5\sigma_{4w,t})$, whenever $\text{DD}_{s,t} > \delta_{\text{cap},t}$ and price $P_{s,t} < \rho_{\text{rec}} \cdot \max_{1 \le \tau \le t} P_{s,\tau}$, the circuit breaker overrides bullish exposure ($w_{s,t}^{\text{pos}} \leftarrow 0$), preventing repeated re-entry into secular value traps (e.g., \texttt{002594.SZ} and \texttt{000858.SZ} in 2025--2026).
   \item \textbf{Counterfactual Marginal Credit Assignment:} Let $\text{sign}(\hat{d}_{i,t}) \in \{-1, 0, +1\}$ denote agent $i$'s directional stance and $\text{sign}(d_{\text{team},t})$ denote the executed portfolio decision. After observing realized return $R_{t+1}$, \texttt{compute\_counterfactual\_attribution} assigns each agent one of four distinct roles:
   \begin{itemize}
     \setlength{\itemsep}{0.5pt}\setlength{\parskip}{0pt}
@@ -235,7 +287,7 @@ Our evaluation strictly enforces all seven Minimum Reporting requirements (MR-1 
 \texttt{M1\_Linear\_Pipeline} (No Debate) & +140.0 & +77.4 & 1.70 & 9.2 & 2.67 & 1.68 & 0.31 & $-7.50$ & 0.1810 & 4,100 & 100.0\% \\
 \texttt{M2\_Vanilla\_TradingAgents} (Fixed Debate) & $-6.7$ & $-31.3$ & $-0.96$ & 45.9 & 2.49 & $-3.00$ & $-3.11$ & $-16.95$ & 0.2151 & 12,700 & 0.0\% \\
 \texttt{M3\_SelfDebate\_V2} (1-Shot Roleplay) & +17.1 & $-9.3$ & $-0.24$ & 24.8 & 2.18 & $-1.12$ & $-2.55$ & $-14.76$ & 0.1929 & 6,500 & 100.0\% \\
-\textbf{\texttt{M4\_CARE\_Agents\_Ours} (Full)} & \textbf{+796.6} & \textbf{+553.1} & \textbf{6.08} & \textbf{6.7} & \textbf{6.48} & \textbf{6.04} & \textbf{5.75} & \textbf{+5.65} & \textbf{0.1305} & \textbf{7,522} & \textbf{37.4\%} \\
+\textbf{\texttt{M4\_CARE\_Agents\_Ours} (Full)} & \textbf{+208.8} & \textbf{+123.9} & \textbf{2.50} & \textbf{8.7} & \textbf{2.17} & \textbf{2.56} & \textbf{3.15} & \textbf{-5.01} & \textbf{0.1695} & \textbf{7,522} & \textbf{37.4\%} \\
 \bottomrule
 \end{tabular}%
 }
@@ -283,7 +335,7 @@ US Tech (\texttt{Frontier-V3}) & \textbf{\texttt{M4\_CARE\_Agents\_Ours}} & \tex
 
 \subsection{Phase 4 Controlled 500-Day Multi-Regime Ablation}
 
-Table~\ref{tab:phase4_ablation} presents the results of our 500-day controlled multi-regime simulation (\texttt{scripts/run\_cph\_ablation\_benchmark.py}), where specialist reliability shifts across Bull (200 days), Bear (150 days), and Sideways (150 days) regimes. \texttt{M2\_Vanilla\_TradingAgents} achieves a positive Sharpe ratio during the Bull regime ($2.49$) but collapses in Bear ($-3.00$) and Sideways ($-3.11$) markets due to uncalibrated social sentiment chasing and $100\%$ debate-induced turnover, ending with a cumulative net loss of $-31.3\%$ and a $-16.95\text{ bps}$ CBS deficit. By contrast, \texttt{M4\_CARE\_Agents\_Ours} skips $37.4\%$ of low-value debates, lowers multiclass Brier loss from $0.2151$ to $0.1305$, and achieves a positive CBS surplus of $+5.65\text{ bps}$ and a Net Sharpe of $6.08$ across all three regimes.
+Table~\ref{tab:phase4_ablation} presents the results of our 500-day controlled multi-regime simulation (\texttt{scripts/run\_cph\_ablation\_benchmark.py}), where specialist reliability shifts across Bull (200 days), Bear (150 days), and Sideways (150 days) regimes. \texttt{M2\_Vanilla\_TradingAgents} achieves a positive Sharpe ratio during the Bull regime ($2.49$) but collapses in Bear ($-3.00$) and Sideways ($-3.11$) markets due to uncalibrated social sentiment chasing and $100\%$ debate-induced turnover, ending with a cumulative net loss of $-31.3\%$ and a $-16.95\text{ bps}$ CBS deficit. By contrast, \texttt{M4\_CARE\_Agents\_Ours} skips $37.4\%$ of low-value debates, lowers multiclass Brier loss from $0.2151$ to $0.1695$, and achieves a Net Return of $+123.9\%$ with a Net Sharpe of $2.50$ (Bull $2.17$, Bear $2.56$, Sideways $3.15$) and an $11.94\text{ bps}$ CBS deficit reduction over \texttt{M2} ($-5.01\text{ bps}$ vs. $-16.95\text{ bps}$).
 
 \subsection{Phase 5 Out-of-Sample 2025--2026 Real-Market Evaluation}
 
@@ -399,7 +451,7 @@ Table~\ref{tab:per_stock} and Table~\ref{tab:cph_and_weights} decompose the sour
 
 \section{Conclusion and R3 Reproducibility Package}
 
-We have presented \textbf{CARE-Agents}, a mathematically grounded refactoring of multi-agent financial decision pipelines that unifies CBS-gated debate routing, online regime-conditioned Brier multiplicative weights, and counterfactual episodic memory. All source modules, 5 unit test suites, 2025--2026 point-in-time datasets, and deterministic/live-API benchmark runners are packaged for single-command reproduction (\texttt{apply\_care\_agents\_upgrades.py}), satisfying the 2026 R3 Reproducibility standard \cite{xia2026audit}.
+We have presented \textbf{CARE-Agents}, a mathematically grounded refactoring of multi-agent financial decision pipelines that unifies CBS-gated debate routing, online regime-conditioned Brier multiplicative weights, and counterfactual episodic memory. All source modules, unit test suites, 2025--2026 point-in-time datasets, and benchmark runners (\texttt{run\_phase5\_real\_market\_benchmark.py}) are packaged for reproduction, satisfying the 2026 R3 Reproducibility standard \cite{xia2026audit}.
 
 \begin{thebibliography}{99}
 \small
@@ -421,9 +473,9 @@ L.~Xia et al.
 \newblock \emph{arXiv preprint arXiv:2605.19337}, 2026. \url{https://arxiv.org/html/2605.19337v1}
 
 \bibitem{alignopt2026}
-M.~Chen et al.
-\newblock Aligning Intermediate Agent Predictions with Downstream Portfolio Optimization via Proper Scoring Rules.
-\newblock \emph{arXiv preprint arXiv:2602.23330}, 2026. \url{https://ideas.repec.org/p/arx/papers/2602.23330.html}
+K.~Miyazaki, T.~Kawahara, S.~Roberts, and S.~Zohren.
+\newblock Toward Expert Investment Teams: A Multi-Agent LLM System with Fine-Grained Trading Tasks.
+\newblock \emph{arXiv preprint arXiv:2602.23330}, 2026. \url{https://arxiv.org/abs/2602.23330}
 
 \bibitem{yu2024finmem}
 Y.~Yu, H.~Li, Z.~Chen, Y.~Jiang, Y.~Li, D.~Zhang, R.~Liu, J.~W.~Suchow, and K.~Khashanah.
@@ -451,14 +503,14 @@ C.~Zong et al.
 \newblock In \emph{Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD)}, 2024.
 
 \bibitem{masfin2026}
-S.~Wang et al.
-\newblock MASFIN: Multi-Agent System for Decomposed Financial Reasoning and Regime-Aware Forecasting.
-\newblock \emph{Expert Systems with Applications}, 2026.
+M.~S.~Montalvo and H.~Yaghoobian.
+\newblock MASFIN: A Multi-Agent System for Decomposed Financial Reasoning and Forecasting.
+\newblock In \emph{NeurIPS Workshop on Generative AI and Financial Services}, 2024.
 
 \bibitem{quantagents2025}
-K.~Zhang et al.
-\newblock QuantAgents: Collaborative Multi-Agent Alpha Mining and Risk Control under Market Regimes.
-\newblock In \emph{Proceedings of the ACM International Conference on AI in Finance (ICAIF)}, 2025.
+X.~Li, Y.~Zeng, X.~Xing, J.~Xu, and X.~Xu.
+\newblock QuantAgents: Towards Multi-Agent Financial System via Simulated Trading.
+\newblock In \emph{Findings of the Association for Computational Linguistics: EMNLP}, 2025. \url{https://arxiv.org/abs/2410.20878}
 
 \bibitem{liang2023dot}
 T.~Liang, Z.~He, W.~Jiao, X.~Wang, Y.~Wang, R.~Wang, Y.~Yang, Z.~Tu, and S.~Shi.
@@ -486,5 +538,96 @@ D.~N.~Politis and J.~P.~Romano.
 \newblock \emph{Journal of the American Statistical Association}, 89(428):1303--1313, 1994.
 
 \end{thebibliography}
+
+\appendix
+\balance
+\section{Mathematical Proofs}
+\label{app:proofs}
+
+\subsection{Proof of Proposition 1 (Cost-Optimal Debate Gating)}
+\begin{proof}
+Let $\mathcal{A} = \{1, \dots, K\}$ denote the set of specialists with directional posteriors $p_{i,t} \in \Delta^2$, expected return moves $\hat{m}_{i,t} \ge 0$, and active regime weights $w_t^{(r_t)} \in \Delta^{K-1}$. By Definition~1, the expected pre-reconciliation dispersion value is:
+\begin{equation}
+  \Delta \hat{v}_t = D_{JS}\!\left(p_{1,t}, \dots, p_{K,t}; \, w_t^{(r_t)}\right) \cdot \sum_{i=1}^K w_{i,t}^{(r_t)} \hat{m}_{i,t},
+\end{equation}
+and the Coordination Breakeven Spread is $\text{CBS}_t = \frac{1}{2}\Delta \hat{v}_t$.
+
+By hypothesis, invoking multi-round adversarial debate incurs total marginal friction $\tau_{\text{cost}} = s_t + c_{\text{tok}}$, where $s_t > 0$ represents execution friction (commission, stamp tax, and bid-ask slippage) and $c_{\text{tok}} \ge 0$ represents normalized compute token cost. Moreover, multi-round deliberation reconciles conflicting viewpoints to recover at most a fraction $\gamma \in (0, \frac{1}{2}]$ of the pre-reconciliation dispersion value:
+\begin{equation}
+  \mathbb{E}\left[\Delta \alpha_t\right] \le \gamma \cdot \Delta \hat{v}_t.
+\end{equation}
+The expected net economic surplus $\Pi_{\text{debate}, t}$ of triggering multi-round debate relative to the calibrated fast path is:
+\begin{equation}
+  \Pi_{\text{debate}, t} = \mathbb{E}\left[\Delta \alpha_t\right] - \tau_{\text{cost}} \le \gamma \Delta \hat{v}_t - (s_t + c_{\text{tok}}).
+\end{equation}
+Since $\gamma \le \frac{1}{2}$, we have $\gamma \Delta \hat{v}_t \le \frac{1}{2}\Delta \hat{v}_t = \text{CBS}_t$. Therefore:
+\begin{equation}
+  \Pi_{\text{debate}, t} \le \text{CBS}_t - s_t - c_{\text{tok}} \le \text{CBS}_t - s_t.
+\end{equation}
+If $\text{CBS}_t \le s_t$, it immediately follows that $\Pi_{\text{debate}, t} \le 0$. If additionally $c_{\text{tok}} > 0$ or $\gamma < \frac{1}{2}$ or $\text{CBS}_t < s_t$, the inequality is strict: $\Pi_{\text{debate}, t} < 0$.
+
+Furthermore, if $D_{JS,t} < \tau_{JS}$ where $\tau_{JS} \equiv 2 s_t / \sum_{i=1}^K w_{i,t}^{(r_t)} \hat{m}_{i,t}$, substitution into Equation~\eqref{eq:cbs} gives:
+\begin{align}
+  \text{CBS}_t &= \frac{1}{2} D_{JS,t} \sum_{i=1}^K w_{i,t}^{(r_t)} \hat{m}_{i,t} \nonumber \\
+  &< \frac{1}{2} \tau_{JS} \sum_{i=1}^K w_{i,t}^{(r_t)} \hat{m}_{i,t} = s_t.
+\end{align}
+Hence, whenever $D_{JS,t} < \tau_{JS}$ or $\text{CBS}_t \le s_t$, the expected net surplus of invoking debate is strictly negative: $\mathbb{E}[\Pi_{\text{debate}, t}] < 0$. Thus, gating debate via $\mathcal{G}_t = \mathbb{I}\{D_{JS,t} \ge \tau_{JS} \wedge \text{CBS}_t > s_t\}$ is cost-optimal.
+\end{proof}
+
+\subsection{Proof of Theorem 1 (Regime-Partitioned Brier Regret Bound)}
+\begin{proof}
+Let $r \in \mathcal{R} = \{\text{bull}, \text{bear}, \text{sideways}\}$ be an arbitrary market regime. Let $\mathcal{T}_r = \{t \in \{1, \dots, T\} : r_t = r\}$ be the sequence of decision steps occurring under regime $r$, with cardinality $T_r = |\mathcal{T}_r|$. At all steps $t \notin \mathcal{T}_r$, the regime-specific weight vector is frozen: $w_{t+1}^{(r)} = w_t^{(r)}$.
+
+For each step $t \in \mathcal{T}_r$, each specialist $i \in \{1, \dots, K\}$ predicts a posterior distribution $p_{i,t} \in \Delta^2$ over 3 classes (optimistic, neutral, cautious). Upon observing true outcome $y_{t+1} \in \{(1,0,0),(0,1,0),(0,0,1)\}$, specialist $i$ incurs multiclass Brier loss:
+\begin{equation}
+  \ell_{i,t} = \frac{1}{3}\sum_{c=1}^3 \left(p_{i,t}^c - y_{t+1}^c\right)^2.
+\end{equation}
+Since $p_{i,t} \in \Delta^2$ and $y_{t+1}$ is a standard basis vector, the maximum Euclidean distance on the probability simplex satisfies $\sum_{c=1}^3 (p_{i,t}^c - y_{t+1}^c)^2 \le 2$. Consequently, $\ell_{i,t}$ is strictly bounded in $[0, L]$ where $L = \frac{2}{3}$.
+
+The ensemble loss at step $t \in \mathcal{T}_r$ under weight vector $w_t^{(r)}$ is $\ell_{\text{MWU}, t} = \sum_{i=1}^K w_{i,t}^{(r)} \ell_{i,t}$. Specialists are updated via the standard Exponential Forecaster:
+\begin{equation}
+  w_{i,t+1}^{(r)} = \frac{w_{i,t}^{(r)} \exp(-\eta_r \ell_{i,t})}{\sum_{j=1}^K w_{j,t}^{(r)} \exp(-\eta_r \ell_{j,t})},
+\end{equation}
+with uniform initial weights $w_{i,1}^{(r)} = 1/K$. Define the potential function $W_t = \sum_{i=1}^K w_{i,t}^{(r)} = 1$ and normalizer $Z_t = \sum_{i=1}^K w_{i,t}^{(r)} \exp(-\eta_r \ell_{i,t})$.
+
+By Hoeffding's Lemma, for any random variable $X \in [0, L]$ and scalar $\lambda \in \mathbb{R}$, $\mathbb{E}[e^{-\lambda X}] \le \exp(-\lambda \mathbb{E}[X] + \frac{\lambda^2 L^2}{8})$. Treating the specialist index $i \sim w_t^{(r)}$ as a probability distribution with bounded loss $\ell_{i,t} \in [0, L]$, we obtain:
+\begin{align}
+  Z_t &= \sum_{i=1}^K w_{i,t}^{(r)} \exp(-\eta_r \ell_{i,t}) \nonumber \\
+  &\le \exp\!\left( -\eta_r \sum_{i=1}^K w_{i,t}^{(r)} \ell_{i,t} + \frac{\eta_r^2 L^2}{8} \right) \nonumber \\
+  &= \exp\!\left(-\eta_r \ell_{\text{MWU},t} + \frac{\eta_r^2 L^2}{8}\right).
+\end{align}
+Taking logarithms and summing across all $t \in \mathcal{T}_r$:
+\begin{equation}
+  \sum_{t \in \mathcal{T}_r} \ln Z_t \le -\eta_r \sum_{t \in \mathcal{T}_r} \ell_{\text{MWU},t} + \frac{\eta_r^2 L^2 T_r}{8}.
+  \label{eq:upper_bound}
+\end{equation}
+Conversely, by definition of the telescoping weight update, for any fixed specialist $k \in \{1, \dots, K\}$:
+\begin{align}
+  \sum_{t \in \mathcal{T}_r} \ln Z_t &= \ln \left( \sum_{i=1}^K w_{i,1}^{(r)} \exp\!\left( -\eta_r \sum_{t \in \mathcal{T}_r} \ell_{i,t} \right) \right) \nonumber \\
+  &= \ln \left( \frac{1}{K} \sum_{i=1}^K \exp\!\left( -\eta_r \sum_{t \in \mathcal{T}_r} \ell_{i,t} \right) \right) \nonumber \\
+  &\ge \ln \left( \frac{1}{K} \exp\!\left( -\eta_r \sum_{t \in \mathcal{T}_r} \ell_{k,t} \right) \right) \nonumber \\
+  &= -\ln K - \eta_r \sum_{t \in \mathcal{T}_r} \ell_{k,t}.
+  \label{eq:lower_bound}
+\end{align}
+Combining Equation~\eqref{eq:upper_bound} and Equation~\eqref{eq:lower_bound}:
+\begin{equation}
+  -\ln K - \eta_r \sum_{t \in \mathcal{T}_r} \ell_{k,t} \le -\eta_r \sum_{t \in \mathcal{T}_r} \ell_{\text{MWU},t} + \frac{\eta_r^2 L^2 T_r}{8}.
+\end{equation}
+Rearranging terms and dividing by $\eta_r > 0$:
+\begin{equation}
+  \sum_{t \in \mathcal{T}_r} \ell_{\text{MWU},t} - \sum_{t \in \mathcal{T}_r} \ell_{k,t} \le \frac{\ln K}{\eta_r} + \frac{\eta_r L^2 T_r}{8}.
+\end{equation}
+Because this inequality holds for every specialist $k \in \{1, \dots, K\}$, it holds for the empirical best specialist $i_r^* = \arg\min_{i \in \mathcal{A}} \sum_{t \in \mathcal{T}_r} \ell_{i,t}$:
+\begin{align}
+  \text{Regret}_r(T_r) &= \sum_{t \in \mathcal{T}_r} \ell_{\text{MWU},t} - \min_{i \in \mathcal{A}} \sum_{t \in \mathcal{T}_r} \ell_{i,t} \nonumber \\
+  &\le \frac{\ln K}{\eta_r} + \frac{\eta_r L^2 T_r}{8}.
+\end{align}
+Minimizing this convex upper bound with respect to $\eta_r$ yields the optimal learning rate $\eta_r^* = \sqrt{8 \ln K / (L^2 T_r)}$. Substituting $\eta_r^*$ and $L = \frac{2}{3}$:
+\begin{align}
+  \text{Regret}_r(T_r) &\le 2 \sqrt{\frac{\ln K \cdot L^2 T_r}{8}} \nonumber \\
+  &= L \sqrt{\frac{T_r \ln K}{2}} = \frac{2}{3}\sqrt{\frac{T_r \ln K}{2}}.
+\end{align}
+This completes the proof of Theorem~1.
+\end{proof}
 
 \end{document}

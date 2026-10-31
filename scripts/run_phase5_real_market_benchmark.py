@@ -30,6 +30,12 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(REPO_ROOT / ".env", override=False)
+except ImportError:
+    pass
+
 import tests  # registers lightweight offline stubs if optional cloud SDKs are absent
 from tradingagents.graph.conditional_logic import (
     ConditionalLogic,
@@ -141,6 +147,7 @@ def query_live_llm_posterior(
     Caches every response by `(model_tier, agent_id, symbol, date)` for R3 reproducibility.
     """
     import urllib.request
+    from datetime import datetime, timezone
     from core.agents.analyst import extract_structured_posterior
 
     cache_key = f"{model_tier}::{agent_id}::{row['symbol']}::{row['date']}"
@@ -152,12 +159,16 @@ def query_live_llm_posterior(
         base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1/chat/completions")
         model_name = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
     else:
-        api_key = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
-        base_url = os.environ.get(
-            "DASHSCOPE_BASE_URL",
-            "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-        )
-        model_name = os.environ.get("QWEN_MODEL", "qwen2.5-14b-instruct")
+        api_key = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
+        if os.environ.get("DASHSCOPE_API_KEY"):
+            base_url = os.environ.get(
+                "DASHSCOPE_BASE_URL",
+                "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+            )
+            model_name = os.environ.get("QWEN_MODEL", "qwen2.5-14b-instruct")
+        else:
+            base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1/chat/completions")
+            model_name = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 
     if not api_key:
         raise RuntimeError(
@@ -181,16 +192,33 @@ def query_live_llm_posterior(
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.1,
     }).encode("utf-8")
-    req = urllib.request.Request(
-        base_url,
-        data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    import time
+    time.sleep(0.08)
+
+    max_retries = 3
+    data = None
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(
+                base_url,
+                data=payload,
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=35) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            break
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(1.0 * (2 ** attempt))
     text = data["choices"][0]["message"]["content"]
     parsed = extract_structured_posterior(text)
+    parsed["prompt"] = prompt
+    parsed["raw_response"] = text
+    parsed["tokens_used"] = data.get("usage", {}).get("total_tokens", 0)
+    parsed["model"] = data.get("model", model_name)
+    parsed["timestamp"] = datetime.now(timezone.utc).isoformat()
     cache[cache_key] = parsed
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(cache, indent=2), encoding="utf-8")
@@ -372,6 +400,7 @@ def run_market_universe_chronologically(
     model_tier: str,
     seed: int,
     use_live_llm_api: bool = False,
+    max_weeks: int = 0,
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Dict[str, List[Dict[str, Any]]]], List[Dict[str, Any]]]:
     """
     Simulate all 5 architectures (M0..M4) plus SOTA baselines (Q1, Q2, B1, B2, B3)
@@ -404,6 +433,7 @@ def run_market_universe_chronologically(
 
     n_weeks = min(len(by_symbol[s]) for s in symbols)
     warmup = 8
+    end_idx = min(n_weeks - 1, warmup + max_weeks) if max_weeks > 0 else (n_weeks - 1)
 
     protocols = [
         "M0_Buy_And_Hold",
@@ -439,7 +469,7 @@ def run_market_universe_chronologically(
 
     weight_trajectory_log: List[Dict[str, Any]] = []
 
-    for idx in range(warmup, n_weeks - 1):
+    for idx in range(warmup, end_idx):
         date_str = by_symbol[symbols[0]][idx]["date"]
         regime_counts = {"bull": 0, "bear": 0, "sideways": 0}
 
@@ -963,6 +993,24 @@ def main():
         action="store_true",
         help="Call live OpenAI/DeepSeek/DashScope LLM APIs instead of calibrated signal emulation.",
     )
+    parser.add_argument(
+        "--symbols",
+        type=str,
+        default="",
+        help="Comma-separated ticker subset to evaluate (e.g. 'NVDA,AAPL,600519.SH,300750.SZ').",
+    )
+    parser.add_argument(
+        "--model-tiers",
+        type=str,
+        default="",
+        help="Comma-separated model tiers (e.g. 'Frontier_LLM_DeepSeek_V3').",
+    )
+    parser.add_argument(
+        "--max-weeks",
+        type=int,
+        default=0,
+        help="Maximum number of chronological weekly decision steps (0 = all).",
+    )
     args, _ = parser.parse_known_args()
 
     csv_path = REPO_ROOT / "data" / "phase5_real_2025_2026_prices.csv"
@@ -974,14 +1022,26 @@ def main():
     ]
     us_symbols = ["NVDA", "AAPL", "GOOGL", "AMZN"]
 
-    universes = [
-        ("CN_CSI300_A_Shares", cn_symbols, "CN", 15.0),
-        ("US_Tech_Benchmark", us_symbols, "US", 5.0),
-    ]
-    model_tiers = [
+    if args.symbols:
+        filtered_syms = [s.strip() for s in args.symbols.split(",") if s.strip()]
+        cn_symbols = [s for s in cn_symbols if s in filtered_syms]
+        us_symbols = [s for s in us_symbols if s in filtered_syms]
+
+    universes = []
+    if cn_symbols:
+        universes.append(("CN_CSI300_A_Shares", cn_symbols, "CN", 15.0))
+    if us_symbols:
+        universes.append(("US_Tech_Benchmark", us_symbols, "US", 5.0))
+
+    all_model_tiers = [
         ("Small_SLM_Qwen2.5_14B", 202601),
         ("Frontier_LLM_DeepSeek_V3", 202602),
     ]
+    if args.model_tiers:
+        tier_filter = [t.strip() for t in args.model_tiers.split(",") if t.strip()]
+        model_tiers = [t for t in all_model_tiers if t[0] in tier_filter]
+    else:
+        model_tiers = all_model_tiers
 
     summary_rows: List[Dict[str, Any]] = []
     sota_pnl_rows: List[Dict[str, Any]] = []
@@ -1003,6 +1063,7 @@ def main():
                 model_tier=tier_name,
                 seed=seed,
                 use_live_llm_api=args.use_live_llm_api,
+                max_weeks=args.max_weeks,
             )
             if mkt_code == "CN" and tier_name == "Frontier_LLM_DeepSeek_V3":
                 cn_frontier_weights = weight_log
@@ -1132,81 +1193,98 @@ def main():
                         "m4_debate_rate_pct": round(m4_deb, 1),
                     })
 
-    print("\n" + "=" * 108)
-    print("CPH MARGINAL DECOMPOSITION: COORDINATION PRIMACY VS. MODEL SCALING (Nguyen & Pham 2026)")
-    print("=" * 108)
-    for univ_name, _, _, _ in universes:
-        u_rows = {
-            (r["model_tier"], r["protocol"]): r
-            for r in summary_rows
-            if r["universe"] == univ_name
-        }
-        coord_slm = u_rows[("Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents")]["net_sharpe"]
-        coord_llm = u_rows[("Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents")]["net_sharpe"]
-        scale_m2 = u_rows[("Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents")]["net_sharpe"]
-        scale_m4 = u_rows[("Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours")]["net_sharpe"]
+    has_slm = any(r["model_tier"] == "Small_SLM_Qwen2.5_14B" for r in summary_rows)
+    has_frontier = any(r["model_tier"] == "Frontier_LLM_DeepSeek_V3" for r in summary_rows)
+    if has_slm and has_frontier:
+        print("\n" + "=" * 108)
+        print("CPH MARGINAL DECOMPOSITION: COORDINATION PRIMACY VS. MODEL SCALING (Nguyen & Pham 2026)")
+        print("=" * 108)
+        for univ_name, _, _, _ in universes:
+            u_rows = {
+                (r["model_tier"], r["protocol"]): r
+                for r in summary_rows
+                if r["universe"] == univ_name
+            }
+            if (
+                ("Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours") in u_rows
+                and ("Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents") in u_rows
+                and ("Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours") in u_rows
+                and ("Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents") in u_rows
+            ):
+                coord_slm = u_rows[("Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents")]["net_sharpe"]
+                coord_llm = u_rows[("Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents")]["net_sharpe"]
+                scale_m2 = u_rows[("Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents")]["net_sharpe"]
+                scale_m4 = u_rows[("Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours")]["net_sharpe"]
 
-        print(
-            f"[{univ_name}] "
-            f"Delta_NetSharpe(Coordination: M2->M4 on SLM) = +{coord_slm:.3f} | "
-            f"Delta_NetSharpe(Coordination: M2->M4 on Frontier) = +{coord_llm:.3f} || "
-            f"Delta_NetSharpe(Model Scale on M2) = {scale_m2:+.3f} | "
-            f"Delta_NetSharpe(Model Scale on M4) = {scale_m4:+.3f}"
-        )
+                print(
+                    f"[{univ_name}] "
+                    f"Delta_NetSharpe(Coordination: M2->M4 on SLM) = +{coord_slm:.3f} | "
+                    f"Delta_NetSharpe(Coordination: M2->M4 on Frontier) = +{coord_llm:.3f} || "
+                    f"Delta_NetSharpe(Model Scale on M2) = {scale_m2:+.3f} | "
+                    f"Delta_NetSharpe(Model Scale on M4) = {scale_m4:+.3f}"
+                )
 
+    is_subset = bool(args.symbols or args.model_tiers or args.max_weeks)
     results_dir = REPO_ROOT / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
-    csv_out = results_dir / "phase5_real_market_cph_results.csv"
-    with open(csv_out, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(summary_rows)
+    if summary_rows:
+        csv_filename = "phase5_real_market_subset_results.csv" if is_subset else "phase5_real_market_cph_results.csv"
+        csv_out = results_dir / csv_filename
+        with open(csv_out, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(summary_rows)
 
-    sota_csv_out = results_dir / "phase5_sota_pnl_comparison.csv"
-    with open(sota_csv_out, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(sota_pnl_rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(sota_pnl_rows)
+    if sota_pnl_rows:
+        sota_filename = "phase5_sota_pnl_subset.csv" if is_subset else "phase5_sota_pnl_comparison.csv"
+        sota_csv_out = results_dir / sota_filename
+        with open(sota_csv_out, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=list(sota_pnl_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(sota_pnl_rows)
 
-    stock_csv_out = results_dir / "phase5_per_stock_breakdown.csv"
-    with open(stock_csv_out, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(per_stock_rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(per_stock_rows)
+    if per_stock_rows:
+        stock_filename = "phase5_per_stock_subset.csv" if is_subset else "phase5_per_stock_breakdown.csv"
+        stock_csv_out = results_dir / stock_filename
+        with open(stock_csv_out, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=list(per_stock_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(per_stock_rows)
 
-    tex_out = results_dir / "phase5_cph_table.tex"
-    tex_lines = [
-        "% Auto-generated by scripts/run_phase5_real_market_benchmark.py",
-        "\\begin{table*}[t]",
-        "\\centering",
-        "\\small",
-        "\\caption{Phase 5 Empirical Evaluation on Post-Cutoff 2025--2026 Real Market Data (86 Weekly Bars, Out-of-Sample).}",
-        "\\label{tab:phase5_cph_real_market}",
-        "\\begin{tabular}{llrrrrrrrrrr}",
-        "\\toprule",
-        "\\textbf{Universe} & \\textbf{Protocol} & \\textbf{Gross\\%} & \\textbf{Net\\%} & \\textbf{Gross SR} & "
-        "\\textbf{Net SR} & \\textbf{MaxDD\\%} & \\textbf{Turn.} & \\textbf{Brier}\\,$\\downarrow$ & "
-        "\\textbf{CBS (bps)} & \\textbf{Debate\\%} & \\textbf{$p$-val} \\\\",
-        "\\midrule",
-    ]
-    for r in summary_rows:
-        if r["protocol"] == "M0_Buy_And_Hold" and r["model_tier"] == "Small_SLM_Qwen2.5_14B":
-            continue
-        u_short = "CN A-Shares" if r["market"] == "CN" else "US Tech"
-        t_short = "SLM-14B" if "SLM" in r["model_tier"] else "Frontier-V3"
-        p_clean = r["protocol"].replace("_", "\\_")
-        bold_open = "\\textbf{" if r["protocol"] == "M4_CARE_Agents_Ours" else ""
-        bold_close = "}" if r["protocol"] == "M4_CARE_Agents_Ours" else ""
-        tex_lines.append(
-            f"{u_short} ({t_short}) & {bold_open}{p_clean}{bold_close} & "
-            f"{r['gross_cum_return_pct']:+.2f} & {bold_open}{r['net_cum_return_pct']:+.2f}{bold_close} & "
-            f"{r['gross_sharpe']:.3f} & {bold_open}{r['net_sharpe']:.3f}{bold_close} & "
-            f"{r['max_drawdown_pct']:.2f} & {r['turnover_rate']:.2f} & "
-            f"{r['brier_score']:.4f} & {r['cbs_mean_bps']:+.2f} & "
-            f"{r['debate_rate_pct']:.1f}\\% & {r['p_value_vs_m2']:.4f} \\\\"
-        )
-    tex_lines.extend(["\\bottomrule", "\\end{tabular}", "\\end{table*}"])
-    tex_out.write_text("\n".join(tex_lines) + "\n", encoding="utf-8")
+    if summary_rows and not is_subset:
+        tex_out = results_dir / "phase5_cph_table.tex"
+        tex_lines = [
+            "% Auto-generated by scripts/run_phase5_real_market_benchmark.py",
+            "\\begin{table*}[t]",
+            "\\centering",
+            "\\small",
+            "\\caption{Phase 5 Empirical Evaluation on Post-Cutoff 2025--2026 Real Market Data (86 Weekly Bars, Out-of-Sample).}",
+            "\\label{tab:phase5_cph_real_market}",
+            "\\begin{tabular}{llrrrrrrrrrr}",
+            "\\toprule",
+            "\\textbf{Universe} & \\textbf{Protocol} & \\textbf{Gross\\%} & \\textbf{Net\\%} & \\textbf{Gross SR} & "
+            "\\textbf{Net SR} & \\textbf{MaxDD\\%} & \\textbf{Turn.} & \\textbf{Brier}\\,$\\downarrow$ & "
+            "\\textbf{CBS (bps)} & \\textbf{Debate\\%} & \\textbf{$p$-val} \\\\",
+            "\\midrule",
+        ]
+        for r in summary_rows:
+            if r["protocol"] == "M0_Buy_And_Hold" and r["model_tier"] == "Small_SLM_Qwen2.5_14B":
+                continue
+            u_short = "CN A-Shares" if r["market"] == "CN" else "US Tech"
+            t_short = "SLM-14B" if "SLM" in r["model_tier"] else "Frontier-V3"
+            p_clean = r["protocol"].replace("_", "\\_")
+            bold_open = "\\textbf{" if r["protocol"] == "M4_CARE_Agents_Ours" else ""
+            bold_close = "}" if r["protocol"] == "M4_CARE_Agents_Ours" else ""
+            tex_lines.append(
+                f"{u_short} ({t_short}) & {bold_open}{p_clean}{bold_close} & "
+                f"{r['gross_cum_return_pct']:+.2f} & {bold_open}{r['net_cum_return_pct']:+.2f}{bold_close} & "
+                f"{r['gross_sharpe']:.3f} & {bold_open}{r['net_sharpe']:.3f}{bold_close} & "
+                f"{r['max_drawdown_pct']:.2f} & {r['turnover_rate']:.2f} & "
+                f"{r['brier_score']:.4f} & {r['cbs_mean_bps']:+.2f} & "
+                f"{r['debate_rate_pct']:.1f}\\% & {r['p_value_vs_m2']:.4f} \\\\"
+            )
+        tex_lines.extend(["\\bottomrule", "\\end{tabular}", "\\end{table*}"])
+        tex_out.write_text("\n".join(tex_lines) + "\n", encoding="utf-8")
 
     fig_out = results_dir / "regime_weight_trajectories.png"
     if cn_frontier_weights:

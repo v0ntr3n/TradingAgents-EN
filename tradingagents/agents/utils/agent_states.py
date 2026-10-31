@@ -91,3 +91,12 @@ class AgentState(MessagesState):
     ]
     final_trade_decision: Annotated[str, "Final decision made by the Risk Analysts"]
     agent_context: Annotated[Dict[str, Any], "User context for template selection"]
+
+    # Coordination and Calibration State (CARE-Agents)
+    analyst_posteriors: Annotated[Optional[Dict[str, Any]], "Posterior probability simplex vectors from analysts"]
+    analyst_weights: Annotated[Optional[Dict[str, float]], "Regime-adapted specialist weights"]
+    market_regime: Annotated[Optional[str], "Detected causal market regime: bull, bear, or sideways"]
+    estimated_spread_bps: Annotated[Optional[float], "Estimated transaction friction spread in bps"]
+    cbs_gating_decision: Annotated[Optional[Dict[str, Any]], "CBS debate gating decision and metrics"]
+    _risk_self_debate: Annotated[Optional[bool], "Fast-path single-pass debate flag"]
+    current_price: Annotated[Optional[float], "Current asset price for calibrated price targeting"]

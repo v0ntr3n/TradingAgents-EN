@@ -19,17 +19,39 @@ class SignalProcessor:
         self.quick_thinking_llm = quick_thinking_llm
 
     @log_graph_module("signal_processing")
-    def process_signal(self, full_signal: str, stock_symbol: str = None) -> dict:
+    def process_signal(
+        self,
+        full_signal: str,
+        stock_symbol: str = None,
+        analyst_posteriors: dict = None,
+        regime: str = "sideways",
+        current_price: float = None,
+        weight_manager=None,
+        **kwargs,
+    ) -> dict:
         """
         Process a full trading signal to extract structured decision information.
 
         Args:
             full_signal: Complete trading signal text
             stock_symbol: Stock symbol to determine currency type
+            analyst_posteriors: Optional posterior probability distributions from analysts
+            regime: Current market regime (bull, bear, sideways)
+            current_price: Current asset price for dynamic targeting
+            weight_manager: Optional RegimeMultiplicativeWeightManager instance
 
         Returns:
             Dictionary containing extracted decision information
         """
+        if analyst_posteriors:
+            return self.process_calibrated_signal(
+                full_signal=full_signal,
+                stock_symbol=stock_symbol,
+                analyst_posteriors=analyst_posteriors,
+                regime=regime,
+                weight_manager=weight_manager,
+                current_price=current_price,
+            )
 
         # Validate input parameters
         if not full_signal or not isinstance(full_signal, str) or len(full_signal.strip()) == 0:

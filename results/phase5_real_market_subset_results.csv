@@ -1,0 +1,6 @@
+universe,market,cost_bps,model_tier,protocol,gross_cum_return_pct,net_cum_return_pct,gross_sharpe,net_sharpe,net_sortino,calmar_ratio,max_drawdown_pct,turnover_rate,brier_score,cbs_mean_bps,debate_rate_pct,avg_tokens_per_step,p_value_vs_m2
+US_Tech_Benchmark,US,5.0,Frontier_LLM_DeepSeek_V3,M0_Buy_And_Hold,-11.72,-11.72,-6.322,-6.322,-6.322,-8.981,10.7,0.0,0.5,-290.37,0.0,0.0,1.0
+US_Tech_Benchmark,US,5.0,Frontier_LLM_DeepSeek_V3,M1_Linear_Pipeline,-5.91,-5.98,-8.282,-8.442,-8.442,-16.495,4.84,1.55,0.2688,0.0,0.0,1450.0,1.0
+US_Tech_Benchmark,US,5.0,Frontier_LLM_DeepSeek_V3,M2_Vanilla_TradingAgents,-5.91,-5.98,-8.282,-8.442,-8.442,-16.495,4.84,1.55,0.2723,-1.5,100.0,4820.0,1.0
+US_Tech_Benchmark,US,5.0,Frontier_LLM_DeepSeek_V3,M3_SelfDebate_V2,-5.91,-5.98,-8.282,-8.442,-8.442,-16.495,4.84,1.55,0.2687,-0.9,100.0,2950.0,1.0
+US_Tech_Benchmark,US,5.0,Frontier_LLM_DeepSeek_V3,M4_CARE_Agents_Ours,-11.72,-11.77,-6.322,-6.382,-6.382,-8.985,10.7,1.0,0.2327,-292.87,0.0,1420.0,1.0

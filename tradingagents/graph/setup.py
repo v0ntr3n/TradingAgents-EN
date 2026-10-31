@@ -313,7 +313,14 @@ class GraphSetup:
                 next_analyst = f"{next_display_name} Analyst"
                 workflow.add_edge(current_clear, next_analyst)
             else:
-                workflow.add_edge(current_clear, "Bull Researcher")
+                workflow.add_conditional_edges(
+                    current_clear,
+                    self.conditional_logic.should_trigger_multi_round_debate,
+                    {
+                        "Bull Researcher": "Bull Researcher",
+                        "Research Manager": "Research Manager",
+                    },
+                )
 
         # Add remaining edges
         workflow.add_conditional_edges(

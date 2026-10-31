@@ -1389,7 +1389,13 @@ class TradingAgentsGraph:
             model_info = "Unknown"
 
         # Process decisions and add model information
-        decision = self.process_signal(final_state["final_trade_decision"], company_name)
+        decision = self.process_signal(
+            final_state["final_trade_decision"],
+            company_name,
+            analyst_posteriors=final_state.get("analyst_posteriors"),
+            regime=final_state.get("market_regime", "sideways"),
+            current_price=final_state.get("current_price"),
+        )
         decision['model_info'] = model_info
 
         # Return decision and processed signal
@@ -1731,6 +1737,10 @@ class TradingAgentsGraph:
             self.curr_state, returns_losses, self.risk_manager_memory
         )
 
-    def process_signal(self, full_signal, stock_symbol=None):
+    def process_signal(self, full_signal, stock_symbol=None, **kwargs):
         """Process a signal to extract the core decision."""
-        return self.signal_processor.process_signal(full_signal, stock_symbol)
+        return self.signal_processor.process_signal(full_signal, stock_symbol, **kwargs)
+
+    def process_calibrated_signal(self, full_signal, stock_symbol=None, **kwargs):
+        """Process a signal with calibrated Bayesian ensemble."""
+        return self.signal_processor.process_calibrated_signal(full_signal, stock_symbol=stock_symbol, **kwargs)

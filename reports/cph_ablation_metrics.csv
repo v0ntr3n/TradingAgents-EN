@@ -1,0 +1,5 @@
+Architecture,Gross_Return_Pct,Net_Return_Pct,Gross_Sharpe,Net_Sharpe,Net_Sortino,Max_Drawdown_Pct,Bull_Net_Sharpe,Bear_Net_Sharpe,Sideways_Net_Sharpe,CBS_Surplus_Bps,Brier_Score,ECE,Avg_Tokens_Per_Decision,Avg_Latency_Sec,Debate_Skip_Rate_Pct
+M1_Linear_Pipeline,139.9828,77.4034,2.559,1.7044,2.649,9.2019,2.6704,1.6761,0.3057,-7.5,0.181043,0.140832,4100.0,2.4,100.0
+M2_Vanilla_TradingAgents,-6.6982,-31.2912,-0.1039,-0.9629,-1.2868,45.8885,2.4926,-3.003,-3.1077,-16.9492,0.215123,0.105819,12700.0,8.6,0.0
+M3_SelfDebate_V2,17.1163,-9.2936,0.5922,-0.2411,-0.333,24.829,2.1844,-1.1176,-2.5462,-14.7605,0.192922,0.061846,6500.0,3.8,100.0
+M4_CARE_Agents_Ours,208.7516,123.9163,3.4829,2.5028,4.1085,8.6723,2.1728,2.5631,3.1455,-5.0148,0.169517,0.138634,7521.5,4.389,37.4

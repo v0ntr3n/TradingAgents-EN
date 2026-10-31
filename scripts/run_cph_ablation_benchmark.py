@@ -216,17 +216,7 @@ def run_ablation():
         p_m4_opt = agg["p_optimistic"]
         p_m4_neu = agg["p_neutral"]
         p_m4_cau = agg["p_cautious"]
-
-        # When multi-round debate is triggered on high-JSD, high-CBS days, tool-verified rebuttal sharpens the genuine signal
-        if not gate["risk_self_debate"]:
-            if ret_pct > 0.20:
-                p_m4_opt = min(0.88, p_m4_opt + 0.14)
-                p_m4_cau = max(0.04, p_m4_cau - 0.10)
-            elif ret_pct < -0.20:
-                p_m4_cau = min(0.88, p_m4_cau + 0.15)
-                p_m4_opt = max(0.04, p_m4_opt - 0.11)
-            s4 = p_m4_opt + p_m4_neu + p_m4_cau
-            p_m4_opt, p_m4_neu, p_m4_cau = p_m4_opt / s4, p_m4_neu / s4, p_m4_cau / s4
+        # Causal debate resolution: posteriors are derived purely from regime-adapted Bayesian weights
 
         # Turnover-aware position sizing: only change position if expected edge clears spread_bps
         raw_target_pos = 1.0 if p_m4_opt > p_m4_cau + 0.04 else (0.0 if p_m4_cau > p_m4_opt + 0.02 else 0.25)

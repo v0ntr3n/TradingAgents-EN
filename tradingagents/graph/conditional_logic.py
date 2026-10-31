@@ -354,11 +354,14 @@ class ConditionalLogic:
     def should_continue_debate(self, state: AgentState) -> str:
         """Determine if debate should continue."""
         current_count = state["investment_debate_state"]["count"]
-        max_count = 2 * self.max_debate_rounds
+        target_rounds = self.max_debate_rounds
+        if "cbs_gating_decision" in state and isinstance(state["cbs_gating_decision"], dict):
+            target_rounds = state["cbs_gating_decision"].get("target_debate_rounds", self.max_debate_rounds)
+        max_count = 2 * target_rounds
         current_speaker = state["investment_debate_state"]["current_response"]
 
         # 🔍 Detailed log
-        logger.info(f"🔍 [investment debate control] Current number of speeches: {current_count}, Maximum times: {max_count} (Configuration rounds: {self.max_debate_rounds})")
+        logger.info(f"🔍 [investment debate control] Current number of speeches: {current_count}, Maximum times: {max_count} (Configuration rounds: {target_rounds})")
         logger.info(f"🔍 [investment debate control] current speaker: {current_speaker}")
 
         if current_count >= max_count:
@@ -400,8 +403,41 @@ class ConditionalLogic:
         Evaluate whether multi-round Bull/Bear debate clears the JSD and
         Coordination Breakeven Spread (CBS) thresholds.
         """
-        posteriors = state.get("analyst_posteriors") or {}
-        weights = state.get("analyst_weights") or None
+        posteriors = state.get("analyst_posteriors")
+        if not posteriors:
+            try:
+                from core.agents.analyst import extract_structured_posterior
+                extracted = {}
+                for key, role in [
+                    ("market_report", "market"),
+                    ("fundamentals_report", "fundamentals"),
+                    ("news_report", "news"),
+                    ("sentiment_report", "social"),
+                    ("index_report", "index"),
+                    ("sector_report", "sector"),
+                ]:
+                    report_text = state.get(key)
+                    if report_text:
+                        extracted[role] = extract_structured_posterior(str(report_text))
+                if extracted:
+                    posteriors = extracted
+                    state["analyst_posteriors"] = posteriors
+            except Exception as e:
+                logger.warning(f"Error extracting posteriors from reports: {e}")
+
+        posteriors = posteriors or {}
+        weights = state.get("analyst_weights")
+        regime = state.get("market_regime", "sideways")
+        if not weights and posteriors:
+            try:
+                from core.agents.utils.weight_calculator import RegimeMultiplicativeWeightManager
+                wm = RegimeMultiplicativeWeightManager()
+                weights = wm.get_weights(regime)
+                state["analyst_weights"] = weights
+            except Exception as e:
+                logger.warning(f"Error obtaining regime weights: {e}")
+                weights = None
+
         spread_bps = float(state.get("estimated_spread_bps", self.default_spread_bps))
         jsd_thresh = float(state.get("jsd_threshold", self.jsd_threshold))
 
