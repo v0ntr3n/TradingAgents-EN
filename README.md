@@ -147,7 +147,7 @@ Contributors who consistently submit high-quality PRs will be invited to partici
 
 **What you get**: Public attribution and visibility (shout-outs in release notes and official articles), hands-on engineering experience with multi-agent systems, and priority in future project commercialization. Project revenue does not yet cover basic infrastructure costs, so participation is currently voluntary; revenue-sharing principles once costs are covered (community contribution fund / consulting fees / profit-sharing paths) are documented upfront.
 
-**How to contact**: For initial communication, please email hsliup@163.com; for specific technical issues, we recommend opening an Issue or PR for public discussion; after smooth collaboration, you will be invited to join the project WeChat group and knowledge community.
+**How to contact**: For initial communication, please email anonymous@example.com; for specific technical issues, we recommend opening an Issue or PR for public discussion; after smooth collaboration, you will be invited to join the project WeChat group and knowledge community.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for submission workflows, revenue-sharing framework, and Contributor License Agreement (CLA).
 
@@ -168,7 +168,7 @@ Submitting a contribution indicates your agreement to sign the [Contributor Lice
 
 ## Acknowledgments
 
-- [Tauric Research / TradingAgents](https://github.com/TauricResearch/TradingAgents) — Original multi-agent trading framework project
+- [[Anonymous Authors] / TradingAgents](https://anonymous.4open.science/r/TradingAgents) — Original multi-agent trading framework project
 - All contributors who have participated in building the project via PRs
 
 For full acknowledgments (including licensing details and data source credits), see [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).

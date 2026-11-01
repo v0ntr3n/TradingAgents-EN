@@ -2,7 +2,7 @@
 
 > This agreement governs community contributions received by the TradingAgents-CN project (including both the Community Edition and Pro Edition, hereinafter referred to as "the Project"). Please read carefully before signing; if you have any questions, please contact the maintainer via email.
 
-**Project Maintainer**: hsliuping
+**Project Maintainer**: [Anonymous Authors]
 **Contributor**: ________________ (GitHub ID: ________________)
 **Date Signed**: ________________
 

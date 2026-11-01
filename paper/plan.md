@@ -2,7 +2,7 @@
 
 **Working Title:** *CARE-Agents: Cost-Aware, Regime-Adaptive Multi-Agent Coordination and Calibrated Memory for Financial Trading*
 
-**Base Repository:** `TradingAgents-EN` (v3.0 Community Edition), extended from [TauricResearch/TradingAgents (arXiv:2412.20138)](https://arxiv.org/abs/2412.20138)
+**Base Repository:** `TradingAgents-EN` (v3.0 Community Edition), extended from [TradingAgents (arXiv:2412.20138)](https://arxiv.org/abs/2412.20138)
 
 **Target Venues:** AAAI, KDD, ACM ICAIF, IJCAI, or *Expert Systems with Applications (ESWA)*
 

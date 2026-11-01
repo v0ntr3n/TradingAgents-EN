@@ -3,7 +3,7 @@
 **Project Title:** CARE-Agents: Cost-Aware, Regime-Adaptive Multi-Agent Financial Coordination  
 **Primary Manuscript:** `paper/care_agents_paper.tex` (Compiled: `paper/care_agents_paper.pdf`)  
 **Secondary Artifact:** `care_agents_paper.tex` (Root repository draft)  
-**Target Repository:** `/home/bramy/Downloads/TradingAgents-EN`  
+**Target Repository:** `.`  
 **Lead Auditor / Synthesizer:** `worker_m1` (Teamwork Audit Suite)  
 **Audit Date:** October 31, 2026  
 **Evaluation Standard:** Standard Peer-Review Criteria (AAAI / KDD / ACM ICAIF / NeurIPS / ESWA) & MR-1–MR-7 Minimum Reporting Guidelines  
@@ -194,7 +194,7 @@ All verification probes below were executed directly in the environment to estab
 **Objective:** Verify whether the test suite and framework execute out-of-the-box under the project's declared Python 3.10 environment.  
 **Execution Command:**
 ```bash
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/python -c "
+PYTHONPATH=. ./.venv/bin/python -c "
 import tests
 import tomllib
 print(f'tomllib successfully loaded: {tomllib}')
@@ -202,7 +202,7 @@ print(f'tomllib successfully loaded: {tomllib}')
 ```
 **Raw Terminal Output:**
 ```
-tomllib successfully loaded: <module 'tomli' from '/home/bramy/Downloads/TradingAgents-EN/.venv/lib/python3.10/site-packages/tomli/__init__.py'>
+tomllib successfully loaded: <module 'tomli' from './.venv/lib/python3.10/site-packages/tomli/__init__.py'>
 ```
 **Finding: RESOLVED & VERIFIED PASSING.** `tests/__init__.py` detects missing standard library `tomllib` on Python 3.10, imports `tomli as tomllib`, and aliases it into `sys.modules["tomllib"]`. The test suite and application execute seamlessly on Python 3.10.
 
@@ -212,7 +212,7 @@ tomllib successfully loaded: <module 'tomli' from '/home/bramy/Downloads/Trading
 **Objective:** Verify that all 5 CARE-Agents unit tests execute and pass 100% without mocks or crashes.  
 **Execution Command:**
 ```bash
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/pytest \
+PYTHONPATH=. ./.venv/bin/pytest \
   tests/test_cbs_debate_gating.py \
   tests/test_regime_weight_calculator.py \
   tests/test_regime_memory_attribution.py \
@@ -243,7 +243,7 @@ tests/test_phase5_prompt_seed_and_real_data.py::TestPhase5RealMarketAndPromptSee
 **Objective:** Confirm live frontier LLM API execution capabilities and support for authentic inference caching.  
 **Execution Command:**
 ```bash
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/python scripts/run_phase5_real_market_benchmark.py --help
+PYTHONPATH=. ./.venv/bin/python scripts/run_phase5_real_market_benchmark.py --help
 ```
 **Raw Terminal Output:**
 ```
@@ -264,7 +264,7 @@ options:
 **Execution Command:**
 ```bash
 grep -n "ret_pct > 0.20" scripts/run_cph_ablation_benchmark.py
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/python scripts/run_cph_ablation_benchmark.py
+PYTHONPATH=. ./.venv/bin/python scripts/run_cph_ablation_benchmark.py
 ```
 **Raw Terminal Output:**
 ```
@@ -319,7 +319,7 @@ Symbols present: ['000333.SZ', '000858.SZ', '002594.SZ', '300750.SZ', '600036.SH
 **Objective:** Confirm presence of authentic live LLM posterior cache (15,246 records, 37 MB, zero hardcoded tokens) and absence of phantom setup scripts.  
 **Execution Command:**
 ```bash
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/python -c "
+PYTHONPATH=. ./.venv/bin/python -c "
 import json, pathlib
 p = pathlib.Path('results/live_llm_posteriors_cache.json')
 assert p.exists()

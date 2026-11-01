@@ -17,7 +17,7 @@ Not sure where to begin? Look for opportunities in this order:
 
 1. **Browse Issues labeled `good first issue`** — these are starter tasks specially prepared for newcomers
 2. **Broken data source API bugs** — small in scope and easy to verify, ideal for a first PR
-3. **Email us**: hsliup@163.com, describing your skills and areas of interest, and we will suggest suitable tasks
+3. **Email us**: anonymous@example.com, describing your skills and areas of interest, and we will suggest suitable tasks
 
 ## PRs Are the Only Evaluation Criterion
 
@@ -112,6 +112,6 @@ Be friendly and respectful in Issues, PRs, and discussions; focus on the issue r
 
 ## Communication Channels
 
-- **Initial communication via email**: hsliup@163.com (collaboration intent, discussions outside PRs, commercial inquiries)
+- **Initial communication via email**: anonymous@example.com (collaboration intent, discussions outside PRs, commercial inquiries)
 - **Specific technical issues**: Prefer public discussions in GitHub Issues / PRs so knowledge is preserved and accessible to future contributors
 - **Deep collaboration**: Once collaboration goes smoothly, we will invite you to join the project **WeChat group** and **Knowledge Planet (Zsxq)** to participate in daily discussions and release planning

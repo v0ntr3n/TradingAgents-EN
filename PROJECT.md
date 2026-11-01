@@ -80,7 +80,7 @@ TradingAgents-EN/
 
 ### 1. Execute All 5 Core CARE-Agents Unit Test Suites on Python 3.10
 ```bash
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/pytest \
+PYTHONPATH=. ./.venv/bin/pytest \
   tests/test_cbs_debate_gating.py \
   tests/test_regime_weight_calculator.py \
   tests/test_regime_memory_attribution.py \
@@ -92,7 +92,7 @@ PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/pytest \
 
 ### 2. Verify Python 3.10 `tomllib` Compatibility Fallback
 ```bash
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/python -c "
+PYTHONPATH=. ./.venv/bin/python -c "
 import tests, tomllib
 print(f'tomllib module loaded successfully: {tomllib}')
 "
@@ -101,7 +101,7 @@ print(f'tomllib module loaded successfully: {tomllib}')
 
 ### 3. Verify Authentic Live LLM Posterior Cache
 ```bash
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/python -c "
+PYTHONPATH=. ./.venv/bin/python -c "
 import json
 d = json.load(open('results/live_llm_posteriors_cache.json'))
 assert len(d) >= 15000
@@ -116,7 +116,7 @@ print(f'ALL {len(d)} LIVE POSTERIORS VERIFIED (ZERO HARDCODED TOKENS)!')
 
 ### 4. Run Strictly Causal CPH Ablation Benchmark (Lookahead Removed)
 ```bash
-PYTHONPATH=. /home/bramy/Downloads/TradingAgents-EN/.venv/bin/python scripts/run_cph_ablation_benchmark.py
+PYTHONPATH=. ./.venv/bin/python scripts/run_cph_ablation_benchmark.py
 # Expected: M4 Net Cumulative Return +123.9%, Net Sharpe 2.5028, Max Drawdown 8.67%
 ```
 
@@ -143,11 +143,11 @@ diff -u paper/care_agents_paper.tex care_agents_paper.tex
 ---
 
 ## Deliverables & Key Documentation
-- **Peer-Review Readiness Report:** `/home/bramy/Downloads/TradingAgents-EN/PEER_REVIEW_READINESS_REPORT.md` (Verdict: READY FOR SUBMISSION)
-- **Canonical LaTeX Manuscript:** `/home/bramy/Downloads/TradingAgents-EN/paper/care_agents_paper.tex` (Typeset to 8 pages with TikZ Figure 1 and Appendix A proofs)
-- **Compiled PDF Manuscript:** `/home/bramy/Downloads/TradingAgents-EN/paper/care_agents_paper.pdf` (8 pages, zero orphan lines)
-- **Root LaTeX Copy:** `/home/bramy/Downloads/TradingAgents-EN/care_agents_paper.tex` (100% synchronized)
-- **Live LLM Inference Cache:** `/home/bramy/Downloads/TradingAgents-EN/results/live_llm_posteriors_cache.json` (15,246 genuine DeepSeek traces, 37 MB, zero hardcoded tokens)
+- **Peer-Review Readiness Report:** `./PEER_REVIEW_READINESS_REPORT.md` (Verdict: READY FOR SUBMISSION)
+- **Canonical LaTeX Manuscript:** `./paper/care_agents_paper.tex` (Typeset to 8 pages with TikZ Figure 1 and Appendix A proofs)
+- **Compiled PDF Manuscript:** `./paper/care_agents_paper.pdf` (8 pages, zero orphan lines)
+- **Root LaTeX Copy:** `./care_agents_paper.tex` (100% synchronized)
+- **Live LLM Inference Cache:** `./results/live_llm_posteriors_cache.json` (15,246 genuine DeepSeek traces, 37 MB, zero hardcoded tokens)
 - **Verification Logs & Handoffs:**
   - `.agents/teamwork/worker_m1_code/handoff.md` (Code & Benchmark Remediation)
   - `.agents/teamwork/worker_m3_paper/handoff.md` (Manuscript & Typesetting Remediation)

@@ -37,11 +37,11 @@ Thank you to all the developers and users who have contributed to the TradingAge
 
 - **[@YifanHere](https://github.com/YifanHere)**
   - **Key Contributions**:
-    - 🔧 **CLI Code Quality Improvement** ([PR #158](https://github.com/hsliuping/TradingAgents-CN/pull/158))
+    - 🔧 **CLI Code Quality Improvement** ([PR #158](https://github.com/[Anonymous Authors]/TradingAgents-CN/pull/158))
       - Optimized user experience and error handling in the command-line interface
       - Improved stability and user-friendliness of the CLI tool
       - Date: 2025
-    - 🐛 **Critical Bug Fix** ([PR #173](https://github.com/hsliuping/TradingAgents-CN/pull/173))
+    - 🐛 **Critical Bug Fix** ([PR #173](https://github.com/[Anonymous Authors]/TradingAgents-CN/pull/173))
       - Discovered and reported the critical `KeyError: 'volume'` issue
       - Provided detailed issue analysis, root cause localization, and a fix
       - Significantly improved system stability for the Tushare data source and resolved cached data standardization issues
@@ -50,7 +50,7 @@ Thank you to all the developers and users who have contributed to the TradingAge
 
 - **[@BG8CFB](https://github.com/BG8CFB)**
   - **Key Contributions**:
-    - 🐛 Fixed issue where GLM models could not invoke news analysis ([PR #457](https://github.com/hsliuping/TradingAgents-CN/pull/457))
+    - 🐛 Fixed issue where GLM models could not invoke news analysis ([PR #457](https://github.com/[Anonymous Authors]/TradingAgents-CN/pull/457))
       - Fixed compatibility issues between the news analysis module and GLM models
       - Improved availability and stability of the news analysis feature when using GLM models
       - Date: November 2025
@@ -136,9 +136,9 @@ We welcome contributions of all forms:
 
 If you would like to become a contributor or have any questions, please reach out to us via:
 
-- **GitHub Issues**: [Submit an issue or suggestion](https://github.com/hsliuping/TradingAgents-CN/issues)
-- **GitHub Discussions**: [Join community discussions](https://github.com/hsliuping/TradingAgents-CN/discussions)
-- **Pull Requests**: [Submit code contributions](https://github.com/hsliuping/TradingAgents-CN/pulls)
+- **GitHub Issues**: [Submit an issue or suggestion](https://github.com/[Anonymous Authors]/TradingAgents-CN/issues)
+- **GitHub Discussions**: [Join community discussions](https://github.com/[Anonymous Authors]/TradingAgents-CN/discussions)
+- **Pull Requests**: [Submit code contributions](https://github.com/[Anonymous Authors]/TradingAgents-CN/pulls)
 - Join our QQ Group: 782124367
 
 ## 🙏 Acknowledgments

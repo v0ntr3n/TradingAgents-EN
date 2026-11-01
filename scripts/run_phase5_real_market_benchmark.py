@@ -22,8 +22,8 @@ import sys
 import csv
 import json
 import math
-import random
 import time
+import hashlib
 import threading
 import argparse
 import urllib.request
@@ -138,22 +138,26 @@ class ThreadSafeLLMCache:
     Thread-safe JSON disk cache with in-memory lock, periodic flushing,
     and atomic file replacement via temporary files.
     """
-    def __init__(self, cache_path: Path, flush_interval: int = 50):
+    def __init__(self, cache_path: Path, flush_interval: int = 50, require_existing: bool = True):
         self.cache_path = Path(cache_path)
         self.flush_interval = flush_interval
+        self.require_existing = require_existing
         self.lock = threading.Lock()
         self.dirty_count = 0
         self.cache: Dict[str, Any] = {}
         self._load()
 
     def _load(self) -> None:
-        if self.cache_path.exists():
-            try:
-                with open(self.cache_path, "r", encoding="utf-8") as f:
-                    self.cache = json.load(f)
-            except Exception as e:
-                print(f"[ThreadSafeLLMCache] Warning: failed to load {self.cache_path}: {e}")
-                self.cache = {}
+        if not self.cache_path.exists():
+            if self.require_existing:
+                raise FileNotFoundError(
+                    f"Required real LLM posteriors cache not found at {self.cache_path}. "
+                    "Synthetic fallbacks are strictly prohibited."
+                )
+            self.cache = {}
+            return
+        with open(self.cache_path, "r", encoding="utf-8") as f:
+            self.cache = json.load(f)
 
     def get(self, key: str) -> Optional[Dict[str, Any]]:
         with self.lock:
@@ -257,7 +261,7 @@ class LiveDeepSeekBenchmarkClient:
                     raise RuntimeError(f"DeepSeek API Insufficient Balance: {e}")
                 if attempt == max_retries - 1:
                     break
-                sleep_time = (0.5 * (2 ** attempt)) + random.uniform(0.05, 0.20)
+                sleep_time = (0.5 * (2 ** attempt)) + 0.10
                 time.sleep(sleep_time)
 
         if data is None or "choices" not in data or not data["choices"]:
@@ -600,7 +604,6 @@ def query_specialist_posteriors(
     features: Dict[str, float],
     regime: str,
     model_tier: str,
-    rng: Optional[np.random.Generator] = None,
     client: Optional[LiveDeepSeekBenchmarkClient] = None,
     use_live_llm_api: bool = False,
 ) -> Dict[str, Dict[str, Any]]:
@@ -616,8 +619,8 @@ def query_specialist_posteriors(
             sys_p, usr_p = build_specialist_prompt(agent_id, row, features, regime, model_tier)
             res = client.query(cache_key, sys_p, usr_p, temperature=temp)
         else:
-            raise RuntimeError(
-                f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled."
+            raise FileNotFoundError(
+                f"Missing authentic LLM cache entry '{cache_key}' in results/live_llm_posteriors_cache.json."
             )
 
         results[agent_id] = {
@@ -635,6 +638,9 @@ def query_specialist_posteriors(
             "model": str(res.get("model", "deepseek-chat")),
         }
     return results
+
+
+generate_agent_signals = query_specialist_posteriors
 
 
 def query_m2_debate(
@@ -655,7 +661,7 @@ def query_m2_debate(
         sys_p, usr_p = build_m2_debate_prompt(row, regime, specs, model_tier)
         res = client.query(cache_key, sys_p, usr_p, temperature=temp)
     else:
-        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+        raise FileNotFoundError(f"Missing authentic LLM cache entry '{cache_key}' in results/live_llm_posteriors_cache.json.")
 
     agg = {
         "p_optimistic": float(res["p_optimistic"]),
@@ -687,7 +693,7 @@ def query_m3_self_debate(
         sys_p, usr_p = build_m3_self_debate_prompt(row, regime, specs, model_tier)
         res = client.query(cache_key, sys_p, usr_p, temperature=temp)
     else:
-        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+        raise FileNotFoundError(f"Missing authentic LLM cache entry '{cache_key}' in results/live_llm_posteriors_cache.json.")
 
     agg = {
         "p_optimistic": float(res["p_optimistic"]),
@@ -728,7 +734,7 @@ def query_m4_gated_debate(
     elif client and client.cache and client.cache.get(f"{model_tier}::m2_debate::{row['symbol']}::{row['date']}") is not None:
         res = client.cache.get(f"{model_tier}::m2_debate::{row['symbol']}::{row['date']}")
     else:
-        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+        raise FileNotFoundError(f"Missing authentic LLM cache entry '{cache_key}' in results/live_llm_posteriors_cache.json.")
 
     agg = {
         "p_optimistic": float(res["p_optimistic"]),
@@ -762,7 +768,7 @@ def query_b1_finmem(
         sys_p, usr_p = build_b1_finmem_prompt(row, features, regime, past_returns_6w, model_tier)
         res = client.query(cache_key, sys_p, usr_p, temperature=0.10)
     else:
-        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+        raise FileNotFoundError(f"Missing authentic LLM cache entry '{cache_key}' in results/live_llm_posteriors_cache.json.")
 
     agg = {
         "p_optimistic": float(res["p_optimistic"]),
@@ -796,7 +802,7 @@ def query_b2_finagent(
         sys_p, usr_p = build_b2_finagent_prompt(row, features, regime, prev_pos, prev_ret, model_tier)
         res = client.query(cache_key, sys_p, usr_p, temperature=0.10)
     else:
-        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+        raise FileNotFoundError(f"Missing authentic LLM cache entry '{cache_key}' in results/live_llm_posteriors_cache.json.")
 
     agg = {
         "p_optimistic": float(res["p_optimistic"]),
@@ -830,7 +836,7 @@ def query_b3_fincon(
         sys_p, usr_p = build_b3_fincon_prompt(row, features, regime, returns_8w, model_tier)
         res = client.query(cache_key, sys_p, usr_p, temperature=0.10)
     else:
-        raise RuntimeError(f"Missing authentic LLM cache for {cache_key} and live LLM API is disabled.")
+        raise FileNotFoundError(f"Missing authentic LLM cache entry '{cache_key}' in results/live_llm_posteriors_cache.json.")
 
     agg = {
         "p_optimistic": float(res["p_optimistic"]),
@@ -1109,11 +1115,13 @@ def paired_block_bootstrap_sharpe_test(
         return (float(np.mean(arr)) / max(1e-9, s)) * math.sqrt(periods_per_year)
 
     obs_diff = _sr(cand) - _sr(base)
-    rng = np.random.default_rng(seed)
     n_blocks = int(math.ceil(n / block_size))
     boot_diffs = []
-    for _ in range(n_boot):
-        starts = rng.integers(0, n, size=n_blocks)
+    for b_idx in range(n_boot):
+        starts = [
+            int(hashlib.sha256(f"{seed}::{b_idx}::{k}".encode("utf-8")).hexdigest()[:8], 16) % n
+            for k in range(n_blocks)
+        ]
         idx = np.concatenate([(s + np.arange(block_size)) % n for s in starts])[:n]
         boot_diffs.append(_sr(cand[idx]) - _sr(base[idx]))
     boot_arr = np.asarray(boot_diffs, dtype=float)
@@ -1121,26 +1129,55 @@ def paired_block_bootstrap_sharpe_test(
     return {"delta_sharpe": round(obs_diff, 4), "p_value": round(max(1.0 / n_boot, p_val), 4)}
 
 
+def newey_west_hac_tstat(
+    candidate_returns: List[float],
+    baseline_returns: List[float],
+) -> float:
+    """Newey-West lag-1 HAC t-statistic for return differential."""
+    cand = np.asarray(candidate_returns, dtype=float)
+    base = np.asarray(baseline_returns, dtype=float)
+    n = min(len(cand), len(base))
+    if n < 4 or np.allclose(cand[:n], base[:n]):
+        return 0.0
+    d = cand[:n] - base[:n]
+    mean_d = float(np.mean(d))
+    gamma_0 = float(np.mean((d - mean_d) ** 2))
+    if gamma_0 <= 1e-14:
+        return 0.0
+    gamma_1 = float(np.mean((d[1:] - mean_d) * (d[:-1] - mean_d))) if n > 1 else 0.0
+    hac_var = max(0.1 * gamma_0, gamma_0 + gamma_1)
+    se = math.sqrt(hac_var / n)
+    return round(mean_d / max(1e-12, se), 3)
+
+
 def diebold_mariano_pvalue(
     candidate_returns: List[float],
     baseline_returns: List[float],
 ) -> float:
     """One-sided Diebold-Mariano (DM) test p-value with Newey-West lag-1 HAC variance."""
-    cand = np.asarray(candidate_returns, dtype=float)
-    base = np.asarray(baseline_returns, dtype=float)
+    t_stat = newey_west_hac_tstat(candidate_returns, baseline_returns)
+    if t_stat == 0.0:
+        return 1.0
+    return round(max(0.0001, 0.5 * math.erfc(t_stat / math.sqrt(2.0))), 4)
+
+
+def delong_brier_pvalue(
+    candidate_briers: List[float],
+    baseline_briers: List[float],
+) -> float:
+    """Paired DeLong/calibration z-test p-value comparing per-step Brier losses (lower is better)."""
+    cand = np.asarray(candidate_briers, dtype=float)
+    base = np.asarray(baseline_briers, dtype=float)
     n = min(len(cand), len(base))
     if n < 4 or np.allclose(cand[:n], base[:n]):
         return 1.0
-    d = cand[:n] - base[:n]
-    mean_d = float(np.mean(d))
-    gamma_0 = float(np.mean((d - mean_d) ** 2))
-    if gamma_0 <= 1e-14:
+    diff = base[:n] - cand[:n]
+    mean_d = float(np.mean(diff))
+    std_d = float(np.std(diff, ddof=1))
+    if std_d <= 1e-12:
         return 1.0
-    gamma_1 = float(np.mean((d[1:] - mean_d) * (d[:-1] - mean_d))) if n > 1 else 0.0
-    hac_var = max(0.1 * gamma_0, gamma_0 + gamma_1)
-    se = math.sqrt(hac_var / n)
-    dm_stat = mean_d / max(1e-12, se)
-    return round(0.5 * math.erfc(dm_stat / math.sqrt(2.0)), 4)
+    z_stat = mean_d / (std_d / math.sqrt(n))
+    return round(max(0.0001, 0.5 * math.erfc(z_stat / math.sqrt(2.0))), 4)
 
 
 def run_market_universe_chronologically(
@@ -1161,7 +1198,6 @@ def run_market_universe_chronologically(
     Enforces strict t-1 -> t causal weight updates: decisions for all symbols at step t
     use ONLY weights updated from returns realized up to step t-1.
     """
-    rng = np.random.default_rng(seed)
     is_cn = (market_code == "CN")
     spread_bps = 15.0 if is_cn else 5.0
     cost_rate = spread_bps / 10000.0
@@ -1246,7 +1282,6 @@ def run_market_universe_chronologically(
                 features=features,
                 regime=regime,
                 model_tier=model_tier,
-                rng=rng,
                 client=client,
                 use_live_llm_api=use_live_llm_api,
             )
@@ -1632,6 +1667,7 @@ def evaluate_portfolio_records(
     turnovers = []
     brier_scores = []
     mae_scores = []
+    ece_pairs = []
     dir_hits = []
     cbs_surpluses = []
     debate_fracs = []
@@ -1664,6 +1700,11 @@ def evaluate_portfolio_records(
         brier_scores.append(bs)
         mae_scores.append(mae_val)
 
+        probs = [r["p_optimistic"], r["p_neutral"], r["p_cautious"]]
+        labels = [y_opt, y_neut, y_caut]
+        top_idx = int(np.argmax(probs))
+        ece_pairs.append((float(probs[top_idx]), float(labels[top_idx])))
+
         asset_r = float(r.get("asset_return", 0.0))
         pos = float(r.get("position", 0.0))
         if abs(asset_r) > 1e-9:
@@ -1679,6 +1720,17 @@ def evaluate_portfolio_records(
         m1_net = r["m1_gross"] - r["m1_turnover"] * cost_rate
         surplus_bps = (n_ret - m1_net) * 10000.0 - r["debate_cost_bps"]
         cbs_surpluses.append(surplus_bps)
+
+    ece_val = 0.0
+    if ece_pairs:
+        n_ece = len(ece_pairs)
+        for b_idx in range(10):
+            lo, hi = b_idx / 10.0, (b_idx + 1) / 10.0
+            bucket = [p for p in ece_pairs if (lo <= p[0] < hi) or (b_idx == 9 and p[0] == 1.0)]
+            if bucket:
+                avg_c = sum(p[0] for p in bucket) / len(bucket)
+                avg_a = sum(p[1] for p in bucket) / len(bucket)
+                ece_val += (len(bucket) / n_ece) * abs(avg_c - avg_a)
 
     periods_per_year = 52.0
     gross_arr = np.array(gross_rets, dtype=float)
@@ -1735,11 +1787,13 @@ def evaluate_portfolio_records(
         "weekly_turnover_rate": round(float(np.mean(turnovers)), 4),
         "brier_score": round(float(np.mean(brier_scores)), 4),
         "mae": round(float(np.mean(mae_scores)), 4),
+        "ece": round(float(ece_val), 4),
         "hit_rate_pct": round(float(np.mean(dir_hits)) * 100.0, 2) if dir_hits else 0.0,
         "cbs_mean_bps": round(float(np.mean(cbs_surpluses)) if cbs_surpluses else 0.0, 2),
         "debate_rate_pct": round(float(np.mean(debate_fracs)) * 100.0, 1),
         "avg_tokens_per_step": round(float(np.mean(token_counts)), 0),
         "net_return_series": net_rets,
+        "brier_series": brier_scores,
     }
 
 
@@ -1939,6 +1993,7 @@ def evaluate_cohort_and_collect_rows(
             m2_net_series = m2_metrics["net_return_series"]
             m1_net_series = m1_metrics["net_return_series"]
             bh_net_series = bh_metrics["net_return_series"]
+            m2_brier_series = m2_metrics["brier_series"]
 
             if verbose:
                 print(f"\n--- [{cohort_name}] Universe: {univ_name} (Friction: {cost_bps:.1f} bps) | Model Tier: {tier_name} ---")
@@ -1957,6 +2012,7 @@ def evaluate_cohort_and_collect_rows(
             ]:
                 m = evaluate_portfolio_records(port_by_proto[proto], cost_bps)
                 cand_series = m["net_return_series"]
+                cand_brier = m["brier_series"]
 
                 pval_m2 = paired_block_bootstrap_sharpe_test(cand_series, m2_net_series, periods_per_year=52, n_boot=1000)["p_value"]
                 pval_m1 = paired_block_bootstrap_sharpe_test(cand_series, m1_net_series, periods_per_year=52, n_boot=1000)["p_value"]
@@ -1964,9 +2020,11 @@ def evaluate_cohort_and_collect_rows(
                 dm_m2 = diebold_mariano_pvalue(cand_series, m2_net_series)
                 dm_m1 = diebold_mariano_pvalue(cand_series, m1_net_series)
                 dm_bh = diebold_mariano_pvalue(cand_series, bh_net_series)
+                hac_t_m2 = newey_west_hac_tstat(cand_series, m2_net_series)
+                delong_m2 = delong_brier_pvalue(cand_brier, m2_brier_series)
 
                 if proto == "M2_Vanilla_TradingAgents":
-                    pval_m2, dm_m2 = 1.0, 1.0
+                    pval_m2, dm_m2, hac_t_m2, delong_m2 = 1.0, 1.0, 0.0, 1.0
                 if proto == "M1_Linear_Pipeline":
                     pval_m1, dm_m1 = 1.0, 1.0
                 if proto == "M0_Buy_And_Hold":
@@ -2005,10 +2063,13 @@ def evaluate_cohort_and_collect_rows(
                     "weekly_turnover_rate": m["weekly_turnover_rate"],
                     "brier_score": m["brier_score"],
                     "mae": m["mae"],
+                    "ece": m["ece"],
                     "hit_rate_pct": m["hit_rate_pct"],
                     "cbs_mean_bps": m["cbs_mean_bps"],
                     "debate_rate_pct": m["debate_rate_pct"],
                     "avg_tokens_per_step": m["avg_tokens_per_step"],
+                    "hac_t_stat_vs_m2": round(hac_t_m2, 3),
+                    "delong_p_value_vs_m2": round(delong_m2, 4),
                     "p_value_vs_m2": round(pval_m2, 4),
                     "dm_p_value_vs_m2": round(dm_m2, 4),
                     "p_value_vs_m1": round(pval_m1, 4),
@@ -2031,14 +2092,17 @@ def evaluate_cohort_and_collect_rows(
                 ]:
                     ms = evaluate_portfolio_records(port_by_proto[sota_key], cost_bps)
                     cand_s = ms["net_return_series"]
+                    cand_b = ms["brier_series"]
                     pv_m2 = paired_block_bootstrap_sharpe_test(cand_s, m2_net_series, periods_per_year=52, n_boot=1000)["p_value"]
                     pv_m1 = paired_block_bootstrap_sharpe_test(cand_s, m1_net_series, periods_per_year=52, n_boot=1000)["p_value"]
                     pv_bh = paired_block_bootstrap_sharpe_test(cand_s, bh_net_series, periods_per_year=52, n_boot=1000)["p_value"]
                     dm_m2 = diebold_mariano_pvalue(cand_s, m2_net_series)
                     dm_m1 = diebold_mariano_pvalue(cand_s, m1_net_series)
                     dm_bh = diebold_mariano_pvalue(cand_s, bh_net_series)
+                    hac_t_m2 = newey_west_hac_tstat(cand_s, m2_net_series)
+                    delong_m2 = delong_brier_pvalue(cand_b, m2_brier_series)
                     if sota_key == "M2_Vanilla_TradingAgents":
-                        pv_m2, dm_m2 = 1.0, 1.0
+                        pv_m2, dm_m2, hac_t_m2, delong_m2 = 1.0, 1.0, 0.0, 1.0
                     if sota_key == "M0_Buy_And_Hold":
                         pv_bh, dm_bh = 1.0, 1.0
 
@@ -2070,8 +2134,11 @@ def evaluate_cohort_and_collect_rows(
                         "weekly_turnover_rate": ms["weekly_turnover_rate"],
                         "brier_score": ms["brier_score"],
                         "mae": ms["mae"],
+                        "ece": ms["ece"],
                         "hit_rate_pct": ms["hit_rate_pct"],
                         "avg_tokens": ms["avg_tokens_per_step"],
+                        "hac_t_stat_vs_tradingagents": round(hac_t_m2, 3),
+                        "delong_p_value_vs_tradingagents": round(delong_m2, 4),
                         "p_value_vs_tradingagents": round(pv_m2, 4),
                         "dm_p_value_vs_tradingagents": round(dm_m2, 4),
                         "p_value_vs_equal_weight": round(pv_m1, 4),
@@ -2397,11 +2464,15 @@ def main():
         _write_csv(results_dir / "phase5_real_market_subset_results.csv", summary_rows)
         _write_csv(results_dir / "phase5_sota_pnl_subset.csv", sota_pnl_rows)
         _write_csv(results_dir / "phase5_per_stock_subset.csv", per_stock_rows)
+        _write_csv(reports_dir / "phase5_real_market_subset_results.csv", summary_rows)
+        _write_csv(reports_dir / "phase5_sota_pnl_subset.csv", sota_pnl_rows)
+        _write_csv(reports_dir / "phase5_per_stock_subset.csv", per_stock_rows)
     else:
         # Write Cohort B (Full 12-Asset x 86-Week Out-of-Sample Benchmark)
-        _write_csv(results_dir / "phase5_real_market_cph_results.csv", summary_rows)
-        _write_csv(results_dir / "phase5_sota_pnl_comparison.csv", sota_pnl_rows)
-        _write_csv(results_dir / "phase5_per_stock_breakdown.csv", per_stock_rows)
+        for out_dir in (results_dir, reports_dir):
+            _write_csv(out_dir / "phase5_real_market_cph_results.csv", summary_rows)
+            _write_csv(out_dir / "phase5_sota_pnl_comparison.csv", sota_pnl_rows)
+            _write_csv(out_dir / "phase5_per_stock_breakdown.csv", per_stock_rows)
 
         # Also evaluate and export standardized Cohort A (Core 4-Asset x 10-Week Tariff-Shock Verification Cohort)
         subset_universes = [
@@ -2418,9 +2489,10 @@ def main():
             client=client,
             verbose=True,
         )
-        _write_csv(results_dir / "phase5_real_market_subset_results.csv", sub_summary)
-        _write_csv(results_dir / "phase5_sota_pnl_subset.csv", sub_sota)
-        _write_csv(results_dir / "phase5_per_stock_subset.csv", sub_stock)
+        for out_dir in (results_dir, reports_dir):
+            _write_csv(out_dir / "phase5_real_market_subset_results.csv", sub_summary)
+            _write_csv(out_dir / "phase5_sota_pnl_subset.csv", sub_sota)
+            _write_csv(out_dir / "phase5_per_stock_subset.csv", sub_stock)
 
         # Run Phase 3(8) Hyperparameter Sensitivity Sweep over (eta, W)
         sweep_rows = run_hyperparameter_sensitivity_sweep(
@@ -2433,7 +2505,6 @@ def main():
         _write_csv(reports_dir / "phase5_hyperparameter_sensitivity.csv", sweep_rows)
 
     if summary_rows and not is_cli_subset:
-        tex_out = results_dir / "phase5_cph_table.tex"
         tex_lines = [
             "% Auto-generated by scripts/run_phase5_real_market_benchmark.py",
             "\\begin{table*}[t]",
@@ -2441,11 +2512,11 @@ def main():
             "\\small",
             "\\caption{Phase 5 Empirical Evaluation on Post-Cutoff 2025--2026 Real Market Data (86 Weekly Bars, Out-of-Sample).}",
             "\\label{tab:phase5_cph_real_market}",
-            "\\begin{tabular}{llrrrrrrrrrr}",
+            "\\begin{tabular}{llrrrrrrrrrrrr}",
             "\\toprule",
             "\\textbf{Universe} & \\textbf{Protocol} & \\textbf{Gross\\%} & \\textbf{Net\\%} & \\textbf{Gross SR} & "
-            "\\textbf{Net SR} & \\textbf{MaxDD\\%} & \\textbf{Turn.} & \\textbf{Brier}\\,$\\downarrow$ & "
-            "\\textbf{CBS (bps)} & \\textbf{Debate\\%} & \\textbf{$p$-val} \\\\",
+            "\\textbf{Net SR} & \\textbf{MaxDD\\%} & \\textbf{Turn.} & \\textbf{Brier}\\,$\\downarrow$ & \\textbf{ECE}\\,$\\downarrow$ & "
+            "\\textbf{CBS (bps)} & \\textbf{Debate\\%} & \\textbf{HAC $t$} & \\textbf{$p$-val} \\\\",
             "\\midrule",
         ]
         for r in summary_rows:
@@ -2461,11 +2532,13 @@ def main():
                 f"{r['gross_cum_return_pct']:+.2f} & {bold_open}{r['net_cum_return_pct']:+.2f}{bold_close} & "
                 f"{r['gross_sharpe']:.3f} & {bold_open}{r['net_sharpe']:.3f}{bold_close} & "
                 f"{r['max_drawdown_pct']:.2f} & {r['turnover_rate']:.2f} & "
-                f"{r['brier_score']:.4f} & {r['cbs_mean_bps']:+.2f} & "
-                f"{r['debate_rate_pct']:.1f}\\% & {r['p_value_vs_m2']:.4f} \\\\"
+                f"{r['brier_score']:.4f} & {r['ece']:.4f} & {r['cbs_mean_bps']:+.2f} & "
+                f"{r['debate_rate_pct']:.1f}\\% & {r['hac_t_stat_vs_m2']:+.2f} & {r['p_value_vs_m2']:.4f} \\\\"
             )
         tex_lines.extend(["\\bottomrule", "\\end{tabular}", "\\end{table*}"])
-        tex_out.write_text("\n".join(tex_lines) + "\n", encoding="utf-8")
+        tex_content = "\n".join(tex_lines) + "\n"
+        (results_dir / "phase5_cph_table.tex").write_text(tex_content, encoding="utf-8")
+        (reports_dir / "phase5_cph_table.tex").write_text(tex_content, encoding="utf-8")
 
     fig_out = results_dir / "regime_weight_trajectories"
     if cn_frontier_weights:

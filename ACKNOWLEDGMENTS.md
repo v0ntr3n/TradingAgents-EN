@@ -2,7 +2,7 @@
 
 ## 🌟 Tribute to the Original Project
 
-We extend our sincerest respect and gratitude to the **[Tauric Research](https://github.com/TauricResearch)** team and all contributors to the **[TradingAgents](https://github.com/TauricResearch/TradingAgents)** project.
+We extend our sincerest respect and gratitude to the **[[Anonymous Authors]](https://anonymous.4open.science/r/TradingAgents)** team and all contributors to the **[TradingAgents](https://anonymous.4open.science/r/TradingAgents)** project.
 
 This project is deeply inspired by and built upon their technical foundation. We are especially grateful for:
 
@@ -30,12 +30,12 @@ This project adopts a **hybrid license**, where different directories are govern
 | **Apache-2.0 Open-Source Components** | `tradingagents/`, `cli/`, `docs/`, `tests/`, `web/`, and root configuration files | Free to use, modify, distribute, and create derivative works (subject to Apache-2.0 terms) |
 | **Proprietary Components (Source Available)** | `app/`, `frontend/`, `core/` | Source code is viewable; personal use, evaluation, and educational use are permitted; **redistribution and commercial use are prohibited** |
 
-Commercial license inquiries: hsliup@163.com
+Commercial license inquiries: anonymous@example.com
 
 ## 🙏 Roll of Honor
 
-- **[Tauric Research](https://github.com/TauricResearch)** — Development team of the original TradingAgents project
-- **hsliuping** — Project creator and maintainer
+- **[[Anonymous Authors]](https://anonymous.4open.science/r/TradingAgents)** — Development team of the original TradingAgents project
+- **[Anonymous Authors]** — Project creator and maintainer
 - **Community Contributors** — Friends who participated in building the project via PRs (see [CONTRIBUTING.md](CONTRIBUTING.md))
 - **All users who submitted issues, suggestions, and feedback** — Your feedback drives the continuous improvement of this project
 
@@ -50,7 +50,7 @@ Thanks to [AkShare](https://github.com/akfamily/akshare), [Tushare](https://tush
 
 ---
 
-*"Standing on the shoulders of giants, we can see further. Thank you to the Tauric Research team for providing such solid shoulders."*
+*"Standing on the shoulders of giants, we can see further. Thank you to the [Anonymous Authors] team for providing such solid shoulders."*
 
 **TradingAgents-CN**
 September 2026

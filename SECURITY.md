@@ -4,7 +4,7 @@ If you discover a security vulnerability in this project (such as authentication
 
 ## How to Report
 
-Send an email to **hsliup@163.com**, preferably including:
+Send an email to **anonymous@example.com**, preferably including:
 
 - Vulnerability type (Authentication Bypass / Injection / Sensitive Information Disclosure / Other)
 - Reproduction steps and impact assessment
