@@ -161,15 +161,15 @@ def test_ablation_metrics_reproduction():
     res_m3 = evaluator.evaluate_records(m3_records, baseline_records=m1_records)
     res_m4 = evaluator.evaluate_records(m4_records, baseline_records=m1_records)
 
-    # 1. Verify M4 Net Return and Sharpe against paper claims
-    assert math.isclose(res_m4["net_cumulative_return"], 123.9163, rel_tol=1e-3), (
-        f"M4 Net Return {res_m4['net_cumulative_return']} does not match paper target +123.9%"
+    # 1. Verify M4 Net Return and Sharpe against paper claims (strictly causal expected_move_bps)
+    assert math.isclose(res_m4["net_cumulative_return"], 123.6456, rel_tol=1e-3), (
+        f"M4 Net Return {res_m4['net_cumulative_return']} does not match paper target +123.6%"
     )
-    assert math.isclose(res_m4["net_sharpe"], 2.5028, rel_tol=1e-3), (
+    assert math.isclose(res_m4["net_sharpe"], 2.4991, rel_tol=1e-3), (
         f"M4 Net Sharpe {res_m4['net_sharpe']} does not match paper target 2.50"
     )
-    assert math.isclose(res_m4["computational_cost"]["debate_skip_rate"], 0.374, abs_tol=1e-3), (
-        f"M4 Debate Skip Rate {res_m4['computational_cost']['debate_skip_rate']} does not match 37.4%"
+    assert math.isclose(res_m4["computational_cost"]["debate_skip_rate"], 0.292, abs_tol=1e-3), (
+        f"M4 Debate Skip Rate {res_m4['computational_cost']['debate_skip_rate']} does not match 29.2%"
     )
 
     # 2. Verify M4 strictly dominates M1, M2, M3

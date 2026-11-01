@@ -488,9 +488,12 @@ class ProtocolAuditEvaluator:
 
         gross_returns = []
         net_returns = []
+        net_10bps_returns = []
         cost_bps_series = []
         turnovers = []
         brier_losses = []
+        mae_losses = []
+        dir_hits = []
         confidences = []
         accuracies = []
         edge_bps_list = []
@@ -513,11 +516,14 @@ class ProtocolAuditEvaluator:
             )
             cost_bps_series.append(day_cost_bps)
             day_cost_pct = day_cost_bps / 100.0
+            day_cost_10bps_pct = (delta_pos * 10.0) / 100.0
 
             gross_r = pos * ret_pct
             net_r = gross_r - day_cost_pct
+            net_10bps_r = gross_r - day_cost_10bps_pct
             gross_returns.append(gross_r)
             net_returns.append(net_r)
+            net_10bps_returns.append(net_10bps_r)
             prev_pos = pos
 
             # Calibration metrics
@@ -538,11 +544,20 @@ class ProtocolAuditEvaluator:
                 true_cls = 1
 
             brier = ((p_o - y[0]) ** 2 + (p_n - y[1]) ** 2 + (p_c - y[2]) ** 2) / 3.0
+            mae = (abs(p_o - y[0]) + abs(p_n - y[1]) + abs(p_c - y[2])) / 3.0
             brier_losses.append(brier)
+            mae_losses.append(mae)
             probs = (p_o, p_n, p_c)
             pred_cls = max(range(3), key=lambda c: probs[c])
             confidences.append(probs[pred_cls])
             accuracies.append(1.0 if pred_cls == true_cls else 0.0)
+
+            # Directional hit rate: active exposure aligned with return sign or flat during non-positive return
+            if abs(ret_pct) > 1e-9:
+                if abs(pos) > 0.05:
+                    dir_hits.append(1.0 if (pos * ret_pct > 0) else 0.0)
+                else:
+                    dir_hits.append(1.0 if ret_pct <= 0 else 0.0)
 
             if baseline_records and idx < len(baseline_records):
                 base_r = float(baseline_records[idx].get("position", 0.0)) * ret_pct
@@ -550,7 +565,7 @@ class ProtocolAuditEvaluator:
             else:
                 edge_bps_list.append(float(rec.get("execution_edge_bps", 0.0)))
 
-        summary = self._compute_return_stats(gross_returns, net_returns)
+        summary = self._compute_return_stats(gross_returns, net_returns, net_10bps_returns)
         avg_edge_bps = sum(edge_bps_list) / len(edge_bps_list)
         realized_cbs_bps = avg_edge_bps / 2.0
         cbs_surplus_bps = realized_cbs_bps - self.half_spread_slippage_bps
@@ -562,8 +577,9 @@ class ProtocolAuditEvaluator:
             if r_indices:
                 r_gross = [gross_returns[i] for i in r_indices]
                 r_net = [net_returns[i] for i in r_indices]
+                r_net10 = [net_10bps_returns[i] for i in r_indices]
                 r_edge = sum(edge_bps_list[i] for i in r_indices) / len(r_indices)
-                r_stats = self._compute_return_stats(r_gross, r_net)
+                r_stats = self._compute_return_stats(r_gross, r_net, r_net10)
                 r_stats["cbs_surplus_bps"] = round((r_edge / 2.0) - self.half_spread_slippage_bps, 4)
                 r_stats["days"] = len(r_indices)
                 regime_metrics[r_name] = r_stats
@@ -580,7 +596,11 @@ class ProtocolAuditEvaluator:
             "realized_cbs_bps": round(realized_cbs_bps, 4),
             "cbs_surplus_bps": round(cbs_surplus_bps, 4),
             "brier_score": round(sum(brier_losses) / len(brier_losses), 6),
+            "mae": round(sum(mae_losses) / len(mae_losses), 6),
+            "hit_rate_pct": round((sum(dir_hits) / len(dir_hits)) * 100.0, 2) if dir_hits else 0.0,
             "expected_calibration_error": round(self._compute_ece(confidences, accuracies), 6),
+            "net_returns_series": net_returns,
+            "brier_losses_series": brier_losses,
             "computational_cost": {
                 "total_prompt_tokens": total_prompt,
                 "total_completion_tokens": total_completion,
@@ -592,7 +612,12 @@ class ProtocolAuditEvaluator:
         })
         return summary
 
-    def _compute_return_stats(self, gross_pct: List[float], net_pct: List[float]) -> Dict[str, float]:
+    def _compute_return_stats(
+        self,
+        gross_pct: List[float],
+        net_pct: List[float],
+        net_10bps_pct: Optional[List[float]] = None,
+    ) -> Dict[str, float]:
         def _cum_and_dd(series_pct: List[float]):
             eq = 1.0
             peak = 1.0
@@ -606,30 +631,52 @@ class ProtocolAuditEvaluator:
                     max_dd = dd
             return (eq - 1.0) * 100.0, max_dd * 100.0
 
-        def _sharpe_sortino(series_pct: List[float]):
+        def _sharpe_sortino_vol(series_pct: List[float]):
             n = len(series_pct)
             if n < 2:
-                return 0.0, 0.0
+                return 0.0, 0.0, 0.0
             mean_r = sum(series_pct) / n
             var = sum((x - mean_r) ** 2 for x in series_pct) / (n - 1)
             std = math.sqrt(var) if var > 1e-12 else 1e-6
             downside_sq = [min(0.0, x) ** 2 for x in series_pct]
             down_std = math.sqrt(sum(downside_sq) / n) if sum(downside_sq) > 1e-12 else 1e-6
             ann_factor = math.sqrt(self.trading_days_per_year)
-            return (mean_r / std) * ann_factor, (mean_r / down_std) * ann_factor
+            ann_vol = std * ann_factor
+            return (mean_r / std) * ann_factor, (mean_r / down_std) * ann_factor, ann_vol
 
+        n_steps = max(1, len(net_pct))
         gross_cum, _ = _cum_and_dd(gross_pct)
         net_cum, max_dd = _cum_and_dd(net_pct)
-        gross_sharpe, _ = _sharpe_sortino(gross_pct)
-        net_sharpe, net_sortino = _sharpe_sortino(net_pct)
-        ann_net = net_cum * (self.trading_days_per_year / max(1, len(net_pct)))
+        gross_sharpe, _, gross_ann_vol = _sharpe_sortino_vol(gross_pct)
+        net_sharpe, net_sortino, net_ann_vol = _sharpe_sortino_vol(net_pct)
+
+        gross_eq = 1.0 + gross_cum / 100.0
+        net_eq = 1.0 + net_cum / 100.0
+        ann_gross = ((gross_eq ** (self.trading_days_per_year / n_steps)) - 1.0) * 100.0 if gross_eq > 0 else -100.0
+        ann_net = ((net_eq ** (self.trading_days_per_year / n_steps)) - 1.0) * 100.0 if net_eq > 0 else -100.0
         net_calmar = ann_net / max_dd if max_dd > 1e-6 else ann_net
+
+        if net_10bps_pct is not None:
+            net10_cum, _ = _cum_and_dd(net_10bps_pct)
+            net10_sharpe, _, _ = _sharpe_sortino_vol(net_10bps_pct)
+            net10_eq = 1.0 + net10_cum / 100.0
+            ann_net10 = ((net10_eq ** (self.trading_days_per_year / n_steps)) - 1.0) * 100.0 if net10_eq > 0 else -100.0
+        else:
+            net10_cum = net_cum
+            net10_sharpe = net_sharpe
+            ann_net10 = ann_net
 
         return {
             "gross_cumulative_return": round(gross_cum, 4),
             "net_cumulative_return": round(net_cum, 4),
+            "net_10bps_cumulative_return": round(net10_cum, 4),
+            "gross_annualized_return": round(ann_gross, 4),
+            "net_annualized_return": round(ann_net, 4),
+            "net_10bps_annualized_return": round(ann_net10, 4),
+            "annualized_volatility": round(net_ann_vol, 4),
             "gross_sharpe": round(gross_sharpe, 4),
             "net_sharpe": round(net_sharpe, 4),
+            "net_sharpe_10bps": round(net10_sharpe, 4),
             "net_sortino": round(net_sortino, 4),
             "net_calmar": round(net_calmar, 4),
             "max_drawdown": round(max_dd, 4),

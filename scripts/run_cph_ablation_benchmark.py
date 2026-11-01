@@ -28,6 +28,7 @@ from tradingagents.graph.conditional_logic import (
 def generate_multi_regime_market_stream(n_days: int = 500, seed: int = 20261030):
     rng = random.Random(seed)
     stream = []
+    past_abs_rets = []
     # Partition 500 days into realistic rolling Bull (200d), Bear (150d), Sideways (150d) blocks
     for t in range(n_days):
         if t < 120 or (260 <= t < 340):
@@ -42,6 +43,10 @@ def generate_multi_regime_market_stream(n_days: int = 500, seed: int = 20261030)
 
         ret_pct = rng.gauss(mu, sigma)
         true_signal = 1.0 if ret_pct > 0.20 else (-1.0 if ret_pct < -0.20 else 0.0)
+
+        # Strictly causal volatility proxy from prior realized returns (tau <= t - 1)
+        trailing_abs = past_abs_rets[-10:]
+        causal_mad_pct = (sum(trailing_abs) / len(trailing_abs)) if trailing_abs else 1.15
 
         # Realistic specialist skill profiles across regimes:
         # In each regime, only 2-3 domain specialists have genuine predictive edge (>0.62),
@@ -95,9 +100,12 @@ def generate_multi_regime_market_stream(n_days: int = 500, seed: int = 20261030)
                 "p_optimistic": p_o / s,
                 "p_neutral": p_n / s,
                 "p_cautious": p_c / s,
-                "expected_move_bps": abs(ret_pct) * 100.0 + rng.uniform(30.0, 75.0),
+                "expected_move_bps": causal_mad_pct * 100.0 + rng.uniform(30.0, 75.0),
                 "market_regime": regime,
             }
+
+        # Update causal return history strictly after decision features at step t are constructed
+        past_abs_rets.append(abs(ret_pct))
 
         stream.append({
             "day": t + 1,
@@ -108,6 +116,147 @@ def generate_multi_regime_market_stream(n_days: int = 500, seed: int = 20261030)
             "posteriors": posteriors,
         })
     return stream
+
+
+def _compute_dm_pvalue(series_cand, series_base, higher_is_better: bool = True) -> float:
+    """One-sided Diebold-Mariano test p-value with Newey-West lag-1 HAC variance."""
+    n = min(len(series_cand), len(series_base))
+    if n < 5:
+        return 1.0
+    if higher_is_better:
+        d = [series_cand[i] - series_base[i] for i in range(n)]
+    else:
+        d = [series_base[i] - series_cand[i] for i in range(n)]
+    mean_d = sum(d) / n
+    gamma_0 = sum((x - mean_d) ** 2 for x in d) / n
+    if gamma_0 <= 1e-12:
+        return 1.0 if mean_d <= 0 else 0.0001
+    gamma_1 = sum((d[i] - mean_d) * (d[i - 1] - mean_d) for i in range(1, n)) / n
+    hac_var = max(0.1 * gamma_0, gamma_0 + 2.0 * (1.0 - 1.0 / 2.0) * gamma_1)
+    se = math.sqrt(hac_var / n)
+    dm_stat = mean_d / se
+    return round(0.5 * math.erfc(dm_stat / math.sqrt(2.0)), 4)
+
+
+def _compute_paired_bootstrap_pvalue(
+    rets_cand,
+    rets_base,
+    n_boot: int = 1000,
+    seed: int = 20260331,
+) -> float:
+    """One-sided Paired Stationary Bootstrap (1,000 resamples) p-value for Sharpe(cand) > Sharpe(base)."""
+    n = min(len(rets_cand), len(rets_base))
+    if n < 5:
+        return 1.0
+
+    def _sr(arr) -> float:
+        m = sum(arr) / len(arr)
+        v = sum((x - m) ** 2 for x in arr) / max(1, len(arr) - 1)
+        return (m / math.sqrt(max(v, 1e-12))) * math.sqrt(252.0)
+
+    obs_diff = _sr(rets_cand[:n]) - _sr(rets_base[:n])
+    if abs(obs_diff) <= 1e-12:
+        return 1.0
+
+    rng = random.Random(seed)
+    block_len = 5
+    non_pos = 0
+    for _ in range(n_boot):
+        idxs = []
+        while len(idxs) < n:
+            start = rng.randrange(0, n)
+            for k in range(block_len):
+                idxs.append((start + k) % n)
+                if len(idxs) >= n:
+                    break
+        c_sample = [rets_cand[i] for i in idxs]
+        b_sample = [rets_base[i] for i in idxs]
+        if (_sr(c_sample) - _sr(b_sample)) <= 0.0:
+            non_pos += 1
+    return round(max(1.0 / n_boot, non_pos / float(n_boot)), 4)
+
+
+def plot_cph_ablation_brier_mae(results, reports_dir: Path, results_dir: Path) -> None:
+    """Generate publication-grade vector (.pdf) and raster (.png) figure for Phase 4 CPH Ablation."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    plt.rcParams.update({
+        "font.family": "serif",
+        "font.size": 10,
+        "axes.labelsize": 11,
+        "axes.titlesize": 11,
+        "legend.fontsize": 9,
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+        "figure.dpi": 300,
+    })
+
+    protocols = [
+        "M1_Linear_Pipeline",
+        "M2_Vanilla_TradingAgents",
+        "M3_SelfDebate_V2",
+        "M4_CARE_Agents_Ours",
+    ]
+    labels = [
+        "M1: Linear\n(No Debate)",
+        "M2: Vanilla TA\n(Fixed Debate)",
+        "M3: Self-Debate\n(1-Shot)",
+        "M4: CARE-Agents\n(Ours, CBS+MWU)",
+    ]
+
+    briers = [results[p]["brier_score"] for p in protocols]
+    maes = [results[p]["mae"] for p in protocols]
+    net_sharpes = [results[p]["net_sharpe"] for p in protocols]
+    sharpes_10bps = [results[p]["net_sharpe_10bps"] for p in protocols]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.2))
+    x = np.arange(len(protocols))
+    width = 0.34
+
+    bars_brier = ax1.bar(x - width / 2, briers, width, label="Multiclass Brier Score (↓)", color="#1f4e78", edgecolor="black", linewidth=0.6)
+    bars_mae = ax1.bar(x + width / 2, maes, width, label="Probability MAE (↓)", color="#2e8b57", edgecolor="black", linewidth=0.6)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(labels)
+    ax1.set_ylabel("Calibration Error (Lower is Better)")
+    ax1.set_title("(a) Probabilistic Calibration: Brier Score & MAE")
+    ax1.set_ylim(0, max(maes) * 1.25)
+    ax1.grid(True, axis="y", linestyle="--", alpha=0.4)
+    ax1.legend(loc="upper right", frameon=True)
+
+    for b in bars_brier:
+        ax1.text(b.get_x() + b.get_width() / 2, b.get_height() + 0.006, f"{b.get_height():.4f}", ha="center", va="bottom", fontsize=7.5)
+    for b in bars_mae:
+        ax1.text(b.get_x() + b.get_width() / 2, b.get_height() + 0.006, f"{b.get_height():.4f}", ha="center", va="bottom", fontsize=7.5)
+
+    bars_sr15 = ax2.bar(x - width / 2, net_sharpes, width, label="Net Sharpe (15 bps A-Share)", color="#8b0000", edgecolor="black", linewidth=0.6)
+    bars_sr10 = ax2.bar(x + width / 2, sharpes_10bps, width, label="Net Sharpe (10 bps Institutional)", color="#d95f02", edgecolor="black", linewidth=0.6)
+    ax2.axhline(0.0, color="black", linewidth=0.8, linestyle="-")
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(labels)
+    ax2.set_ylabel("Annualized Sharpe Ratio (rf = 0)")
+    ax2.set_title("(b) Risk-Adjusted Return Across Transaction Cost Regimes")
+    ax2.set_ylim(min(net_sharpes) * 1.28, max(sharpes_10bps) * 1.22)
+    ax2.grid(True, axis="y", linestyle="--", alpha=0.4)
+    ax2.legend(loc="upper left", frameon=True)
+
+    for b in bars_sr15:
+        y_val = b.get_height()
+        offset = 0.08 if y_val >= 0 else -0.22
+        ax2.text(b.get_x() + b.get_width() / 2, y_val + offset, f"{y_val:.2f}", ha="center", va="bottom", fontsize=7.5)
+    for b in bars_sr10:
+        y_val = b.get_height()
+        offset = 0.08 if y_val >= 0 else -0.22
+        ax2.text(b.get_x() + b.get_width() / 2, y_val + offset, f"{y_val:.2f}", ha="center", va="bottom", fontsize=7.5)
+
+    plt.tight_layout()
+    for out_dir in (reports_dir, results_dir):
+        out_dir.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out_dir / "cph_ablation_brier_mae.pdf", bbox_inches="tight")
+        fig.savefig(out_dir / "cph_ablation_brier_mae.png", dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
 
 def run_ablation():
@@ -254,52 +403,96 @@ def run_ablation():
         "M4_CARE_Agents_Ours": evaluator.evaluate_records(m4_records, baseline_records=m1_records),
     }
 
-    reports_dir = ROOT / "reports"
-    reports_dir.mkdir(exist_ok=True)
+    m2_net_series = results["M2_Vanilla_TradingAgents"]["net_returns_series"]
+    m1_net_series = results["M1_Linear_Pipeline"]["net_returns_series"]
+    for name, m in results.items():
+        cand_series = m["net_returns_series"]
+        m["dm_pvalue_vs_m2"] = 1.0 if name == "M2_Vanilla_TradingAgents" else _compute_dm_pvalue(cand_series, m2_net_series, higher_is_better=True)
+        m["bootstrap_pvalue_vs_m2"] = 1.0 if name == "M2_Vanilla_TradingAgents" else _compute_paired_bootstrap_pvalue(cand_series, m2_net_series, n_boot=1000)
+        m["dm_pvalue_vs_m1"] = 1.0 if name == "M1_Linear_Pipeline" else _compute_dm_pvalue(cand_series, m1_net_series, higher_is_better=True)
+        m["bootstrap_pvalue_vs_m1"] = 1.0 if name == "M1_Linear_Pipeline" else _compute_paired_bootstrap_pvalue(cand_series, m1_net_series, n_boot=1000)
+        m.pop("net_returns_series", None)
+        m.pop("brier_losses_series", None)
 
-    # Save CSV
-    csv_path = reports_dir / "cph_ablation_metrics.csv"
-    with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "Architecture",
-            "Gross_Return_Pct",
-            "Net_Return_Pct",
-            "Gross_Sharpe",
-            "Net_Sharpe",
-            "Net_Sortino",
-            "Max_Drawdown_Pct",
-            "Bull_Net_Sharpe",
-            "Bear_Net_Sharpe",
-            "Sideways_Net_Sharpe",
-            "CBS_Surplus_Bps",
-            "Brier_Score",
-            "ECE",
-            "Avg_Tokens_Per_Decision",
-            "Avg_Latency_Sec",
-            "Debate_Skip_Rate_Pct",
-        ])
-        for name, m in results.items():
-            rm = m["regime_metrics"]
-            cc = m["computational_cost"]
+    reports_dir = ROOT / "reports"
+    results_dir = ROOT / "results"
+    reports_dir.mkdir(exist_ok=True)
+    results_dir.mkdir(exist_ok=True)
+
+    plot_cph_ablation_brier_mae(results, reports_dir, results_dir)
+
+    # Save CSV to both reports/ and results/
+    for out_dir in (reports_dir, results_dir):
+        csv_path = out_dir / "cph_ablation_metrics.csv"
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
             writer.writerow([
-                name,
-                m["gross_cumulative_return"],
-                m["net_cumulative_return"],
-                m["gross_sharpe"],
-                m["net_sharpe"],
-                m["net_sortino"],
-                m["max_drawdown"],
-                rm["bull"]["net_sharpe"],
-                rm["bear"]["net_sharpe"],
-                rm["sideways"]["net_sharpe"],
-                m["cbs_surplus_bps"],
-                m["brier_score"],
-                m["expected_calibration_error"],
-                cc["avg_tokens_per_decision"],
-                cc["avg_latency_sec"],
-                round(cc["debate_skip_rate"] * 100.0, 1),
+                "Architecture",
+                "Gross_Return_Pct",
+                "Net_Return_Pct",
+                "Net_10bps_Return_Pct",
+                "Gross_Ann_Return_Pct",
+                "Net_Ann_Return_Pct",
+                "Ann_Vol_Pct",
+                "Gross_Sharpe",
+                "Net_Sharpe",
+                "Net_Sharpe_10bps",
+                "Net_Sortino",
+                "Net_Calmar",
+                "Max_Drawdown_Pct",
+                "Turnover_Rate",
+                "Cumulative_Turnover",
+                "Bull_Net_Sharpe",
+                "Bear_Net_Sharpe",
+                "Sideways_Net_Sharpe",
+                "CBS_Surplus_Bps",
+                "Brier_Score",
+                "MAE",
+                "Hit_Rate_Pct",
+                "ECE",
+                "DM_P_Value_vs_M2",
+                "Bootstrap_P_Value_vs_M2",
+                "DM_P_Value_vs_M1",
+                "Bootstrap_P_Value_vs_M1",
+                "Avg_Tokens_Per_Decision",
+                "Avg_Latency_Sec",
+                "Debate_Skip_Rate_Pct",
             ])
+            for name, m in results.items():
+                rm = m["regime_metrics"]
+                cc = m["computational_cost"]
+                writer.writerow([
+                    name,
+                    m["gross_cumulative_return"],
+                    m["net_cumulative_return"],
+                    m["net_10bps_cumulative_return"],
+                    m["gross_annualized_return"],
+                    m["net_annualized_return"],
+                    m["annualized_volatility"],
+                    m["gross_sharpe"],
+                    m["net_sharpe"],
+                    m["net_sharpe_10bps"],
+                    m["net_sortino"],
+                    m["net_calmar"],
+                    m["max_drawdown"],
+                    m["turnover_rate"],
+                    m["cumulative_turnover"],
+                    rm["bull"]["net_sharpe"],
+                    rm["bear"]["net_sharpe"],
+                    rm["sideways"]["net_sharpe"],
+                    m["cbs_surplus_bps"],
+                    m["brier_score"],
+                    m["mae"],
+                    m["hit_rate_pct"],
+                    m["expected_calibration_error"],
+                    m["dm_pvalue_vs_m2"],
+                    m["bootstrap_pvalue_vs_m2"],
+                    m["dm_pvalue_vs_m1"],
+                    m["bootstrap_pvalue_vs_m1"],
+                    cc["avg_tokens_per_decision"],
+                    cc["avg_latency_sec"],
+                    round(cc["debate_skip_rate"] * 100.0, 1),
+                ])
 
     # Save LaTeX Table
     tex_path = reports_dir / "cph_ablation_table.tex"
