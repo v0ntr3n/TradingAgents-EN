@@ -11,9 +11,23 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Callable
 from app.utils.api_key_utils import truncate_api_key
 
-from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
-from langchain_core.tools import BaseTool
+try:
+    from langchain_core.language_models import BaseChatModel
+    from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
+    from langchain_core.tools import BaseTool
+except ModuleNotFoundError:
+    BaseChatModel = Any  # type: ignore
+
+    class _FallbackMessage:
+        def __init__(self, content: str = "", **kwargs: Any):
+            self.content = content
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+
+    AIMessage = _FallbackMessage  # type: ignore
+    ToolMessage = _FallbackMessage  # type: ignore
+    HumanMessage = _FallbackMessage  # type: ignore
+    BaseTool = Any  # type: ignore
 
 from .config import AgentMetadata, AgentConfig
 

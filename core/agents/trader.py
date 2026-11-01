@@ -111,7 +111,7 @@ class TraderAgent(BaseAgent):
             all_reports = self._collect_all_reports(state)
             
             # 3. Get historical transaction records from the memory system (if any)
-            historical_trades = self._get_historical_trades(ticker) if self.memory else None
+            historical_trades = self._get_historical_trades(ticker, state=state) if self.memory else None
             
             # 4. Build prompt words
             system_prompt = self._build_system_prompt(state=state)
@@ -209,12 +209,13 @@ class TraderAgent(BaseAgent):
 
         return reports
 
-    def _get_historical_trades(self, ticker: str) -> Optional[List[Dict[str, Any]]]:
+    def _get_historical_trades(self, ticker: str, state: Optional[Dict[str, Any]] = None) -> Optional[List[Dict[str, Any]]]:
         """
         Obtain historical transaction records from the memory system
 
         Args:
             ticker: Stock code
+            state: Optional workflow state for regime-aware retrieval
 
         Returns:
             Historical transaction list
@@ -229,10 +230,13 @@ class TraderAgent(BaseAgent):
                 logger.warning("Memory instances do not support search_memories and historical transaction recall has been skipped: %s", type(self.memory).__name__)
                 return None
 
+            state_dict = state if isinstance(state, dict) else {}
             memories = self.memory.search_memories(
                 query=query,
                 n_results=3,
                 filter_metadata={"ticker": ticker} if ticker else None,
+                current_regime=state_dict.get("market_regime"),
+                drawdown_circuit_breaker=bool(state_dict.get("drawdown_circuit_breaker", False)),
             )
             return [
                 {

@@ -313,8 +313,20 @@ class GraphSetup:
                 next_analyst = f"{next_display_name} Analyst"
                 workflow.add_edge(current_clear, next_analyst)
             else:
+                def cbs_gate_node(state: AgentState):
+                    decision = self.conditional_logic.should_gate_debate(state)
+                    return {
+                        "cbs_gating_decision": decision,
+                        "_risk_self_debate": decision.get("risk_self_debate", False),
+                        "analyst_posteriors": state.get("analyst_posteriors"),
+                        "analyst_weights": state.get("analyst_weights"),
+                        "market_regime": state.get("market_regime"),
+                    }
+
+                workflow.add_node("CBS Debate Gate", cbs_gate_node)
+                workflow.add_edge(current_clear, "CBS Debate Gate")
                 workflow.add_conditional_edges(
-                    current_clear,
+                    "CBS Debate Gate",
                     self.conditional_logic.should_trigger_multi_round_debate,
                     {
                         "Bull Researcher": "Bull Researcher",

@@ -1,5 +1,4 @@
 import math
-from core.agents.base import BaseAgent, GENERIC_REPORT_FALLBACK
 """
 Analyst Agent base class
 
@@ -11,10 +10,17 @@ import logging
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional
 
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from .base import BaseAgent
-from .config import AgentMetadata, AgentCategory
+try:
+    from core.agents.base import BaseAgent, GENERIC_REPORT_FALLBACK, HumanMessage
+    from .config import AgentMetadata, AgentCategory
+    SystemMessage = HumanMessage  # type: ignore
+except ModuleNotFoundError:
+    BaseAgent = object  # type: ignore
+    GENERIC_REPORT_FALLBACK = "Tool execution or model generation has not been completed, and the current conclusions still need to be verified."
+    HumanMessage = object  # type: ignore
+    SystemMessage = object  # type: ignore
+    AgentMetadata = object  # type: ignore
+    AgentCategory = object  # type: ignore
 
 logger = logging.getLogger(__name__)
 

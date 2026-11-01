@@ -170,7 +170,7 @@ class ManagerAgent(BaseAgent):
             else:
                 debate_summary = None
 
-            memory_context = self._get_memory_context(ticker, inputs)
+            memory_context = self._get_memory_context(ticker, inputs, state=state)
             if memory_context:
                 debate_summary = self._merge_memory_context(debate_summary, memory_context)
             
@@ -418,7 +418,7 @@ class ManagerAgent(BaseAgent):
             query_parts.append(f"{key}: {str(content)[:200]}")
         return "\n".join(query_parts)
 
-    def _get_memory_context(self, ticker: str, inputs: Dict[str, Any]) -> str:
+    def _get_memory_context(self, ticker: str, inputs: Dict[str, Any], state: Optional[Dict[str, Any]] = None) -> str:
         if not self.memory:
             return ""
 
@@ -429,10 +429,13 @@ class ManagerAgent(BaseAgent):
                 logger.warning("Memory instances do not support search_memories, manager history recall has been skipped: %s", type(self.memory).__name__)
                 return ""
 
+            state_dict = state if isinstance(state, dict) else {}
             memories = self.memory.search_memories(
                 query=query,
                 n_results=3,
                 filter_metadata={"ticker": ticker} if ticker else None,
+                current_regime=state_dict.get("market_regime"),
+                drawdown_circuit_breaker=bool(state_dict.get("drawdown_circuit_breaker", False)),
             )
             formatted = []
             for item in memories or []:

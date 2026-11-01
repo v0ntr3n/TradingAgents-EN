@@ -99,4 +99,5 @@ class AgentState(MessagesState):
     estimated_spread_bps: Annotated[Optional[float], "Estimated transaction friction spread in bps"]
     cbs_gating_decision: Annotated[Optional[Dict[str, Any]], "CBS debate gating decision and metrics"]
     _risk_self_debate: Annotated[Optional[bool], "Fast-path single-pass debate flag"]
+    drawdown_circuit_breaker: Annotated[Optional[bool], "Drawdown circuit breaker active flag"]
     current_price: Annotated[Optional[float], "Current asset price for calibrated price targeting"]

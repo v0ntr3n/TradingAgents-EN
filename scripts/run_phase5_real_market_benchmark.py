@@ -56,7 +56,7 @@ from core.backtest.result_evaluator import ProtocolAuditEvaluator
 
 
 def load_real_2025_2026_dataset(csv_path: Path) -> Dict[str, List[Dict[str, Any]]]:
-    """Load real 2025-2026 weekly prices and valuation metrics grouped by symbol."""
+    """Load real 2025-2026 weekly prices and compute point-in-time dynamic valuation metrics grouped by symbol."""
     by_symbol: Dict[str, List[Dict[str, Any]]] = {}
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -68,11 +68,17 @@ def load_real_2025_2026_dataset(csv_path: Path) -> Dict[str, List[Dict[str, Any]
                 "market": row["market"],
                 "date": row["date"],
                 "close": float(row["close"]),
+                "pe_static": float(row.get("pe", row.get("pe_ratio", 20.0))),
+                "div_yield_static": float(row.get("div_yield", row.get("dividend_yield", 1.5))),
                 "pe_ratio": float(row.get("pe", row.get("pe_ratio", 20.0))),
                 "dividend_yield": float(row.get("div_yield", row.get("dividend_yield", 1.5))),
             })
     for sym in by_symbol:
         by_symbol[sym].sort(key=lambda r: r["date"])
+        initial_close = max(1e-6, by_symbol[sym][0]["close"])
+        for r in by_symbol[sym]:
+            r["pe_ratio"] = round(r["pe_static"] * (r["close"] / initial_close), 2)
+            r["dividend_yield"] = round(r["div_yield_static"] * (initial_close / max(1e-6, r["close"])), 2)
     return by_symbol
 
 
@@ -298,14 +304,18 @@ def build_specialist_prompt(
     regime: str,
     model_tier: str = "Frontier_LLM_DeepSeek_V3",
 ) -> Tuple[str, str]:
-    tier_label = "Frontier reasoning model" if "Frontier" in model_tier else "SLM-14B lightweight model"
+    tier_label = (
+        "Frontier reasoning model (DeepSeek-Flash T=0.10 / Frontier Persona)"
+        if "Frontier" in model_tier
+        else "SLM-14B lightweight model (DeepSeek-Flash T=0.35 / Qwen2.5-14B Persona)"
+    )
     system_prompt = (
         f"You are the {agent_id} specialist analyst ({tier_label}) evaluating {row['symbol']} ({row['name']}) "
         f"as of point-in-time date {row['date']} (strictly no information after {row['date']}).\n"
         "Your analysis must adhere strictly to your specialist domain:\n"
-        "- market: Focus strictly on price momentum, trend persistence, moving average support/resistance, and short-term volatility.\n"
-        "- fundamentals: Focus strictly on valuation multiples (P/E ratio), dividend yield support, structural earnings quality, and margin of safety.\n"
-        "- news: Focus strictly on macroeconomic news narrative, moving average alignment (MA4 vs MA8), and medium-term directional regime.\n"
+        "- market: Focus strictly on price momentum, trend persistence, 4-week and 8-week moving average (MA4 vs MA8_weekly) support/resistance, and short-term volatility.\n"
+        "- fundamentals: Focus strictly on dynamic valuation multiples (P/E ratio), dividend yield support, 52-week drawdown margin of safety, and structural earnings quality.\n"
+        "- news: Focus strictly on macroeconomic news narrative, 4-week vs 8-week moving average alignment (MA4 vs MA8_weekly), and medium-term directional regime.\n"
         "- social: Focus strictly on retail crowd psychology, short-term extreme price reactions, speculative euphoria or panic, and sentiment reversal risk.\n\n"
         "Output format:\n"
         "Emit a concise 2-sentence rationale followed by a single-line JSON block strictly matching:\n"
@@ -313,13 +323,36 @@ def build_specialist_prompt(
         '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
         "where p_optimistic + p_neutral + p_cautious == 1.0."
     )
-    user_prompt = (
-        f"Point-in-time metrics for {row['symbol']} ({row['name']}) as of {row['date']}:\n"
-        f"Close={row['close']}, PE={row['pe_ratio']}, DivYield={row['dividend_yield']}%, "
-        f"1w_ret={features['ret_1w']:.2f}%, 2w_ret={features['ret_2w']:.2f}%, "
-        f"3w_ret={features['ret_3w']:.2f}%, 4w_ret={features['ret_4w']:.2f}%, "
-        f"Price/MA8={features['p_over_ma8']:.4f}, Vol_4w={features['vol_4w']:.2f}%, CausalRegime={regime}."
-    )
+    if agent_id == "market":
+        user_prompt = (
+            f"Point-in-time market & technical metrics for {row['symbol']} ({row['name']}) as of {row['date']}:\n"
+            f"Close={row['close']}, 1w_ret={features['ret_1w']:.2f}%, 2w_ret={features['ret_2w']:.2f}%, "
+            f"3w_ret={features['ret_3w']:.2f}%, 4w_ret={features['ret_4w']:.2f}%, "
+            f"MA4={features['ma4']:.2f}, MA8_weekly={features['ma8']:.2f}, "
+            f"Price/MA8_weekly={features['p_over_ma8']:.4f}, Vol_4w={features['vol_4w']:.2f}%, CausalRegime={regime}."
+        )
+    elif agent_id == "fundamentals":
+        price_to_peak = row["close"] / max(1e-6, features["peak_all"])
+        user_prompt = (
+            f"Point-in-time fundamental & valuation metrics for {row['symbol']} ({row['name']}) as of {row['date']}:\n"
+            f"Close={row['close']}, Dynamic_PE={row['pe_ratio']:.2f}, Dynamic_DivYield={row['dividend_yield']:.2f}%, "
+            f"52w_Peak={features['peak_all']:.2f}, Price/52w_Peak={price_to_peak:.4f}, "
+            f"4w_ret={features['ret_4w']:.2f}%, 8w_ret={features['ret_8w']:.2f}%, CausalRegime={regime}."
+        )
+    elif agent_id == "news":
+        user_prompt = (
+            f"Point-in-time macro & medium-term regime metrics for {row['symbol']} ({row['name']}) as of {row['date']}:\n"
+            f"Close={row['close']}, 4w_ret={features['ret_4w']:.2f}%, 8w_ret={features['ret_8w']:.2f}%, "
+            f"MA4={features['ma4']:.2f}, MA8_weekly={features['ma8']:.2f}, "
+            f"Price/MA8_weekly={features['p_over_ma8']:.4f}, Vol_4w={features['vol_4w']:.2f}%, CausalRegime={regime}."
+        )
+    else:
+        user_prompt = (
+            f"Point-in-time retail sentiment & short-term velocity metrics for {row['symbol']} ({row['name']}) as of {row['date']}:\n"
+            f"Close={row['close']}, 1w_ret={features['ret_1w']:.2f}%, 2w_ret={features['ret_2w']:.2f}%, "
+            f"3w_ret={features['ret_3w']:.2f}%, Vol_4w={features['vol_4w']:.2f}%, "
+            f"MA4={features['ma4']:.2f}, MA8_weekly={features['ma8']:.2f}, Price/MA8_weekly={features['p_over_ma8']:.4f}, CausalRegime={regime}."
+        )
     return system_prompt, user_prompt
 
 
@@ -418,6 +451,7 @@ def build_b3_fincon_prompt(
     regime: str,
     returns_8w: List[float],
     model_tier: str = "Frontier_LLM_DeepSeek_V3",
+    fincon_history: Optional[List[float]] = None,
 ) -> Tuple[str, str]:
     system_prompt = (
         "You are the FinCon hierarchical trading system (Yu et al., NeurIPS 2024), integrating an Analyst perspective "
@@ -430,8 +464,9 @@ def build_b3_fincon_prompt(
         '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}\n'
         "where p_optimistic + p_neutral + p_cautious == 1.0."
     )
-    if len(returns_8w) >= 2:
-        sorted_rets = sorted(returns_8w)
+    cvar_source = fincon_history[-8:] if (fincon_history and len(fincon_history) >= 2) else returns_8w
+    if len(cvar_source) >= 2:
+        sorted_rets = sorted(cvar_source)
         worst_2 = sorted_rets[:2]
         cvar_pct = float(np.mean(worst_2)) * 100.0
     else:
@@ -627,7 +662,10 @@ def query_specialist_posteriors(
             "p_optimistic": float(res["p_optimistic"]),
             "p_neutral": float(res["p_neutral"]),
             "p_cautious": float(res["p_cautious"]),
-            "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+            "expected_move_bps": round(
+                abs(float(res.get("expected_move_bps", 50.0))) + float(features.get("vol_4w", 2.5)) * 100.0,
+                2,
+            ),
             "confidence": float(res.get("confidence", 0.8)),
             "market_regime": str(res.get("market_regime", regime)),
             "tokens_used": int(res.get("tokens_used", 0)),
@@ -833,7 +871,9 @@ def query_b3_fincon(
     if cached is not None:
         res = cached
     elif use_live_llm_api and client:
-        sys_p, usr_p = build_b3_fincon_prompt(row, features, regime, returns_8w, model_tier)
+        sys_p, usr_p = build_b3_fincon_prompt(
+            row, features, regime, returns_8w, model_tier, fincon_history=fincon_history
+        )
         res = client.query(cache_key, sys_p, usr_p, temperature=0.10)
     else:
         raise FileNotFoundError(f"Missing authentic LLM cache entry '{cache_key}' in results/live_llm_posteriors_cache.json.")
@@ -1075,8 +1115,9 @@ def unified_position_from_posterior(
     cbs_turnover_gate: bool = False,
 ) -> float:
     """
-    Unified posterior-to-position decision rule shared identically across M1, M2, M3, and M4.
-    When `cbs_turnover_gate=True` (Contribution C1), small position adjustments inside the
+    Symmetric binary posterior-to-position decision rule shared identically across all protocols.
+    Base target position is binary {0.0, 1.0} based on posterior directional edge (p_opt - p_cau).
+    When `cbs_turnover_gate=True` (Contribution C1), small directional edges inside the
     cost-scaled no-trade band `[-band, +band]` retain `prev_pos` to avoid negative-CBS whipsaws.
     """
     edge = agg_post["p_optimistic"] - agg_post["p_cautious"]
@@ -1088,11 +1129,7 @@ def unified_position_from_posterior(
             return 0.0
         return prev_pos
     else:
-        if edge >= 0.05:
-            return 1.0
-        elif edge >= -0.03:
-            return 0.45
-        return 0.0
+        return 1.0 if edge > 0.0 else 0.0
 
 
 def paired_block_bootstrap_sharpe_test(
@@ -1125,7 +1162,7 @@ def paired_block_bootstrap_sharpe_test(
         idx = np.concatenate([(s + np.arange(block_size)) % n for s in starts])[:n]
         boot_diffs.append(_sr(cand[idx]) - _sr(base[idx]))
     boot_arr = np.asarray(boot_diffs, dtype=float)
-    p_val = float(np.mean(boot_arr <= 0.0)) if obs_diff > 0 else float(np.mean(boot_arr >= 0.0))
+    p_val = float(np.mean(boot_arr <= 0.0))
     return {"delta_sharpe": round(obs_diff, 4), "p_value": round(max(1.0 / n_boot, p_val), 4)}
 
 
@@ -1161,11 +1198,11 @@ def diebold_mariano_pvalue(
     return round(max(0.0001, 0.5 * math.erfc(t_stat / math.sqrt(2.0))), 4)
 
 
-def delong_brier_pvalue(
+def paired_brier_z_pvalue(
     candidate_briers: List[float],
     baseline_briers: List[float],
 ) -> float:
-    """Paired DeLong/calibration z-test p-value comparing per-step Brier losses (lower is better)."""
+    """Paired Brier loss z-test p-value comparing per-step Brier losses (lower is better)."""
     cand = np.asarray(candidate_briers, dtype=float)
     base = np.asarray(baseline_briers, dtype=float)
     n = min(len(cand), len(base))
@@ -1193,11 +1230,13 @@ def run_market_universe_chronologically(
     window_len: int = 8,
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Dict[str, List[Dict[str, Any]]]], List[Dict[str, Any]]]:
     """
-    Simulate all 5 architectures (M0..M4) plus SOTA baselines (Q1, Q2, B1, B2, B3)
-    chronologically across all weeks in the universe.
-    Enforces strict t-1 -> t causal weight updates: decisions for all symbols at step t
-    use ONLY weights updated from returns realized up to step t-1.
+    Simulate all 5 architectures (M0..M4), component ablations, plus SOTA baselines (Q1, Q2, B1, B2, B3)
+    chronologically across all canonical ISO calendar weeks in the universe.
+    Enforces strict t-1 -> t causal weight updates: decisions for all symbols at week t
+    use ONLY weights updated from returns realized up to week t-1.
     """
+    from datetime import date as _date
+
     is_cn = (market_code == "CN")
     spread_bps = 15.0 if is_cn else 5.0
     cost_rate = spread_bps / 10000.0
@@ -1216,12 +1255,26 @@ def run_market_universe_chronologically(
         max_debate_rounds=2,
         max_risk_discuss_rounds=1,
         jsd_threshold=0.0052,
-        default_spread_bps=spread_bps * 0.005,
+        default_spread_bps=spread_bps,
     )
 
-    n_weeks = min(len(by_symbol[s]) for s in symbols)
     warmup = 8
-    end_idx = min(n_weeks - 1, warmup + max_weeks) if max_weeks > 0 else (n_weeks - 1)
+    sym_week_idx: Dict[Tuple[str, Tuple[int, int]], int] = {}
+    all_iso_weeks = set()
+    week_canonical_date: Dict[Tuple[int, int], str] = {}
+    for s in symbols:
+        rows_s = by_symbol[s]
+        for idx in range(warmup, len(rows_s) - 1):
+            dt_s = rows_s[idx]["date"]
+            wk = _date.fromisoformat(dt_s).isocalendar()[:2]
+            sym_week_idx[(s, wk)] = idx
+            all_iso_weeks.add(wk)
+            if wk not in week_canonical_date or dt_s > week_canonical_date[wk]:
+                week_canonical_date[wk] = dt_s
+
+    sorted_weeks = sorted(all_iso_weeks)
+    if max_weeks > 0:
+        sorted_weeks = sorted_weeks[:max_weeks]
 
     protocols = [
         "M0_Buy_And_Hold",
@@ -1229,6 +1282,10 @@ def run_market_universe_chronologically(
         "M2_Vanilla_TradingAgents",
         "M3_SelfDebate_V2",
         "M4_CARE_Agents_Ours",
+        "M1_plus_C2_Regime_MWU",
+        "M1_plus_C1_C2_CBS_Debate",
+        "M1_plus_C1_C2_Turnover_Gate",
+        "M2_plus_C3_Turnover_Gate",
         "Q1_SMA_Crossover",
         "Q2_MACD_RSI_Rule",
         "B1_FinMem_2024",
@@ -1246,6 +1303,8 @@ def run_market_universe_chronologically(
 
     m4_equity: Dict[str, float] = {s: 1.0 for s in symbols}
     m4_peak: Dict[str, float] = {s: 1.0 for s in symbols}
+    m2_c3_equity: Dict[str, float] = {s: 1.0 for s in symbols}
+    m2_c3_peak: Dict[str, float] = {s: 1.0 for s in symbols}
 
     # Online counterfactual marginal loss per specialist (Contribution C3)
     spec_cum_loss: Dict[str, float] = {"market": 0.0, "fundamentals": 0.0, "news": 0.0, "social": 0.0}
@@ -1257,12 +1316,28 @@ def run_market_universe_chronologically(
 
     weight_trajectory_log: List[Dict[str, Any]] = []
 
-    for idx in range(warmup, end_idx):
-        date_str = by_symbol[symbols[0]][idx]["date"]
+    for wk in sorted_weeks:
+        date_str = week_canonical_date[wk]
         regime_counts = {"bull": 0, "bear": 0, "sideways": 0}
         pending_step_updates: List[Dict[str, Any]] = []
 
         for sym in symbols:
+            if (sym, wk) not in sym_week_idx:
+                # Market holiday week for this symbol: zero asset return, retain previous position
+                for p in protocols:
+                    if p in ("B1_FinMem_2024", "B2_FinAgent_KDD24", "B3_FinCon_NeurIPS24") and model_tier != "Frontier_LLM_DeepSeek_V3":
+                        continue
+                    hold_pos = prev_pos[p][sym]
+                    by_proto_stock[p][sym].append({
+                        "date": date_str, "symbol": sym, "position": hold_pos,
+                        "prev_position": hold_pos, "asset_return": 0.0,
+                        "p_optimistic": 0.3333, "p_neutral": 0.3334, "p_cautious": 0.3333,
+                        "outcome": 0, "debate_triggered": False,
+                        "debate_cost_bps": 0.0, "tokens_used": 0,
+                    })
+                continue
+
+            idx = sym_week_idx[(sym, wk)]
             series = by_symbol[sym]
             closes = [r["close"] for r in series]
             row_curr = series[idx]
@@ -1350,6 +1425,30 @@ def run_market_universe_chronologically(
             })
             prev_pos["M2_Vanilla_TradingAgents"][sym] = pos_m2
 
+            # M2 + C3 + Turnover Gate (Symmetric execution rule control on Vanilla TradingAgents)
+            pos_m2_c3 = unified_position_from_posterior(
+                agg_m2, prev_pos["M2_plus_C3_Turnover_Gate"][sym], spread_bps, cbs_turnover_gate=True
+            )
+            curr_dd_m2 = (m2_c3_peak[sym] - m2_c3_equity[sym]) / max(1e-9, m2_c3_peak[sym])
+            dd_cap_m2 = max(0.068, 2.5 * (features["vol_4w"] / 100.0))
+            if curr_dd_m2 > dd_cap_m2 and closes[idx] < features["peak_all"] * 0.92:
+                pos_m2_c3 = 0.0
+            prev_m2_c3 = prev_pos["M2_plus_C3_Turnover_Gate"][sym]
+            m2_c3_net = pos_m2_c3 * realized_ret - abs(pos_m2_c3 - prev_m2_c3) * cost_rate
+            m2_c3_equity[sym] *= (1.0 + m2_c3_net)
+            m2_c3_peak[sym] = max(m2_c3_peak[sym], m2_c3_equity[sym])
+            by_proto_stock["M2_plus_C3_Turnover_Gate"][sym].append({
+                "date": date_str, "symbol": sym, "position": pos_m2_c3,
+                "prev_position": prev_m2_c3,
+                "asset_return": realized_ret,
+                "p_optimistic": agg_m2["p_optimistic"],
+                "p_neutral": agg_m2["p_neutral"],
+                "p_cautious": agg_m2["p_cautious"],
+                "outcome": outcome, "debate_triggered": True,
+                "debate_cost_bps": debate_token_cost_bps, "tokens_used": m2_tok,
+            })
+            prev_pos["M2_plus_C3_Turnover_Gate"][sym] = pos_m2_c3
+
             # ----------------------------------------------------------------
             # M3: Single-Model Self-Debate V2 (1-Shot Internal Roleplay)
             # ----------------------------------------------------------------
@@ -1378,16 +1477,34 @@ def run_market_universe_chronologically(
             prev_pos["M3_SelfDebate_V2"][sym] = pos_m3
 
             # ----------------------------------------------------------------
-            # M4: CARE-Agents (Ours)
+            # M4: CARE-Agents (Ours) & Stepwise Component Ablations
             #   1. Online Regime-Conditioned Multiplicative Weights (C2, strictly causal t-1 -> t)
             #   2. CBS Debate Gate (`ConditionalLogic.should_gate_debate`, C1)
             #   3. Counterfactual Attribution & Volatility-Scaled Drawdown Breaker (C3)
             # ----------------------------------------------------------------
             w_reg = weight_mgr.get_regime_weights(regime)
+            agg_c2 = linear_pool_posteriors(posteriors, w_reg)
+
+            # Component Ablation: M1 + C2 (Online Regime-MWU only, no debate, no turnover gate)
+            pos_c2 = unified_position_from_posterior(
+                agg_c2, prev_pos["M1_plus_C2_Regime_MWU"][sym], spread_bps, cbs_turnover_gate=False
+            )
+            by_proto_stock["M1_plus_C2_Regime_MWU"][sym].append({
+                "date": date_str, "symbol": sym, "position": pos_c2,
+                "prev_position": prev_pos["M1_plus_C2_Regime_MWU"][sym],
+                "asset_return": realized_ret,
+                "p_optimistic": agg_c2["p_optimistic"],
+                "p_neutral": agg_c2["p_neutral"],
+                "p_cautious": agg_c2["p_cautious"],
+                "outcome": outcome, "debate_triggered": False,
+                "debate_cost_bps": 0.0, "tokens_used": m1_tok,
+            })
+            prev_pos["M1_plus_C2_Regime_MWU"][sym] = pos_c2
+
             gate_info = cond_logic.should_gate_debate({
                 "analyst_posteriors": posteriors,
                 "analyst_weights": w_reg,
-                "estimated_spread_bps": spread_bps * 0.005,
+                "estimated_spread_bps": spread_bps,
             })
             gate_open = (gate_info.get("route") == "multi_round_debate")
 
@@ -1396,7 +1513,7 @@ def run_market_universe_chronologically(
             if gate_open:
                 jsd_val = float(gate_info.get("jsd", gate_info.get("divergence_score", 0.006)))
                 conf_diag = f"Inter-specialist JSD={jsd_val:.4f} > 0.0052. Regime={regime}. Top-performing specialist={best_k}."
-                agg_m4, m4_deb_tok = query_m4_gated_debate(
+                deb_post, m4_deb_tok = query_m4_gated_debate(
                     row=row_curr,
                     regime=regime,
                     specs=posteriors,
@@ -1409,28 +1526,49 @@ def run_market_universe_chronologically(
                     use_live_llm_api=use_live_llm_api,
                     best_k=best_k,
                 )
+                agg_m4 = linear_pool_posteriors(
+                    {**posteriors, "debate": deb_post},
+                    {**{k: 0.5 * w_reg[k] for k in w_reg}, "debate": 0.5},
+                )
                 m4_tok = spec_tokens + m4_deb_tok
                 m4_deb_cost = debate_token_cost_bps
             else:
-                # Fast path: Gate closed because specialists agree (JSD <= 0.0052)
-                # Combine genuine specialist posteriors using online learned regime weights w_{i,t}^{(r_t)}
-                agg_m4 = linear_pool_posteriors(posteriors, w_reg)
-                m4_tok = spec_tokens + 0
+                # Fast path: Gate closed because specialists agree
+                agg_m4 = agg_c2
+                m4_tok = spec_tokens
                 m4_deb_cost = 0.0
 
-            if abs(eta - 0.45) > 1e-6:
-                # Temperature / learning-rate scaling on pooled posterior odds around default eta=0.45
-                tau_scale = max(0.5, 1.0 + 0.85 * (eta - 0.45))
-                p_o = max(1e-6, agg_m4["p_optimistic"]) ** tau_scale
-                p_n = max(1e-6, agg_m4["p_neutral"])
-                p_c = max(1e-6, agg_m4["p_cautious"]) ** (1.0 / tau_scale)
-                s_tau = p_o + p_n + p_c
-                agg_m4 = {
-                    **agg_m4,
-                    "p_optimistic": p_o / s_tau,
-                    "p_neutral": p_n / s_tau,
-                    "p_cautious": p_c / s_tau,
-                }
+            # Component Ablation: M1 + C1 + C2 (Regime-MWU + CBS-Gated Debate, no turnover gate)
+            pos_c1_c2 = unified_position_from_posterior(
+                agg_m4, prev_pos["M1_plus_C1_C2_CBS_Debate"][sym], spread_bps, cbs_turnover_gate=False
+            )
+            by_proto_stock["M1_plus_C1_C2_CBS_Debate"][sym].append({
+                "date": date_str, "symbol": sym, "position": pos_c1_c2,
+                "prev_position": prev_pos["M1_plus_C1_C2_CBS_Debate"][sym],
+                "asset_return": realized_ret,
+                "p_optimistic": agg_m4["p_optimistic"],
+                "p_neutral": agg_m4["p_neutral"],
+                "p_cautious": agg_m4["p_cautious"],
+                "outcome": outcome, "debate_triggered": gate_open,
+                "debate_cost_bps": m4_deb_cost, "tokens_used": m4_tok,
+            })
+            prev_pos["M1_plus_C1_C2_CBS_Debate"][sym] = pos_c1_c2
+
+            # Component Ablation: M1 + C1 + C2 + Turnover Gate (without drawdown breaker C3)
+            pos_c1_c2_tg = unified_position_from_posterior(
+                agg_m4, prev_pos["M1_plus_C1_C2_Turnover_Gate"][sym], spread_bps, cbs_turnover_gate=True
+            )
+            by_proto_stock["M1_plus_C1_C2_Turnover_Gate"][sym].append({
+                "date": date_str, "symbol": sym, "position": pos_c1_c2_tg,
+                "prev_position": prev_pos["M1_plus_C1_C2_Turnover_Gate"][sym],
+                "asset_return": realized_ret,
+                "p_optimistic": agg_m4["p_optimistic"],
+                "p_neutral": agg_m4["p_neutral"],
+                "p_cautious": agg_m4["p_cautious"],
+                "outcome": outcome, "debate_triggered": gate_open,
+                "debate_cost_bps": m4_deb_cost, "tokens_used": m4_tok,
+            })
+            prev_pos["M1_plus_C1_C2_Turnover_Gate"][sym] = pos_c1_c2_tg
 
             pos_m4 = unified_position_from_posterior(
                 agg_m4, prev_pos["M4_CARE_Agents_Ours"][sym], spread_bps, cbs_turnover_gate=True
@@ -1601,6 +1739,9 @@ def run_market_universe_chronologically(
 
     portfolio_records_by_proto: Dict[str, List[Dict[str, Any]]] = {}
     for proto in protocols:
+        if not by_proto_stock[proto][symbols[0]]:
+            portfolio_records_by_proto[proto] = []
+            continue
         port_recs = []
         n_steps = len(by_proto_stock[proto][symbols[0]])
         for t in range(n_steps):
@@ -1965,6 +2106,7 @@ def evaluate_cohort_and_collect_rows(
     summary_rows: List[Dict[str, Any]] = []
     sota_pnl_rows: List[Dict[str, Any]] = []
     per_stock_rows: List[Dict[str, Any]] = []
+    component_ablation_rows: List[Dict[str, Any]] = []
     cn_frontier_weights: List[Dict[str, Any]] = []
     cn_frontier_port: Dict[str, List[Dict[str, Any]]] = {}
     us_frontier_port: Dict[str, List[Dict[str, Any]]] = {}
@@ -2021,10 +2163,10 @@ def evaluate_cohort_and_collect_rows(
                 dm_m1 = diebold_mariano_pvalue(cand_series, m1_net_series)
                 dm_bh = diebold_mariano_pvalue(cand_series, bh_net_series)
                 hac_t_m2 = newey_west_hac_tstat(cand_series, m2_net_series)
-                delong_m2 = delong_brier_pvalue(cand_brier, m2_brier_series)
+                brier_z_m2 = paired_brier_z_pvalue(cand_brier, m2_brier_series)
 
                 if proto == "M2_Vanilla_TradingAgents":
-                    pval_m2, dm_m2, hac_t_m2, delong_m2 = 1.0, 1.0, 0.0, 1.0
+                    pval_m2, dm_m2, hac_t_m2, brier_z_m2 = 1.0, 1.0, 0.0, 1.0
                 if proto == "M1_Linear_Pipeline":
                     pval_m1, dm_m1 = 1.0, 1.0
                 if proto == "M0_Buy_And_Hold":
@@ -2069,7 +2211,7 @@ def evaluate_cohort_and_collect_rows(
                     "debate_rate_pct": m["debate_rate_pct"],
                     "avg_tokens_per_step": m["avg_tokens_per_step"],
                     "hac_t_stat_vs_m2": round(hac_t_m2, 3),
-                    "delong_p_value_vs_m2": round(delong_m2, 4),
+                    "paired_brier_z_p_value_vs_m2": round(brier_z_m2, 4),
                     "p_value_vs_m2": round(pval_m2, 4),
                     "dm_p_value_vs_m2": round(dm_m2, 4),
                     "p_value_vs_m1": round(pval_m1, 4),
@@ -2079,6 +2221,41 @@ def evaluate_cohort_and_collect_rows(
                 })
 
             if tier_name == "Frontier_LLM_DeepSeek_V3":
+                ablation_specs = [
+                    ("M1_Linear_Pipeline", "M1: Equal-Weight Linear Pool"),
+                    ("M1_plus_C2_Regime_MWU", "M1 + C2: Online Regime-MWU Only"),
+                    ("M1_plus_C1_C2_CBS_Debate", "M1 + C1 + C2: Regime-MWU + CBS-Gated Debate"),
+                    ("M1_plus_C1_C2_Turnover_Gate", "M1 + C1 + C2 + Turnover Gate"),
+                    ("M4_CARE_Agents_Ours", "M4 Full (C1 + C2 + C3 + Turnover Gate)"),
+                    ("M2_plus_C3_Turnover_Gate", "M2 + C3 + Turnover Gate (Vanilla TA Control)"),
+                ]
+                for abl_key, abl_label in ablation_specs:
+                    ma = evaluate_portfolio_records(port_by_proto[abl_key], cost_bps)
+                    component_ablation_rows.append({
+                        "cohort": cohort_name,
+                        "universe": univ_name,
+                        "market": mkt_code,
+                        "cost_bps": cost_bps,
+                        "model_tier": tier_name,
+                        "ablation_code": abl_key,
+                        "ablation_label": abl_label,
+                        "gross_cum_return_pct": ma["gross_cum_return_pct"],
+                        "net_cum_return_pct": ma["net_cum_return_pct"],
+                        "net_10bps_cum_return_pct": ma["net_10bps_cum_return_pct"],
+                        "gross_sharpe": ma["gross_sharpe"],
+                        "net_sharpe": ma["net_sharpe"],
+                        "net_sharpe_10bps": ma["net_sharpe_10bps"],
+                        "net_sortino": ma["net_sortino"],
+                        "max_drawdown_pct": ma["max_drawdown_pct"],
+                        "turnover_rate": ma["turnover_rate"],
+                        "brier_score": ma["brier_score"],
+                        "mae": ma["mae"],
+                        "ece": ma["ece"],
+                        "hit_rate_pct": ma["hit_rate_pct"],
+                        "debate_rate_pct": ma["debate_rate_pct"],
+                        "avg_tokens_per_step": ma["avg_tokens_per_step"],
+                    })
+
                 initial_capital = 100000.0
                 for sota_key, sota_label in [
                     ("M0_Buy_And_Hold", "Buy & Hold (Market Benchmark)"),
@@ -2100,9 +2277,9 @@ def evaluate_cohort_and_collect_rows(
                     dm_m1 = diebold_mariano_pvalue(cand_s, m1_net_series)
                     dm_bh = diebold_mariano_pvalue(cand_s, bh_net_series)
                     hac_t_m2 = newey_west_hac_tstat(cand_s, m2_net_series)
-                    delong_m2 = delong_brier_pvalue(cand_b, m2_brier_series)
+                    brier_z_m2 = paired_brier_z_pvalue(cand_b, m2_brier_series)
                     if sota_key == "M2_Vanilla_TradingAgents":
-                        pv_m2, dm_m2, hac_t_m2, delong_m2 = 1.0, 1.0, 0.0, 1.0
+                        pv_m2, dm_m2, hac_t_m2, brier_z_m2 = 1.0, 1.0, 0.0, 1.0
                     if sota_key == "M0_Buy_And_Hold":
                         pv_bh, dm_bh = 1.0, 1.0
 
@@ -2138,7 +2315,7 @@ def evaluate_cohort_and_collect_rows(
                         "hit_rate_pct": ms["hit_rate_pct"],
                         "avg_tokens": ms["avg_tokens_per_step"],
                         "hac_t_stat_vs_tradingagents": round(hac_t_m2, 3),
-                        "delong_p_value_vs_tradingagents": round(delong_m2, 4),
+                        "paired_brier_z_p_value_vs_tradingagents": round(brier_z_m2, 4),
                         "p_value_vs_tradingagents": round(pv_m2, 4),
                         "dm_p_value_vs_tradingagents": round(dm_m2, 4),
                         "p_value_vs_equal_weight": round(pv_m1, 4),
@@ -2249,6 +2426,7 @@ def evaluate_cohort_and_collect_rows(
                         "m4_debate_rate_pct": round(m4_st["deb_rate"], 1),
                     })
 
+    evaluate_cohort_and_collect_rows._last_component_ablation_rows = component_ablation_rows
     return summary_rows, sota_pnl_rows, per_stock_rows, cn_frontier_weights, cn_frontier_port, us_frontier_port
 
 
@@ -2469,10 +2647,12 @@ def main():
         _write_csv(reports_dir / "phase5_per_stock_subset.csv", per_stock_rows)
     else:
         # Write Cohort B (Full 12-Asset x 86-Week Out-of-Sample Benchmark)
+        comp_rows = getattr(evaluate_cohort_and_collect_rows, "_last_component_ablation_rows", [])
         for out_dir in (results_dir, reports_dir):
             _write_csv(out_dir / "phase5_real_market_cph_results.csv", summary_rows)
             _write_csv(out_dir / "phase5_sota_pnl_comparison.csv", sota_pnl_rows)
             _write_csv(out_dir / "phase5_per_stock_breakdown.csv", per_stock_rows)
+            _write_csv(out_dir / "phase5_component_ablation.csv", comp_rows)
 
         # Also evaluate and export standardized Cohort A (Core 4-Asset x 10-Week Tariff-Shock Verification Cohort)
         subset_universes = [

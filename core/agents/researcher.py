@@ -141,7 +141,7 @@ class ResearcherAgent(BaseAgent):
             if is_debate_mode:
                 # Debate Mode: Get Debate Context + Vector cache history experience
                 debate_context = self._get_debate_context(state)
-                memory_context = self._get_memory_context(ticker, reports) if self.memory else None
+                memory_context = self._get_memory_context(ticker, reports, state=state) if self.memory else None
                 
                 # Merge debate context and vector cache context
                 context_parts = []
@@ -154,7 +154,7 @@ class ResearcherAgent(BaseAgent):
                 logger.info(f"[debate mode] {self.agent_id} Read debate history + vector cache")
             else:
                 # Single analysis mode: obtaining historical context from the memory system
-                historical_context = self._get_memory_context(ticker, reports) if self.memory else None
+                historical_context = self._get_memory_context(ticker, reports, state=state) if self.memory else None
                 logger.info(f"[Single analysis mode] {self.agent_id} Use vector caching")
 
             # v3.5.0 Item 1 Closed loop: Check the quality gate mark, low quality report is prompted in prompt
@@ -750,7 +750,7 @@ class ResearcherAgent(BaseAgent):
 
         return "\n".join(context_parts) if context_parts else ""
 
-    def _get_memory_context(self, ticker: str, reports: Dict[str, Any]) -> str:
+    def _get_memory_context(self, ticker: str, reports: Dict[str, Any], state: Optional[Dict[str, Any]] = None) -> str:
         """
         Get historical experience from Memory system
 
@@ -847,10 +847,13 @@ class ResearcherAgent(BaseAgent):
                 logger.warning("Memories do not support search_memories, recall skipped: %s", type(self.memory).__name__)
                 return ""
 
+            state_dict = state if isinstance(state, dict) else {}
             past_memories = self.memory.search_memories(
                 query=curr_situation,
                 n_results=3,
-                filter_metadata={"ticker": ticker} if ticker else None
+                filter_metadata={"ticker": ticker} if ticker else None,
+                current_regime=state_dict.get("market_regime"),
+                drawdown_circuit_breaker=bool(state_dict.get("drawdown_circuit_breaker", False)),
             )
 
             memory_str = ""

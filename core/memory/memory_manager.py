@@ -496,7 +496,9 @@ class AgentMemory:
         self,
         query: str,
         n_results: int = 5,
-        filter_metadata: Optional[Dict[str, Any]] = None
+        filter_metadata: Optional[Dict[str, Any]] = None,
+        current_regime: Optional[str] = None,
+        drawdown_circuit_breaker: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Search for similar memories
@@ -505,10 +507,14 @@ class AgentMemory:
             query: Query text
             n_results: Number of results returned
             filter_metadata: Metadata filters
+            current_regime: Current market regime for regime-aware filtering/re-ranking
+            drawdown_circuit_breaker: Suspend retrieval when drawdown circuit breaker is active
 
         Returns:
             Memory list, each memory contains content, metadata, similarity
         """
+        if drawdown_circuit_breaker:
+            return []
         try:
             # Get the query embedding
             query_embedding, provider = self.embedding_manager.get_embedding(query)
@@ -592,6 +598,14 @@ class AgentMemory:
                     memories.append(memory)
 
                 logger.debug(f"🔍 found {len(memories)} similar memories")
+
+            if memories and (current_regime or drawdown_circuit_breaker):
+                memories = Mem0AgentMemory.filter_and_rerank_by_regime(
+                    memories,
+                    current_regime=current_regime,
+                    drawdown_circuit_breaker=drawdown_circuit_breaker,
+                    n_results=n_results,
+                )
 
             return memories
 

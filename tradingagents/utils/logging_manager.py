@@ -13,7 +13,26 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
 import json
-import toml
+try:
+    import tomllib as _toml_lib
+except ImportError:
+    try:
+        import tomli as _toml_lib
+    except ImportError:
+        try:
+            import toml as _toml_lib
+        except ImportError:
+            _toml_lib = None
+
+
+def _load_toml_file(path: Union[str, Path]) -> Dict[str, Any]:
+    if _toml_lib is None:
+        return {}
+    if hasattr(_toml_lib, "loads") and getattr(_toml_lib, "__name__", "") in ("tomllib", "tomli"):
+        with open(path, "rb") as f:
+            return _toml_lib.load(f)
+    with open(path, "r", encoding="utf-8") as f:
+        return _toml_lib.load(f)
 
 # 🔥 Support multi-process safe writing using concurrent-log-handler on all platforms
 # Windows: Fix file locking issues
@@ -163,8 +182,7 @@ class TradingAgentsLogger:
         for config_path in config_paths:
             if config_path and Path(config_path).exists():
                 try:
-                    with open(config_path, 'r', encoding='utf-8') as f:
-                        config_data = toml.load(f)
+                    config_data = _load_toml_file(config_path)
 
                     # Convert configuration format
                     return self._convert_toml_config(config_data)

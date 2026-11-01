@@ -780,13 +780,14 @@ class FinancialSituationMemory:
         """获取最后处理的文本信息"""
         return getattr(self, '_last_text_info', None)
 
-    def add_situations(self, situations_and_advice):
+    def add_situations(self, situations_and_advice, metadata=None):
         """Add financial situations and their corresponding advice. Parameter is a list of tuples (situation, rec)"""
 
         situations = []
         advice = []
         ids = []
         embeddings = []
+        extra_meta = dict(metadata or {})
 
         # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
         logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - add_memories count (v1.x)")
@@ -808,7 +809,7 @@ class FinancialSituationMemory:
             logger.debug(f"🔓 [ChromaDB] Lock acquired - add_memories add (v1.x)")
             self.situation_collection.add(
                 documents=situations,
-                metadatas=[{"recommendation": rec} for rec in advice],
+                metadatas=[{**extra_meta, "recommendation": rec} for rec in advice],
                 embeddings=embeddings,
                 ids=ids,
             )

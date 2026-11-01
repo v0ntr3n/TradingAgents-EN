@@ -5,7 +5,6 @@ Entrypoint wrapper for Phase 5 real-market cached LLM posterior evaluation.
 from scripts.run_phase5_real_market_benchmark import (  # noqa: F401
     LiveDeepSeekBenchmarkClient,
     ThreadSafeLLMCache,
-    delong_brier_pvalue,
     detect_causal_regime,
     diebold_mariano_pvalue,
     evaluate_cohort_and_collect_rows,
@@ -15,6 +14,7 @@ from scripts.run_phase5_real_market_benchmark import (  # noqa: F401
     main,
     newey_west_hac_tstat,
     paired_block_bootstrap_sharpe_test,
+    paired_brier_z_pvalue,
     query_specialist_posteriors,
     run_market_universe_chronologically,
 )

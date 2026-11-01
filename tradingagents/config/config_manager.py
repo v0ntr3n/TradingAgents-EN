@@ -25,7 +25,11 @@ from zoneinfo import ZoneInfo
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    def load_dotenv(*args: Any, **kwargs: Any) -> bool:
+        return False
 
 # 🔴 Issue deprecation warning (expired)
 warnings.warn(

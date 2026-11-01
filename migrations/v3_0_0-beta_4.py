@@ -1,4 +1,4 @@
-﻿"""
+"""
 v3.0.0-beta.4 migration
 
 Add schema changes, new indexes, or default values here.

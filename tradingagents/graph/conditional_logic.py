@@ -1,5 +1,7 @@
 # TradingAgents/graph/conditional_logic.py
 
+import math
+
 try:
     from tradingagents.agents.utils.agent_states import AgentState
 except (ImportError, KeyError):
@@ -83,18 +85,30 @@ def compute_cbs_bps(posteriors: dict, weights: dict = None) -> float:
         w[idx] * abs(float(posteriors[k].get("expected_move_bps", 50.0)))
         for idx, k in enumerate(keys)
     )
-    return round((jsd * weighted_move_bps) / 2.0, 4)
+    return round((math.sqrt(max(0.0, jsd)) * weighted_move_bps) / 2.0, 4)
 
 
 class ConditionalLogic:
     """Handles conditional logic for determining graph flow."""
 
-    def __init__(self, max_debate_rounds=1, max_risk_discuss_rounds=1, jsd_threshold: float = 0.12, default_spread_bps: float = 15.0):
+    def __init__(
+        self,
+        max_debate_rounds=1,
+        max_risk_discuss_rounds=1,
+        jsd_threshold: float = 0.12,
+        default_spread_bps: float = 15.0,
+        weight_manager=None,
+    ):
         """Initialize with configuration parameters."""
         self.max_debate_rounds = max_debate_rounds
         self.max_risk_discuss_rounds = max_risk_discuss_rounds
         self.jsd_threshold = float(jsd_threshold)
         self.default_spread_bps = float(default_spread_bps)
+        if weight_manager is not None:
+            self.weight_manager = weight_manager
+        else:
+            from core.agents.utils.weight_calculator import RegimeMultiplicativeWeightManager
+            self.weight_manager = RegimeMultiplicativeWeightManager()
 
     def should_continue_market(self, state: AgentState):
         """Determine if market analysis should continue."""
@@ -431,8 +445,8 @@ class ConditionalLogic:
         if not weights and posteriors:
             try:
                 from core.agents.utils.weight_calculator import RegimeMultiplicativeWeightManager
-                wm = RegimeMultiplicativeWeightManager()
-                weights = wm.get_weights(regime)
+                wm = getattr(self, "weight_manager", None) or RegimeMultiplicativeWeightManager()
+                weights = wm.get_regime_weights(regime, list(posteriors.keys()))
                 state["analyst_weights"] = weights
             except Exception as e:
                 logger.warning(f"Error obtaining regime weights: {e}")

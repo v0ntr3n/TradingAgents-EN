@@ -8,51 +8,54 @@ v2.0 new features:
 - Supports LangChain LLM integration
 """
 
-from .base import BaseAgent
-from .registry import AgentRegistry, get_registry, register_agent
-from .factory import AgentFactory, create_agent, create_agent_with_dynamic_tools
-from .config import AgentMetadata, AgentConfig, AgentCategory, AgentMaintenanceStatus, LicenseTier, BUILTIN_AGENTS
-from .universal import UniversalAgent
+try:
+    from .base import BaseAgent
+    from .registry import AgentRegistry, get_registry, register_agent
+    from .factory import AgentFactory, create_agent, create_agent_with_dynamic_tools
+    from .config import AgentMetadata, AgentConfig, AgentCategory, AgentMaintenanceStatus, LicenseTier, BUILTIN_AGENTS
+    from .universal import UniversalAgent
 
-# v2.0 New: Agent base class
-from .analyst import AnalystAgent
-from .researcher import ResearcherAgent
-from .manager import ManagerAgent
-from .trader import TraderAgent
-from .post_processor import PostProcessorAgent
+    # v2.0 New: Agent base class
+    from .analyst import AnalystAgent
+    from .researcher import ResearcherAgent
+    from .manager import ManagerAgent
+    from .trader import TraderAgent
+    from .post_processor import PostProcessorAgent
 
-# Import post-processing Agent implementation (trigger registration)
-from .post_processors import (
-    ReportSaverAgent,
-    EmailNotifierAgent,
-    SystemNotifierAgent,
-    ReportGeneratorV2,
-    DataPreparerV2,
-)
+    # Import post-processing Agent implementation (trigger registration)
+    from .post_processors import (
+        ReportSaverAgent,
+        EmailNotifierAgent,
+        SystemNotifierAgent,
+        ReportGeneratorV2,
+        DataPreparerV2,
+    )
 
-# Import v2.0 Agent implementation (trigger registration)
-from .adapters import (
-    # analyst
-    FundamentalsAnalystAgentV2,
-    NewsAnalystV2,
-    SocialMediaAnalystV2,
-    SectorAnalystV2,
-    IndexAnalystV2,
-    # researcher
-    BullResearcherV2,
-    BearResearcherV2,
-    # manager
-    ResearchManagerV2,
-    RiskManagerV2,
-    # research integrator
-    TraderV2,
-    # risk analyst
-    RiskyAnalystV2,
-    SafeAnalystV2,
-    NeutralAnalystV2,
-    # Chip distribution analyst
-    ChipDistributionAnalystV2,
-)
+    # Import v2.0 Agent implementation (trigger registration)
+    from .adapters import (
+        # analyst
+        FundamentalsAnalystAgentV2,
+        NewsAnalystV2,
+        SocialMediaAnalystV2,
+        SectorAnalystV2,
+        IndexAnalystV2,
+        # researcher
+        BullResearcherV2,
+        BearResearcherV2,
+        # manager
+        ResearchManagerV2,
+        RiskManagerV2,
+        # research integrator
+        TraderV2,
+        # risk analyst
+        RiskyAnalystV2,
+        SafeAnalystV2,
+        NeutralAnalystV2,
+        # Chip distribution analyst
+        ChipDistributionAnalystV2,
+    )
+except ModuleNotFoundError:
+    pass
 
 __all__ = [
     # base class

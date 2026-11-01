@@ -407,10 +407,11 @@ class RegimeMultiplicativeWeightManager:
         self,
         regime: str,
         posteriors: Dict[str, Dict[str, Any]],
+        method: str = "linear",
     ) -> Dict[str, Any]:
         """
-        Combine analyst probability vectors using a Logarithmic Opinion Pool
-        (weighted geometric mean in probability space / weighted linear combination in log-odds).
+        Combine analyst probability vectors using a Regime-Weighted Linear Opinion Pool
+        (default `method="linear"`, matching Theorem 1) or Logarithmic Opinion Pool (`method="logarithmic"`).
         """
         if not posteriors:
             return {
@@ -425,33 +426,55 @@ class RegimeMultiplicativeWeightManager:
 
         active_weights = self.get_regime_weights(regime, list(posteriors.keys()))
         eps = 1e-6
-        log_opt = 0.0
-        log_neu = 0.0
-        log_cau = 0.0
         expected_move_bps = 0.0
 
-        for agent_id, post in posteriors.items():
-            w = active_weights.get(agent_id, 1.0 / len(posteriors))
-            p_o = max(eps, float(post.get("p_optimistic", 1.0 / 3.0)))
-            p_n = max(eps, float(post.get("p_neutral", 1.0 / 3.0)))
-            p_c = max(eps, float(post.get("p_cautious", 1.0 / 3.0)))
-            s = p_o + p_n + p_c
-            p_o, p_n, p_c = p_o / s, p_n / s, p_c / s
+        if method == "logarithmic":
+            log_opt = 0.0
+            log_neu = 0.0
+            log_cau = 0.0
+            for agent_id, post in posteriors.items():
+                w = active_weights.get(agent_id, 1.0 / len(posteriors))
+                p_o = max(eps, float(post.get("p_optimistic", 1.0 / 3.0)))
+                p_n = max(eps, float(post.get("p_neutral", 1.0 / 3.0)))
+                p_c = max(eps, float(post.get("p_cautious", 1.0 / 3.0)))
+                s = p_o + p_n + p_c
+                p_o, p_n, p_c = p_o / s, p_n / s, p_c / s
 
-            log_opt += w * math.log(p_o)
-            log_neu += w * math.log(p_n)
-            log_cau += w * math.log(p_c)
-            expected_move_bps += w * float(post.get("expected_move_bps", 50.0))
+                log_opt += w * math.log(p_o)
+                log_neu += w * math.log(p_n)
+                log_cau += w * math.log(p_c)
+                expected_move_bps += w * float(post.get("expected_move_bps", 50.0))
 
-        max_log = max(log_opt, log_neu, log_cau)
-        u_opt = math.exp(log_opt - max_log)
-        u_neu = math.exp(log_neu - max_log)
-        u_cau = math.exp(log_cau - max_log)
-        Z = u_opt + u_neu + u_cau
+            max_log = max(log_opt, log_neu, log_cau)
+            u_opt = math.exp(log_opt - max_log)
+            u_neu = math.exp(log_neu - max_log)
+            u_cau = math.exp(log_cau - max_log)
+            Z = u_opt + u_neu + u_cau
 
-        P_opt = u_opt / Z
-        P_neu = u_neu / Z
-        P_cau = u_cau / Z
+            P_opt = u_opt / Z
+            P_neu = u_neu / Z
+            P_cau = u_cau / Z
+        else:
+            lin_opt = 0.0
+            lin_neu = 0.0
+            lin_cau = 0.0
+            for agent_id, post in posteriors.items():
+                w = active_weights.get(agent_id, 1.0 / len(posteriors))
+                p_o = max(0.0, float(post.get("p_optimistic", 1.0 / 3.0)))
+                p_n = max(0.0, float(post.get("p_neutral", 1.0 / 3.0)))
+                p_c = max(0.0, float(post.get("p_cautious", 1.0 / 3.0)))
+                s = max(eps, p_o + p_n + p_c)
+                p_o, p_n, p_c = p_o / s, p_n / s, p_c / s
+
+                lin_opt += w * p_o
+                lin_neu += w * p_n
+                lin_cau += w * p_c
+                expected_move_bps += w * float(post.get("expected_move_bps", 50.0))
+
+            Z = max(eps, lin_opt + lin_neu + lin_cau)
+            P_opt = lin_opt / Z
+            P_neu = lin_neu / Z
+            P_cau = lin_cau / Z
 
         entropy = 0.0
         for p in (P_opt, P_neu, P_cau):

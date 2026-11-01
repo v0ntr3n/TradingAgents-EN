@@ -1556,6 +1556,13 @@ class WorkflowBuilder:
             # Once injected True will not be overridden by a null return from a parallel node.
             _risk_self_debate: Annotated[bool, keep_non_empty]
 
+            # CARE-Agents coordination, calibration, and CBS debate gating state
+            analyst_posteriors: Annotated[dict, merge_dict]
+            analyst_weights: Annotated[dict, merge_dict]
+            market_regime: Annotated[str, keep_non_empty]
+            cbs_gating_decision: Annotated[dict, merge_dict]
+            drawdown_circuit_breaker: Annotated[bool, keep_non_empty]
+
             # Analyst-independent message history (to avoid message confusion during parallel execution)
             # NOTE: These fields are used in tool call loops, each analyst uses their own message history
             _market_messages: Annotated[List, keep_latest_list]
@@ -2830,9 +2837,37 @@ class WorkflowBuilder:
                         f"[{participants[0]}(Original path), {po_node_id}(Parallel start)]"
                     )
                 else:
-                    # debate node → First participant (original path)
-                    graph.add_edge(debate_id, participants[0])
-                    added_edges.add((debate_id, participants[0]))
+                    # CBS Debate Gate at investment debate entry: route to next_node (fast-path) or first participant
+                    _cbs_next_node = config.get("next_node")
+                    if _cbs_next_node:
+                        def cbs_debate_entry_router(
+                            state,
+                            _first_participant=participants[0],
+                            _next_node=_cbs_next_node,
+                        ):
+                            try:
+                                from tradingagents.graph.conditional_logic import ConditionalLogic
+                                logic = ConditionalLogic(
+                                    max_debate_rounds=int(config.get("rounds") or 1)
+                                )
+                                decision = logic.should_gate_debate(state)
+                                if decision.get("route") == "fast_path_single_pass" and state.get("analyst_posteriors"):
+                                    return _next_node
+                            except Exception as exc:
+                                logger.debug(f"CBS debate entry router fallback: {exc}")
+                            return _first_participant
+
+                        graph.add_conditional_edges(
+                            debate_id,
+                            cbs_debate_entry_router,
+                            [participants[0], _cbs_next_node],
+                        )
+                        added_edges.add((debate_id, participants[0]))
+                        added_edges.add((debate_id, _cbs_next_node))
+                    else:
+                        # debate node → First participant (original path)
+                        graph.add_edge(debate_id, participants[0])
+                        added_edges.add((debate_id, participants[0]))
 
             # Add conditional edges for each participant (the original logic is retained, the self-debate path will not pass through)
             for i, participant in enumerate(participants):

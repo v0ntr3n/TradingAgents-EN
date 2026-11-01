@@ -175,52 +175,72 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
         result = self.quick_thinking_llm.invoke(messages).content
         return result
 
+    def _store_with_attribution(self, memory, situation: str, result: str, current_state: Dict[str, Any], role_meta: Dict[str, Any]):
+        """Store reflection into memory along with regime and counterfactual attribution metadata."""
+        meta = {
+            "market_regime": current_state.get("market_regime", "unknown"),
+            "attribution_role": role_meta.get("attribution_role", "neutral"),
+            "marginal_score": role_meta.get("marginal_score", 0.0),
+        }
+        try:
+            memory.add_situations([(situation, result)], metadata=meta)
+        except TypeError:
+            memory.add_situations([(situation, result)])
+
     def reflect_bull_researcher(self, current_state, returns_losses, bull_memory):
         """Reflect on bull researcher's analysis and update memory."""
         situation = self._extract_current_situation(current_state)
         bull_debate_history = current_state["investment_debate_state"]["bull_history"]
+        attrib = compute_counterfactual_attribution(current_state, float(returns_losses))
+        bull_attrib = attrib.get("BULL", attrib)
 
         result = self._reflect_on_component(
-            "BULL", bull_debate_history, situation, returns_losses
+            "BULL", bull_debate_history, situation, returns_losses, attribution=bull_attrib
         )
-        bull_memory.add_situations([(situation, result)])
+        self._store_with_attribution(bull_memory, situation, result, current_state, bull_attrib)
 
     def reflect_bear_researcher(self, current_state, returns_losses, bear_memory):
         """Reflect on bear researcher's analysis and update memory."""
         situation = self._extract_current_situation(current_state)
         bear_debate_history = current_state["investment_debate_state"]["bear_history"]
+        attrib = compute_counterfactual_attribution(current_state, float(returns_losses))
+        bear_attrib = attrib.get("BEAR", attrib)
 
         result = self._reflect_on_component(
-            "BEAR", bear_debate_history, situation, returns_losses
+            "BEAR", bear_debate_history, situation, returns_losses, attribution=bear_attrib
         )
-        bear_memory.add_situations([(situation, result)])
+        self._store_with_attribution(bear_memory, situation, result, current_state, bear_attrib)
 
     def reflect_trader(self, current_state, returns_losses, trader_memory):
         """Reflect on trader's decision and update memory."""
         situation = self._extract_current_situation(current_state)
         trader_decision = current_state["trader_investment_plan"]
+        attrib = compute_counterfactual_attribution(current_state, float(returns_losses))
 
         result = self._reflect_on_component(
-            "TRADER", trader_decision, situation, returns_losses
+            "TRADER", trader_decision, situation, returns_losses, attribution=attrib
         )
-        trader_memory.add_situations([(situation, result)])
+        self._store_with_attribution(trader_memory, situation, result, current_state, attrib.get("BULL", {}))
 
     def reflect_invest_judge(self, current_state, returns_losses, invest_judge_memory):
         """Reflect on investment judge's decision and update memory."""
         situation = self._extract_current_situation(current_state)
         judge_decision = current_state["investment_debate_state"]["judge_decision"]
+        attrib = compute_counterfactual_attribution(current_state, float(returns_losses))
 
         result = self._reflect_on_component(
-            "INVEST JUDGE", judge_decision, situation, returns_losses
+            "INVEST JUDGE", judge_decision, situation, returns_losses, attribution=attrib
         )
-        invest_judge_memory.add_situations([(situation, result)])
+        self._store_with_attribution(invest_judge_memory, situation, result, current_state, attrib.get("BULL", {}))
 
     def reflect_risk_manager(self, current_state, returns_losses, risk_manager_memory):
         """Reflect on risk manager's decision and update memory."""
         situation = self._extract_current_situation(current_state)
         judge_decision = current_state["risk_debate_state"]["judge_decision"]
+        attrib = compute_counterfactual_attribution(current_state, float(returns_losses))
+        risk_attrib = attrib.get("RISK JUDGE", attrib)
 
         result = self._reflect_on_component(
-            "RISK JUDGE", judge_decision, situation, returns_losses
+            "RISK JUDGE", judge_decision, situation, returns_losses, attribution=risk_attrib
         )
-        risk_manager_memory.add_situations([(situation, result)])
+        self._store_with_attribution(risk_manager_memory, situation, result, current_state, risk_attrib)
