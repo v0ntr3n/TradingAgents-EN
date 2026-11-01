@@ -995,7 +995,17 @@ def prefetch_all_live_llm_posteriors(
                         b2_key = f"{tier_name}::b2_finagent::{sym}::{row_curr['date']}"
                         if client.cache and client.cache.get(b2_key) is None:
                             prev_ret = (closes[idx] / closes[idx - 1] - 1.0) if idx > 0 else 0.0
-                            sys_p, usr_p = build_b2_finagent_prompt(row_curr, features, regime, prev_pos=0.5, prev_ret=prev_ret, model_tier=tier_name)
+                            prev_specs = {
+                                aid: (client.cache.get(f"{tier_name}::{aid}::{sym}::{series[idx - 1]['date']}") or {})
+                                for aid in ("market", "fundamentals", "news", "social")
+                            } if idx > 0 else {}
+                            if prev_specs and all("p_optimistic" in v for v in prev_specs.values()):
+                                p_opt_prev = sum(float(v["p_optimistic"]) for v in prev_specs.values()) / 4.0
+                                p_cau_prev = sum(float(v["p_cautious"]) for v in prev_specs.values()) / 4.0
+                                est_prev_pos = 1.0 if p_opt_prev > p_cau_prev else 0.0
+                            else:
+                                est_prev_pos = 0.0
+                            sys_p, usr_p = build_b2_finagent_prompt(row_curr, features, regime, prev_pos=est_prev_pos, prev_ret=prev_ret, model_tier=tier_name)
                             coord_tasks.append((b2_key, sys_p, usr_p, temp))
 
                         # B3 FinCon

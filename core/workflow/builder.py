@@ -2468,13 +2468,28 @@ class WorkflowBuilder:
 
             logger.info(f"[Debate initialization] initialization {state_key} Status: count=0")
 
-            return {
+            ret_dict = {
                 f"{node_id}_status": "debate_started",
                 "_debate_node": node_id,
                 "_debate_participants": participants,
                 "_debate_rounds": rounds,
                 state_key: debate_state,  # 🔥 Key: Initialize debate state
             }
+            if not is_risk_debate:
+                try:
+                    from tradingagents.graph.conditional_logic import ConditionalLogic
+                    logic = ConditionalLogic(max_debate_rounds=int(rounds or 1))
+                    decision = logic.should_gate_debate(state)
+                    ret_dict.update({
+                        "cbs_gating_decision": decision,
+                        "_risk_self_debate": decision.get("risk_self_debate", False),
+                        "analyst_posteriors": state.get("analyst_posteriors"),
+                        "analyst_weights": state.get("analyst_weights"),
+                        "market_regime": state.get("market_regime"),
+                    })
+                except Exception as exc:
+                    logger.debug(f"CBS gate computation in debate_node fallback: {exc}")
+            return ret_dict
         return debate_node
 
     def _create_debate_participant_wrapper(
@@ -2837,28 +2852,45 @@ class WorkflowBuilder:
                         f"[{participants[0]}(Original path), {po_node_id}(Parallel start)]"
                     )
                 else:
-                    # CBS Debate Gate at investment debate entry: route to next_node (fast-path) or first participant
+                    # CBS Debate Gate at investment debate entry: persist state in dedicated node, then route to next_node (fast-path) or first participant
                     _cbs_next_node = config.get("next_node")
                     if _cbs_next_node:
+                        cbs_gate_node_id = f"{debate_id}_cbs_gate"
+                        _max_deb_rounds = int(config.get("rounds") or 1)
+
+                        def cbs_debate_gate_node(
+                            state,
+                            _rounds=_max_deb_rounds,
+                        ):
+                            try:
+                                from tradingagents.graph.conditional_logic import ConditionalLogic
+                                logic = ConditionalLogic(max_debate_rounds=_rounds)
+                                decision = logic.should_gate_debate(state)
+                                return {
+                                    "cbs_gating_decision": decision,
+                                    "_risk_self_debate": decision.get("risk_self_debate", False),
+                                    "analyst_posteriors": state.get("analyst_posteriors"),
+                                    "analyst_weights": state.get("analyst_weights"),
+                                    "market_regime": state.get("market_regime"),
+                                }
+                            except Exception as exc:
+                                logger.debug(f"CBS debate gate node fallback: {exc}")
+                                return {}
+
                         def cbs_debate_entry_router(
                             state,
                             _first_participant=participants[0],
                             _next_node=_cbs_next_node,
                         ):
-                            try:
-                                from tradingagents.graph.conditional_logic import ConditionalLogic
-                                logic = ConditionalLogic(
-                                    max_debate_rounds=int(config.get("rounds") or 1)
-                                )
-                                decision = logic.should_gate_debate(state)
-                                if decision.get("route") == "fast_path_single_pass" and state.get("analyst_posteriors"):
-                                    return _next_node
-                            except Exception as exc:
-                                logger.debug(f"CBS debate entry router fallback: {exc}")
+                            decision = state.get("cbs_gating_decision") or {}
+                            if decision.get("route") == "fast_path_single_pass" and state.get("analyst_posteriors"):
+                                return _next_node
                             return _first_participant
 
+                        graph.add_node(cbs_gate_node_id, cbs_debate_gate_node)
+                        graph.add_edge(debate_id, cbs_gate_node_id)
                         graph.add_conditional_edges(
-                            debate_id,
+                            cbs_gate_node_id,
                             cbs_debate_entry_router,
                             [participants[0], _cbs_next_node],
                         )

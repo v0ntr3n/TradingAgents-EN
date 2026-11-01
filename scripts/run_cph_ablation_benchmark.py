@@ -85,7 +85,7 @@ def _load_real_cache_and_bars(
         by_symbol[sym].sort(key=lambda r: r["date"])
 
     regime_bars: Dict[str, List[Dict[str, Any]]] = {"bull": [], "bear": [], "sideways": []}
-    for tier in ("Frontier_LLM_DeepSeek_V3", "Lightweight_LLM_Qwen_9B"):
+    for tier in ("Frontier_LLM_DeepSeek_V3", "Small_SLM_Qwen2.5_14B"):
         for sym in sorted(by_symbol.keys()):
             rows = by_symbol[sym]
             closes = [r["close"] for r in rows]
@@ -317,6 +317,8 @@ def plot_cph_ablation_brier_mae(results, reports_dir: Path, results_dir: Path) -
         "M1_Linear_Pipeline",
         "M2_Vanilla_TradingAgents",
         "M3_SelfDebate_V2",
+        "M1_with_Turnover_Gate",
+        "M2_with_Turnover_Gate",
         "M4_No_Turnover_Gate",
         "M4_CARE_Agents_Ours",
     ]
@@ -324,6 +326,8 @@ def plot_cph_ablation_brier_mae(results, reports_dir: Path, results_dir: Path) -
         "M1: Linear\n(No Debate)",
         "M2: Vanilla TA\n(Fixed Debate)",
         "M3: Self-Debate\n(1-Shot)",
+        "M1 + TG\n(Control)",
+        "M2 + TG\n(Control)",
         "M4 w/o TG\n(CBS+MWU)",
         "M4: CARE-Agents\n(Full Ours)",
     ]
@@ -395,6 +399,8 @@ def evaluate_stream_protocols(stream: List[Dict[str, Any]]) -> Dict[str, Any]:
     m1_records = []       # Linear Pipeline (equal weights, no debate, no turnover gate)
     m2_records = []       # Vanilla TradingAgents (always-on 2-round debate, no turnover gate)
     m3_records = []       # RiskSelfDebateV2 1-Shot (1-shot internal roleplay, no turnover gate)
+    m1_tg_records = []    # Linear Pipeline + Turnover Gate (symmetric control)
+    m2_tg_records = []    # Vanilla TradingAgents + Turnover Gate (symmetric control)
     m4_notg_records = []  # CARE-Agents without Turnover Gate (CBS-gated debate + Regime MWU)
     m4_records = []       # CARE-Agents Full (CBS-gated debate + Regime MWU + Turnover Gate)
 
@@ -407,6 +413,8 @@ def evaluate_stream_protocols(stream: List[Dict[str, Any]]) -> Dict[str, Any]:
         default_spread_bps=10.0,
     )
 
+    prev_pos_m1_tg = 0.0
+    prev_pos_m2_tg = 0.0
     prev_pos_m4 = 0.0
     for step in stream:
         regime = step["regime"]
@@ -422,6 +430,7 @@ def evaluate_stream_protocols(stream: List[Dict[str, Any]]) -> Dict[str, Any]:
             int(p.get("completion_tokens", int(p.get("tokens_used", 345) * 0.22)))
             for p in posteriors.values()
         )
+        mean_move_bps = sum(float(p.get("expected_move_bps", 150.0)) for p in posteriors.values()) / len(posteriors)
 
         # --- M1: Linear Pipeline (equal weights across all 4 specialists, no debate) ---
         avg_opt = sum(p["p_optimistic"] for p in posteriors.values()) / len(posteriors)
@@ -432,6 +441,23 @@ def evaluate_stream_protocols(stream: List[Dict[str, Any]]) -> Dict[str, Any]:
             "date": step["date"],
             "regime": regime,
             "position": pos_m1,
+            "asset_return_pct": ret_pct,
+            "p_optimistic": avg_opt,
+            "p_neutral": avg_neu,
+            "p_cautious": avg_cau,
+            "prompt_tokens": spec_p_tok,
+            "completion_tokens": spec_c_tok,
+            "latency_sec": 2.4,
+            "debate_skipped": True,
+            "execution_edge_bps": 0.0,
+        })
+        edge_m1_bps = abs(pos_m1 - prev_pos_m1_tg) * abs(avg_opt - avg_cau) * mean_move_bps
+        pos_m1_tg = prev_pos_m1_tg if edge_m1_bps < spread_bps else pos_m1
+        prev_pos_m1_tg = pos_m1_tg
+        m1_tg_records.append({
+            "date": step["date"],
+            "regime": regime,
+            "position": pos_m1_tg,
             "asset_return_pct": ret_pct,
             "p_optimistic": avg_opt,
             "p_neutral": avg_neu,
@@ -455,6 +481,22 @@ def evaluate_stream_protocols(stream: List[Dict[str, Any]]) -> Dict[str, Any]:
             "date": step["date"],
             "regime": regime,
             "position": pos_m2,
+            "asset_return_pct": ret_pct,
+            "p_optimistic": p_m2_opt,
+            "p_neutral": p_m2_neu,
+            "p_cautious": p_m2_cau,
+            "prompt_tokens": m2_p_tok,
+            "completion_tokens": m2_c_tok,
+            "latency_sec": 8.6,
+            "debate_skipped": False,
+        })
+        edge_m2_bps = abs(pos_m2 - prev_pos_m2_tg) * abs(p_m2_opt - p_m2_cau) * mean_move_bps
+        pos_m2_tg = prev_pos_m2_tg if edge_m2_bps < spread_bps else pos_m2
+        prev_pos_m2_tg = pos_m2_tg
+        m2_tg_records.append({
+            "date": step["date"],
+            "regime": regime,
+            "position": pos_m2_tg,
             "asset_return_pct": ret_pct,
             "p_optimistic": p_m2_opt,
             "p_neutral": p_m2_neu,
@@ -499,8 +541,8 @@ def evaluate_stream_protocols(stream: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         if gate["route"] == "multi_round_debate":
             m4_d = step["m4_cbs_debate"]
-            p_m4_opt = 0.5 * agg["p_optimistic"] + 0.5 * float(m4_d["p_optimistic"])
-            p_m4_cau = 0.5 * agg["p_cautious"] + 0.5 * float(m4_d["p_cautious"])
+            p_m4_opt = float(m4_d["p_optimistic"])
+            p_m4_cau = float(m4_d["p_cautious"])
             p_m4_neu = max(0.0, 1.0 - p_m4_opt - p_m4_cau)
             m4_p_tok = spec_p_tok + int(m4_d.get("prompt_tokens", int(m4_d.get("tokens_used", 700) * 0.78)))
             m4_c_tok = spec_c_tok + int(m4_d.get("completion_tokens", int(m4_d.get("tokens_used", 700) * 0.22)))
@@ -550,13 +592,15 @@ def evaluate_stream_protocols(stream: List[Dict[str, Any]]) -> Dict[str, Any]:
             "debate_skipped": gate["risk_self_debate"],
         })
 
-        # Online Multiplicative Weight update strictly at end of day t (t-1 -> t causality)
-        mw_manager.update_weights(regime, posteriors, realized_return_pct=ret_pct, eta=0.35, threshold_pct=0.20)
+        # Online Multiplicative Weight update strictly at end of day t (t-1 -> t causality, default threshold_pct=1.0)
+        mw_manager.update_weights(regime, posteriors, realized_return_pct=ret_pct, eta=0.35, threshold_pct=1.0)
 
     return {
         "M1_Linear_Pipeline": evaluator.evaluate_records(m1_records, baseline_records=m1_records),
         "M2_Vanilla_TradingAgents": evaluator.evaluate_records(m2_records, baseline_records=m1_records),
         "M3_SelfDebate_V2": evaluator.evaluate_records(m3_records, baseline_records=m1_records),
+        "M1_with_Turnover_Gate": evaluator.evaluate_records(m1_tg_records, baseline_records=m1_records),
+        "M2_with_Turnover_Gate": evaluator.evaluate_records(m2_tg_records, baseline_records=m1_records),
         "M4_No_Turnover_Gate": evaluator.evaluate_records(m4_notg_records, baseline_records=m1_records),
         "M4_CARE_Agents_Ours": evaluator.evaluate_records(m4_records, baseline_records=m1_records),
     }
@@ -688,6 +732,8 @@ def run_ablation():
             "M1_Linear_Pipeline": "M1: Linear Pipeline (No Debate)",
             "M2_Vanilla_TradingAgents": "M2: Vanilla TradingAgents (Fixed Debate)",
             "M3_SelfDebate_V2": "M3: RiskSelfDebateV2 (1-Shot)",
+            "M1_with_Turnover_Gate": "M1 + Turnover Gate (Control)",
+            "M2_with_Turnover_Gate": "M2 + Turnover Gate (Control)",
             "M4_No_Turnover_Gate": "M4 w/o Turnover Gate (CBS + Regime-MWU)",
             "M4_CARE_Agents_Ours": r"\textbf{M4: CARE-Agents (Ours, Full)}",
         }
