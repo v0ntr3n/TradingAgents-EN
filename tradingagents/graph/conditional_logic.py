@@ -478,6 +478,64 @@ class ConditionalLogic:
         state["cbs_gating_decision"] = gating_decision
         return gating_decision
 
+    def evaluate_four_stage_voi_gate(self, state: AgentState) -> dict:
+        """
+        Execute the 4-stage upgraded CARE-Agents ("Ours") gate:
+          Stage 1: Unverified Fast-Path Prior (a^0, p^0) via causal Regime-MWU linear pooling
+          Stage 2: Structured EvidenceContract (C_{i,t})
+          Stage 3: Calibrated Decision-Flip VOI (VOI_Ours = q_flip * max(0, Delta_U_flip))
+          Stage 4: Cost-Aware Verification & Execution Gate (VOI_Ours - c_verify - Delta_c_trade > tau_budget)
+        """
+        from core.agents.evidence_contract import build_evidence_contract_from_posteriors
+        from core.agents.decision_flip_voi import DecisionFlipVOIEstimator
+
+        base_gate = self.should_gate_debate(state)
+        posteriors = state.get("analyst_posteriors") or {}
+        regime = state.get("market_regime", "sideways")
+        symbol = str(state.get("company_of_interest") or state.get("symbol") or "UNKNOWN")
+        trade_date = str(state.get("trade_date") or state.get("date") or "")
+
+        unverified_agg = self.weight_manager.aggregate_posteriors(regime, posteriors, method="linear")
+        contract = state.get("evidence_contract")
+        if contract is None:
+            contract = build_evidence_contract_from_posteriors(
+                symbol=symbol,
+                trade_date=trade_date,
+                posteriors=posteriors,
+                unverified_agg=unverified_agg,
+                market_context=state.get("market_context"),
+            )
+            state["evidence_contract"] = contract
+
+        voi_estimator = state.get("voi_estimator") or getattr(self, "voi_estimator", None)
+        if voi_estimator is None:
+            voi_estimator = DecisionFlipVOIEstimator()
+            self.voi_estimator = voi_estimator
+
+        voi_eval = voi_estimator.evaluate_step_voi(
+            jsd=base_gate["jsd"],
+            cbs_bps=base_gate["cbs_bps"],
+            unverified_agg=unverified_agg,
+            contract=contract,
+            prev_position=float(state.get("prev_position", 0.0)),
+            spread_bps=float(state.get("estimated_spread_bps", self.default_spread_bps)),
+            llm_verify_cost_usd=float(state.get("llm_verify_cost_usd", 0.0012)),
+            tool_cost_usd=float(state.get("tool_cost_usd", 0.0004)),
+            per_stock_capital_usd=float(state.get("per_stock_capital_usd", 5000.0)),
+            sigma_20d=float(state.get("sigma_20d", 0.02)),
+            regime=regime,
+            tau_budget_bps=float(state.get("tau_budget_bps", 0.0)),
+            cost_aware=bool(state.get("cost_aware", True)),
+        )
+        base_gate.update({
+            "unverified_posterior": unverified_agg,
+            "evidence_contract": contract.to_dict(),
+            "voi_eval": voi_eval,
+            "trigger_verify": voi_eval["trigger_verify"],
+        })
+        state["cbs_gating_decision"] = base_gate
+        return base_gate
+
     def should_trigger_multi_round_debate(self, state: AgentState) -> str:
         """Route to 'Research Manager' (fast-path) or 'Bull Researcher' (debate) based on CBS gate."""
         decision = self.should_gate_debate(state)

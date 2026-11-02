@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\caption{E3 Component Ablation Study on StockBench (\texttt{EXTERNAL\_TEST\_2025}).}
+\label{tab:e3_ablation}
+\scriptsize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+Ablation Variant & Net Ret (\%) & Sharpe & Turn. & $\Delta U_{\text{paired}}$ & BFR (\%) & HFR (\%) & NAV (\$) \\
+\midrule
+Ours\_Full & -1.74 & -0.90 & 4.1 & +6.61 & 8.8 & 0.0 & +1460 \\
+Ours\_wo\_VOI & -2.46 & -1.21 & 4.3 & +2.81 & 7.0 & 0.0 & +742 \\
+Ours\_wo\_Evidence\_Contract & -2.20 & -1.04 & 4.7 & +3.02 & 10.5 & 5.3 & +998 \\
+Ours\_wo\_Cost\_Awareness & -3.90 & -1.59 & 4.7 & -3.73 & 4.8 & 4.8 & -698 \\
+B10\_Empirical\_VOI\_with\_Turnover\_Gate & -3.07 & -1.48 & 5.0 & -0.23 & 8.8 & 5.3 & +129 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}

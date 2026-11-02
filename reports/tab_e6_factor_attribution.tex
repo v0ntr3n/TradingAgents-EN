@@ -1,0 +1,21 @@
+\begin{table*}[t]
+\centering
+\caption{E6 Fama--French 5-Factor + Carhart Momentum Attribution and Brinson Decomposition.}
+\label{tab:e6_factor_attribution}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Method & $\alpha_{\text{ann}}$ (\%) & $t_{\text{HAC}}$ & $p$-val & $\beta_{\text{MKT}}$ & $\beta_{\text{SMB}}$ & $\beta_{\text{HML}}$ & $\beta_{\text{RMW}}$ & $\beta_{\text{CMA}}$ & $\beta_{\text{UMD}}$ & $R^2$ & Selection (bps) \\
+\midrule
+B01\_Buy\_And\_Hold & -4.19 & -33.31 & 1.000 & 1.00 & -0.00 & +0.00 & +0.00 & +0.00 & +0.00 & 1.00 & +0.00 \\
+B03\_LightGBM & -4.19 & -33.31 & 1.000 & 1.00 & -0.00 & +0.00 & +0.00 & +0.00 & +0.00 & 1.00 & +0.00 \\
+B05\_Static\_LLM & -7.13 & -2.25 & 0.988 & 0.35 & -0.08 & +0.00 & +0.00 & +0.03 & +0.11 & 0.77 & -7.99 \\
+B09\_Confidence\_Gate & -7.54 & -2.19 & 0.986 & 0.35 & -0.13 & +0.00 & +0.00 & +0.04 & +0.10 & 0.71 & -11.93 \\
+B10\_Empirical\_VOI & -8.65 & -2.43 & 0.992 & 0.34 & -0.10 & +0.00 & +0.00 & +0.04 & +0.10 & 0.69 & -10.37 \\
+B11\_TradingAgents & -12.08 & -2.35 & 0.991 & 0.34 & -0.01 & +0.00 & +0.00 & +0.01 & +0.11 & 0.72 & -19.74 \\
+B12\_EvolveTrade & -6.51 & -1.58 & 0.943 & 0.42 & -0.14 & +0.00 & +0.00 & +0.05 & +0.11 & 0.78 & -6.52 \\
+Ours & -4.74 & -1.77 & 0.961 & 0.27 & -0.07 & +0.00 & +0.00 & +0.02 & +0.08 & 0.60 & -4.50 \\
+\bottomrule
+\end{tabular}
+\end{table*}

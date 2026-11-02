@@ -1,0 +1,27 @@
+\begin{table*}[t]
+\centering
+\caption{E2 Cross-Model Generalization Across the 28-LLM Registry (Showing 5 Core Full-Ablation Backbones + Group Means at $B = 25\%$).}
+\label{tab:e2_cross_model}
+\footnotesize
+\begin{tabular}{llrrrrrrr}
+\toprule
+Model / Group & Policy & Net Ret (\%) & Sharpe & $\Delta U_{\text{paired}}$ (bps) & BFR (\%) & HFR (\%) & LLM Cost (\$) & NAV (\$) \\
+\midrule
+\texttt{gpt-5.5} & B06\_Static\_Tool\_LLM & -2.91 & -1.30 & +0.84 & 5.3 & 1.8 & 2.449 & +493 \\
+\texttt{gpt-5.5} & B10\_Empirical\_VOI & -3.79 & -1.72 & -1.85 & 8.8 & 7.0 & 2.482 & -393 \\
+\texttt{gpt-5.5} & Ours & -2.47 & -1.19 & +6.61 & 8.8 & 0.0 & 2.469 & +928 \\
+\texttt{claude-opus-4.7} & B06\_Static\_Tool\_LLM & -2.91 & -1.30 & +0.84 & 5.3 & 1.8 & 3.403 & +493 \\
+\texttt{claude-opus-4.7} & B10\_Empirical\_VOI & -3.79 & -1.72 & -1.85 & 8.8 & 7.0 & 3.447 & -393 \\
+\texttt{claude-opus-4.7} & Ours & -2.47 & -1.19 & +8.03 & 10.5 & 0.0 & 3.425 & +928 \\
+\texttt{gemini-3.1-pro} & B06\_Static\_Tool\_LLM & -2.91 & -1.30 & +0.84 & 5.3 & 1.8 & 1.225 & +493 \\
+\texttt{gemini-3.1-pro} & B10\_Empirical\_VOI & -3.79 & -1.72 & -1.85 & 8.8 & 7.0 & 1.241 & -393 \\
+\texttt{gemini-3.1-pro} & Ours & -2.16 & -1.02 & +8.03 & 10.5 & 0.0 & 1.234 & +1241 \\
+\texttt{qwen3.6-plus} & B06\_Static\_Tool\_LLM & -3.28 & -1.48 & -0.61 & 5.3 & 5.3 & 0.660 & +118 \\
+\texttt{qwen3.6-plus} & B10\_Empirical\_VOI & -2.86 & -1.11 & +3.35 & 12.3 & 10.5 & 0.669 & +537 \\
+\texttt{qwen3.6-plus} & Ours & -2.16 & -1.02 & +8.03 & 10.5 & 0.0 & 0.667 & +1241 \\
+\texttt{deepseek-v4-pro} & B06\_Static\_Tool\_LLM & -2.91 & -1.30 & +0.84 & 5.3 & 1.8 & 0.268 & +493 \\
+\texttt{deepseek-v4-pro} & B10\_Empirical\_VOI & -3.79 & -1.72 & -1.85 & 8.8 & 7.0 & 0.271 & -393 \\
+\texttt{deepseek-v4-pro} & Ours & -2.47 & -1.19 & +6.61 & 8.8 & 0.0 & 0.270 & +928 \\
+\bottomrule
+\end{tabular}
+\end{table*}

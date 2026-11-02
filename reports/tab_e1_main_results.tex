@@ -1,0 +1,27 @@
+\begin{table*}[t]
+\centering
+\caption{E1 Main Results: Comparison of 12 Baselines vs.\ \textbf{Ours} on \texttt{EXTERNAL\_TEST\_2025} (StockBench) at Matched Verification Budget ($B = 25\%$).}
+\label{tab:e1_main_results}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Method & Net Ret (\%) & Sharpe & MaxDD (\%) & Alpha (\%) & $\Delta U_{\text{paired}}$ (bps) & BFR (\%) & HFR (\%) & Cal.\ Err & VE (bps) & Ver.\ (\%) & NAV (\$) \\
+\midrule
+B01\_Buy\_And\_Hold & -2.06 & -0.30 & 6.62 & -4.19 & +2.07 & 0.0 & 0.0 & 0.500 & +0.00 & 0.0 & +1142 \\
+B02\_Momentum\_MACD & -4.14 & -2.14 & 4.55 & -10.01 & -2.22 & 0.0 & 0.0 & 0.500 & +0.00 & 0.0 & -939 \\
+B03\_LightGBM & -2.06 & -0.30 & 6.62 & -4.19 & +2.07 & 0.0 & 0.0 & 0.500 & +0.00 & 0.0 & +1142 \\
+B04\_SFM & -1.75 & -0.32 & 4.24 & -5.06 & +13.05 & 0.0 & 0.0 & 0.500 & +0.00 & 0.0 & +1449 \\
+B05\_Static\_LLM & -3.20 & -1.47 & 3.40 & -7.13 & +0.00 & 0.0 & 0.0 & 0.500 & +0.00 & 0.0 & +0 \\
+B06\_Static\_Tool\_LLM & -2.70 & -1.22 & 2.91 & -6.49 & +0.84 & 5.3 & 1.8 & 0.565 & +3.37 & 25.0 & +494 \\
+B07\_Always\_Verify & -5.36 & -2.56 & 5.50 & -12.08 & -11.90 & 6.1 & 9.2 & 0.555 & -11.90 & 100.0 & -2156 \\
+B08\_Random\_Verify & -3.94 & -1.88 & 4.23 & -8.65 & -4.08 & 5.8 & 9.9 & 0.533 & -16.33 & 25.0 & -745 \\
+B09\_Confidence\_Gate & -3.10 & -1.34 & 3.34 & -7.54 & -0.60 & 10.5 & 8.8 & 0.830 & -2.40 & 25.0 & +94 \\
+B10\_Empirical\_VOI & -3.60 & -1.65 & 4.33 & -8.65 & -1.85 & 8.8 & 7.0 & 0.789 & -7.42 & 25.0 & -402 \\
+B11\_TradingAgents & -5.36 & -2.56 & 5.50 & -12.08 & -11.90 & 6.1 & 9.2 & 0.555 & -11.90 & 100.0 & -2156 \\
+B12\_EvolveTrade & -2.93 & -1.11 & 3.94 & -6.51 & +0.99 & 26.3 & 22.8 & 0.325 & +3.97 & 25.0 & +269 \\
+\textbf{Ours} & -1.74 & -0.90 & 2.78 & -4.74 & +6.61 & 8.8 & 0.0 & 0.476 & +26.46 & 25.0 & +1460 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

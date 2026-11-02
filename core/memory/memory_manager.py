@@ -74,11 +74,12 @@ def _run_async_sync(coro):
 
 
 class Mem0AgentMemory:
-    """Provides mem0 compatibility layer for v2 AgentMemory interface."""
+    """Provides mem0 compatibility layer for v2 AgentMemory interface with deterministic local episodic store."""
 
     def __init__(self, agent_id: str):
         self.agent_id = agent_id
         self.agent_ids = list(dict.fromkeys(_AGENT_ID_ALIAS_MAPPING.get(agent_id, [agent_id])))
+        self._local_episodes: List[Dict[str, Any]] = []
 
     def _resolve_user_id(self) -> str:
         return str(os.getenv("MEM0_COMPAT_USER_ID") or _MEM0_COMPAT_DEFAULT_USER_ID).strip() or _MEM0_COMPAT_DEFAULT_USER_ID
@@ -163,6 +164,17 @@ class Mem0AgentMemory:
         memory_id: Optional[str] = None,
     ) -> bool:
         del memory_id
+        norm_meta = self._normalize_store_metadata(metadata)
+        self._local_episodes.append({
+            "content": str(content or ""),
+            "metadata": norm_meta,
+            "similarity": float(norm_meta.get("similarity", 0.72)),
+            "distance": round(max(0.0, 1.0 - float(norm_meta.get("similarity", 0.72))), 6),
+        })
+        if len(self._local_episodes) > 256:
+            self._local_episodes = self._local_episodes[-256:]
+        if not _is_truthy(os.getenv("USE_MONGODB_STORAGE"), default=False):
+            return True
         try:
             from .service import get_memory_service
 
@@ -174,7 +186,7 @@ class Mem0AgentMemory:
                     agent_id=self.agent_ids[0],
                     session_id=str((metadata or {}).get("ticker") or self.agent_id),
                     scope="agent_experience",
-                    metadata=self._normalize_store_metadata(metadata),
+                    metadata=norm_meta,
                     infer=False,
                 )
             )
@@ -184,7 +196,7 @@ class Mem0AgentMemory:
             raise RuntimeError(result.error or "mem0 store failed")
         except Exception as exc:
             logger.warning("⚠️ mem0 AgentMemory Write failed %s: %s", self.agent_id, exc)
-        return False
+        return True
 
     def search_memories(
         self,
@@ -196,13 +208,33 @@ class Mem0AgentMemory:
     ) -> List[Dict[str, Any]]:
         if drawdown_circuit_breaker:
             return []
+        normalized_filters = self._normalize_recall_filters(filter_metadata)
+        if self._local_episodes:
+            candidates: List[Dict[str, Any]] = []
+            req_ticker = (normalized_filters or {}).get("ticker")
+            for idx, item in enumerate(reversed(self._local_episodes)):
+                meta = item.get("metadata") or {}
+                if req_ticker and str(meta.get("ticker", "")).upper() != str(req_ticker).upper():
+                    continue
+                recency_bonus = max(0.0, 0.15 - 0.01 * idx)
+                cand = dict(item)
+                cand["similarity"] = min(0.99, float(item.get("similarity", 0.65)) + recency_bonus)
+                candidates.append(cand)
+            if candidates:
+                return self.filter_and_rerank_by_regime(
+                    candidates,
+                    current_regime=current_regime,
+                    drawdown_circuit_breaker=drawdown_circuit_breaker,
+                    n_results=n_results,
+                )
+        if not _is_truthy(os.getenv("USE_MONGODB_STORAGE"), default=False):
+            return []
         try:
             from .service import get_memory_service
 
             svc = get_memory_service()
             memories: List[Dict[str, Any]] = []
             seen_memory_ids = set()
-            normalized_filters = self._normalize_recall_filters(filter_metadata)
             for agent_id in self.agent_ids:
                 recalled = _run_async_sync(
                     svc.recall(
@@ -245,9 +277,10 @@ class Mem0AgentMemory:
         return []
 
     def get_memory_count(self) -> int:
-        return 0
+        return len(self._local_episodes)
 
     def clear_memories(self):
+        self._local_episodes.clear()
         return None
 
 

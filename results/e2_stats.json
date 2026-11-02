@@ -1,0 +1,10 @@
+{
+  "total_models": 28,
+  "policies": [
+    "B06_Static_Tool_LLM",
+    "B09_Confidence_Gate",
+    "B10_Empirical_VOI",
+    "Ours"
+  ],
+  "row_count": 112
+}

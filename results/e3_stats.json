@@ -1,0 +1,79 @@
+{
+  "variants": [
+    {
+      "Variant": "Ours_Full",
+      "Net_Return_Pct": -1.74,
+      "Sharpe_Ratio": -0.904,
+      "Sortino_Ratio": -1.159,
+      "Max_Drawdown_Pct": 2.78,
+      "Turnover": 4.1,
+      "Paired_Delta_Utility_Bps": 6.614,
+      "Beneficial_Flip_Rate_Pct": 8.77,
+      "Harmful_Flip_Rate_Pct": 0.0,
+      "VOI_Calibration_Error": 0.4757,
+      "Verification_Efficiency_Bps_Per_Call": 26.46,
+      "Verification_Rate_Pct": 25.0,
+      "Net_Agentic_Value_USD": 1459.77
+    },
+    {
+      "Variant": "Ours_wo_VOI",
+      "Net_Return_Pct": -2.46,
+      "Sharpe_Ratio": -1.205,
+      "Sortino_Ratio": -1.475,
+      "Max_Drawdown_Pct": 2.85,
+      "Turnover": 4.3,
+      "Paired_Delta_Utility_Bps": 2.812,
+      "Beneficial_Flip_Rate_Pct": 7.02,
+      "Harmful_Flip_Rate_Pct": 0.0,
+      "VOI_Calibration_Error": 0.4641,
+      "Verification_Efficiency_Bps_Per_Call": 11.25,
+      "Verification_Rate_Pct": 25.0,
+      "Net_Agentic_Value_USD": 741.97
+    },
+    {
+      "Variant": "Ours_wo_Evidence_Contract",
+      "Net_Return_Pct": -2.2,
+      "Sharpe_Ratio": -1.037,
+      "Sortino_Ratio": -1.283,
+      "Max_Drawdown_Pct": 3.28,
+      "Turnover": 4.7,
+      "Paired_Delta_Utility_Bps": 3.018,
+      "Beneficial_Flip_Rate_Pct": 10.53,
+      "Harmful_Flip_Rate_Pct": 5.26,
+      "VOI_Calibration_Error": 0.4263,
+      "Verification_Efficiency_Bps_Per_Call": 12.07,
+      "Verification_Rate_Pct": 25.0,
+      "Net_Agentic_Value_USD": 998.17
+    },
+    {
+      "Variant": "Ours_wo_Cost_Awareness",
+      "Net_Return_Pct": -3.9,
+      "Sharpe_Ratio": -1.594,
+      "Sortino_Ratio": -1.817,
+      "Max_Drawdown_Pct": 3.9,
+      "Turnover": 4.7,
+      "Paired_Delta_Utility_Bps": -3.73,
+      "Beneficial_Flip_Rate_Pct": 4.82,
+      "Harmful_Flip_Rate_Pct": 4.82,
+      "VOI_Calibration_Error": 0.4503,
+      "Verification_Efficiency_Bps_Per_Call": -10.24,
+      "Verification_Rate_Pct": 36.4,
+      "Net_Agentic_Value_USD": -698.05
+    },
+    {
+      "Variant": "B10_Empirical_VOI_with_Turnover_Gate",
+      "Net_Return_Pct": -3.07,
+      "Sharpe_Ratio": -1.481,
+      "Sortino_Ratio": -1.739,
+      "Max_Drawdown_Pct": 3.81,
+      "Turnover": 5.0,
+      "Paired_Delta_Utility_Bps": -0.229,
+      "Beneficial_Flip_Rate_Pct": 8.77,
+      "Harmful_Flip_Rate_Pct": 5.26,
+      "VOI_Calibration_Error": 0.8002,
+      "Verification_Efficiency_Bps_Per_Call": -0.92,
+      "Verification_Rate_Pct": 25.0,
+      "Net_Agentic_Value_USD": 128.67
+    }
+  ]
+}

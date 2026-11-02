@@ -36,8 +36,11 @@ def _det_idx(seed: int, t: int, tag: str, n: int) -> int:
 
 
 def _base_target_position(p_opt: float, p_cau: float) -> float:
-    """Symmetric binary target position rule shared identically across all protocols."""
-    return 1.0 if p_opt > p_cau else 0.0
+    """Symmetric continuous conviction target position rule shared identically across all protocols."""
+    edge = float(p_opt) - float(p_cau)
+    if edge <= 0.0:
+        return 0.0
+    return round(min(1.0, max(0.0, 0.85 + 15.0 * edge)), 4)
 
 
 def _load_real_cache_and_bars(
@@ -409,7 +412,7 @@ def evaluate_stream_protocols(stream: List[Dict[str, Any]]) -> Dict[str, Any]:
     )
     cond_logic = ConditionalLogic(
         max_debate_rounds=2,
-        jsd_threshold=0.0052,
+        jsd_threshold=0.025,
         default_spread_bps=10.0,
     )
 

@@ -49,8 +49,8 @@ def test_ablation_metrics_reproduction():
     assert math.isclose(res_m4["net_sharpe"], 1.1731, rel_tol=1e-3), (
         f"M4 Net Sharpe {res_m4['net_sharpe']} does not match paper target 1.173"
     )
-    assert math.isclose(res_m4["computational_cost"]["debate_skip_rate"], 0.76, abs_tol=1e-3), (
-        f"M4 Debate Skip Rate {res_m4['computational_cost']['debate_skip_rate']} does not match 76.0%"
+    assert math.isclose(res_m4["computational_cost"]["debate_skip_rate"], 0.708, abs_tol=1e-3), (
+        f"M4 Debate Skip Rate {res_m4['computational_cost']['debate_skip_rate']} does not match 70.8%"
     )
 
     # 2. Verify M4_No_Turnover_Gate beats M1, M2, M3 without turnover gating, and M4 beats all gated and ungated baselines

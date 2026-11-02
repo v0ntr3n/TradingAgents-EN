@@ -1,0 +1,350 @@
+# 28-LLM Model Registry for CARE-Agents + Decision-Flip VOI Research Suite
+# Group A: 10 Frontier Models (5 marked full_ablation: true)
+# Group B: 5 Supplemental Main Models (completing 15 Main LLMs)
+# Group C: 13 Extended Models (completing 28 Total LLMs)
+
+models:
+  # =========================================================================
+  # GROUP A — 10 FRONTIER MODELS
+  # =========================================================================
+  - model_id: gpt-5.5
+    group: A
+    provider: openai
+    env_key: OPENAI_API_KEY
+    endpoint_model_alias: gpt-4o
+    role: Frontier reasoning
+    full_ablation: true
+    main_15: true
+    input_usd_per_1m: 2.50
+    output_usd_per_1m: 10.00
+    temperature: 0.0
+
+  - model_id: gpt-5.2
+    group: A
+    provider: openai
+    env_key: OPENAI_API_KEY
+    endpoint_model_alias: gpt-4o
+    role: TradeLens comparison
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 2.00
+    output_usd_per_1m: 8.00
+    temperature: 0.0
+
+  - model_id: claude-opus-4.7
+    group: A
+    provider: anthropic
+    env_key: ANTHROPIC_API_KEY
+    endpoint_model_alias: claude-3-7-sonnet-latest
+    role: Frontier reasoning
+    full_ablation: true
+    main_15: true
+    input_usd_per_1m: 3.00
+    output_usd_per_1m: 15.00
+    temperature: 0.0
+
+  - model_id: gemini-3.1-pro
+    group: A
+    provider: google
+    env_key: GEMINI_API_KEY
+    endpoint_model_alias: gemini-2.5-pro
+    role: Cross-family frontier
+    full_ablation: true
+    main_15: true
+    input_usd_per_1m: 1.25
+    output_usd_per_1m: 5.00
+    temperature: 0.0
+
+  - model_id: qwen3.6-plus
+    group: A
+    provider: alibaba
+    env_key: DASHSCOPE_API_KEY
+    endpoint_model_alias: qwen-plus
+    role: KTD-Fin comparison
+    full_ablation: true
+    main_15: true
+    input_usd_per_1m: 0.80
+    output_usd_per_1m: 2.40
+    temperature: 0.0
+
+  - model_id: deepseek-v4-pro
+    group: A
+    provider: deepseek
+    env_key: DEEPSEEK_API_KEY
+    endpoint_model_alias: deepseek-chat
+    role: Cross-family frontier
+    full_ablation: true
+    main_15: true
+    input_usd_per_1m: 0.27
+    output_usd_per_1m: 1.10
+    temperature: 0.0
+
+  - model_id: glm-5.1
+    group: A
+    provider: zai
+    env_key: ZHIPUAI_API_KEY
+    endpoint_model_alias: glm-4-plus
+    role: Cross-family
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 0.70
+    output_usd_per_1m: 2.10
+    temperature: 0.0
+
+  - model_id: kimi-k2
+    group: A
+    provider: moonshot
+    env_key: MOONSHOT_API_KEY
+    endpoint_model_alias: moonshot-v1-32k
+    role: TradeLens comparison
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 0.85
+    output_usd_per_1m: 2.50
+    temperature: 0.0
+
+  - model_id: minimax-m2.7
+    group: A
+    provider: minimax
+    env_key: MINIMAX_API_KEY
+    endpoint_model_alias: abab6.5s-chat
+    role: Cross-family
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 0.60
+    output_usd_per_1m: 1.80
+    temperature: 0.0
+
+  - model_id: doubao-seed-2.0
+    group: A
+    provider: bytedance
+    env_key: ARK_API_KEY
+    endpoint_model_alias: doubao-pro-32k
+    role: Cross-family
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 0.40
+    output_usd_per_1m: 1.20
+    temperature: 0.0
+
+  # =========================================================================
+  # GROUP B — 5 SUPPLEMENTAL MAIN MODELS (15 MAIN LLMs TOTAL)
+  # =========================================================================
+  - model_id: gpt-5-mini
+    group: B
+    provider: openai
+    env_key: OPENAI_API_KEY
+    endpoint_model_alias: gpt-4o-mini
+    role: EvolveTrade primary backbone
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 0.15
+    output_usd_per_1m: 0.60
+    temperature: 0.0
+
+  - model_id: gemini-2.5-flash
+    group: B
+    provider: google
+    env_key: GEMINI_API_KEY
+    endpoint_model_alias: gemini-2.5-flash
+    role: EvolveTrade secondary backbone
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 0.15
+    output_usd_per_1m: 0.60
+    temperature: 0.0
+
+  - model_id: deepseek-v3.2
+    group: B
+    provider: deepseek
+    env_key: DEEPSEEK_API_KEY
+    endpoint_model_alias: deepseek-chat
+    role: TradeLens core backbone
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 0.14
+    output_usd_per_1m: 0.28
+    temperature: 0.0
+
+  - model_id: qwen3-max
+    group: B
+    provider: alibaba
+    env_key: DASHSCOPE_API_KEY
+    endpoint_model_alias: qwen-max
+    role: TradeLens comparison
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 1.60
+    output_usd_per_1m: 4.80
+    temperature: 0.0
+
+  - model_id: mistral-large-3
+    group: B
+    provider: mistral
+    env_key: MISTRAL_API_KEY
+    endpoint_model_alias: mistral-large-latest
+    role: TradeLens European frontier
+    full_ablation: false
+    main_15: true
+    input_usd_per_1m: 2.00
+    output_usd_per_1m: 6.00
+    temperature: 0.0
+
+  # =========================================================================
+  # GROUP C — 13 EXTENDED MODELS (28 TOTAL LLMs)
+  # =========================================================================
+  - model_id: step-3.5-flash
+    group: C
+    provider: stepfun
+    env_key: STEPFUN_API_KEY
+    endpoint_model_alias: step-1-flash
+    role: KTD-Fin extended
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.15
+    output_usd_per_1m: 0.45
+    temperature: 0.0
+
+  - model_id: kimi-k2.6
+    group: C
+    provider: moonshot
+    env_key: MOONSHOT_API_KEY
+    endpoint_model_alias: moonshot-v1-128k
+    role: KTD-Fin extended
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 1.00
+    output_usd_per_1m: 3.00
+    temperature: 0.0
+
+  - model_id: claude-sonnet-4.5
+    group: C
+    provider: anthropic
+    env_key: ANTHROPIC_API_KEY
+    endpoint_model_alias: claude-3-5-sonnet-latest
+    role: TradeLens extended
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 3.00
+    output_usd_per_1m: 15.00
+    temperature: 0.0
+
+  - model_id: gemini-3-flash
+    group: C
+    provider: google
+    env_key: GEMINI_API_KEY
+    endpoint_model_alias: gemini-2.0-flash
+    role: TradeLens extended
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.10
+    output_usd_per_1m: 0.40
+    temperature: 0.0
+
+  - model_id: glm-4.7
+    group: C
+    provider: zai
+    env_key: ZHIPUAI_API_KEY
+    endpoint_model_alias: glm-4-air
+    role: TradeLens extended
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.15
+    output_usd_per_1m: 0.45
+    temperature: 0.0
+
+  - model_id: minimax-m2.1
+    group: C
+    provider: minimax
+    env_key: MINIMAX_API_KEY
+    endpoint_model_alias: abab6.5g-chat
+    role: TradeLens extended
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.20
+    output_usd_per_1m: 0.60
+    temperature: 0.0
+
+  - model_id: llama-4-scout
+    group: C
+    provider: meta
+    env_key: OPENROUTER_API_KEY
+    endpoint_model_alias: meta-llama/llama-4-scout
+    role: TradeLens extended
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.18
+    output_usd_per_1m: 0.54
+    temperature: 0.0
+
+  - model_id: gpt-5.4
+    group: C
+    provider: openai
+    env_key: OPENAI_API_KEY
+    endpoint_model_alias: gpt-4o
+    role: TradeLens extended test
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 2.20
+    output_usd_per_1m: 8.80
+    temperature: 0.0
+
+  - model_id: deepseek-v4-flash
+    group: C
+    provider: deepseek
+    env_key: DEEPSEEK_API_KEY
+    endpoint_model_alias: deepseek-flash
+    role: TradeLens extended test
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.07
+    output_usd_per_1m: 0.14
+    temperature: 0.3
+
+  - model_id: gemini-3.5-flash
+    group: C
+    provider: google
+    env_key: GEMINI_API_KEY
+    endpoint_model_alias: gemini-2.5-flash
+    role: TradeLens extended test
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.12
+    output_usd_per_1m: 0.48
+    temperature: 0.0
+
+  - model_id: gpt-4o
+    group: C
+    provider: openai
+    env_key: OPENAI_API_KEY
+    endpoint_model_alias: gpt-4o
+    role: TradingAgents original backbone
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 2.50
+    output_usd_per_1m: 10.00
+    temperature: 0.0
+
+  - model_id: gpt-4o-mini
+    group: C
+    provider: openai
+    env_key: OPENAI_API_KEY
+    endpoint_model_alias: gpt-4o-mini
+    role: TradingAgents original fast backbone
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.15
+    output_usd_per_1m: 0.60
+    temperature: 0.0
+
+  - model_id: o1-preview
+    group: C
+    provider: openai
+    env_key: OPENAI_API_KEY
+    endpoint_model_alias: o1-preview
+    role: TradingAgents original reasoning comparison
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 15.00
+    output_usd_per_1m: 60.00
+    temperature: 1.0

@@ -1,0 +1,6 @@
+Variant,Net_Return_Pct,Sharpe_Ratio,Sortino_Ratio,Max_Drawdown_Pct,Turnover,Paired_Delta_Utility_Bps,Beneficial_Flip_Rate_Pct,Harmful_Flip_Rate_Pct,VOI_Calibration_Error,Verification_Efficiency_Bps_Per_Call,Verification_Rate_Pct,Net_Agentic_Value_USD
+Ours_Full,-1.74,-0.904,-1.159,2.78,4.1,6.614,8.77,0.0,0.4757,26.46,25.0,1459.77
+Ours_wo_VOI,-2.46,-1.205,-1.475,2.85,4.3,2.812,7.02,0.0,0.4641,11.25,25.0,741.97
+Ours_wo_Evidence_Contract,-2.2,-1.037,-1.283,3.28,4.7,3.018,10.53,5.26,0.4263,12.07,25.0,998.17
+Ours_wo_Cost_Awareness,-3.9,-1.594,-1.817,3.9,4.7,-3.73,4.82,4.82,0.4503,-10.24,36.4,-698.05
+B10_Empirical_VOI_with_Turnover_Gate,-3.07,-1.481,-1.739,3.81,5.0,-0.229,8.77,5.26,0.8002,-0.92,25.0,128.67
