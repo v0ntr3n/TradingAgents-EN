@@ -1,0 +1,18 @@
+\begin{table*}[t]
+\centering
+\caption{Factorial Ablation across 500 Multi-Regime Trading Bars Constructed from Point-in-Time Cached Live LLM Posteriors and Historical Market Returns (Net of Commissions and 7.5 bps Slippage).}
+\label{tab:cph_ablation}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+\textbf{Architecture} & \textbf{Gross\%} & \textbf{Net\%} & \textbf{Net SR} & \textbf{MaxDD\%} & \textbf{Bull SR} & \textbf{Bear SR} & \textbf{Brier $\downarrow$} & \textbf{ECE $\downarrow$} & \textbf{HAC $t$} & \textbf{Tok/Dec} & \textbf{Skip\%} \\
+\midrule
+M1: Linear Pipeline (No Debate) & 43.3 & 30.9 & 0.67 & 36.9 & -0.97 & -1.84 & 0.2383 & 0.1090 & +1.32 & 2067 & 100.0 \\
+M2: Vanilla TradingAgents (Fixed Debate) & 20.3 & -8.2 & -0.16 & 30.7 & -0.80 & -0.94 & 0.2315 & 0.1138 & +0.00 & 2768 & 0.0 \\
+M3: RiskSelfDebateV2 (1-Shot) & 12.9 & -1.9 & 0.07 & 41.5 & -1.11 & -0.27 & 0.2344 & 0.1051 & +0.30 & 2673 & 100.0 \\
+M1 + Turnover Gate (Control) & 24.7 & 17.9 & 0.46 & 40.5 & -0.90 & -1.84 & 0.2383 & 0.1090 & +0.94 & 2067 & 100.0 \\
+M2 + Turnover Gate (Control) & 58.8 & 31.3 & 0.72 & 26.4 & -0.57 & -0.40 & 0.2315 & 0.1138 & +1.83 & 2768 & 0.0 \\
+M4 w/o Turnover Gate (CBS + Regime-MWU) & 42.8 & 30.7 & 0.67 & 37.4 & -1.00 & -1.84 & 0.2378 & 0.1076 & +1.31 & 2301 & 68.6 \\
+\textbf{M4: CARE-Agents (Ours, Full)} & 25.9 & 19.4 & 0.48 & 40.5 & -0.90 & -1.84 & 0.2378 & 0.1076 & +0.98 & 2301 & 68.6 \\
+\bottomrule
+\end{tabular}
+\end{table*}

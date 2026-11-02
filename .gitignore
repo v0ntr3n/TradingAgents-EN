@@ -190,3 +190,4 @@ deploy-all-in-one/wheels/
 
 nul
 node_modules
+.agents/*
