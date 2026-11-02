@@ -194,7 +194,7 @@ def run_fetch_url(url: str) -> str:
 
     # Check if it is a Baidu verification page
     if "wappass.baidu.com" in url or "captcha" in url:
-        return f"The link jumps to the Baidu security verification page and the content cannot be crawled. Please try other search results."
+        return "The link jumps to the Baidu security verification page and the content cannot be crawled. Please try other search results."
 
     try:
         logger.info("抓取网页: %s", url[:80])

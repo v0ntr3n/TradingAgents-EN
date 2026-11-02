@@ -94,7 +94,7 @@ class RedisProgressTracker:
             # Check the REDIS_ENABLED environment variable
             redis_enabled = os.getenv('REDIS_ENABLED', 'false').lower() == 'true'
             if not redis_enabled:
-                logger.info(f"📊 [Redis Progress] Redis Not enabled, uses file storage")
+                logger.info("📊 [Redis Progress] Redis Not enabled, uses file storage")
                 return False
 
             import redis

@@ -22,10 +22,21 @@ if "toml" not in sys.modules:
     sys.modules["toml"] = toml_mod
 
 
+def _attach_invoke(fn):
+    if callable(fn) and not hasattr(fn, "invoke"):
+        try:
+            fn.invoke = lambda payload=None, _f=fn, **kw: (
+                _f(**payload) if isinstance(payload, dict) else _f(**kw)
+            )
+        except Exception:
+            pass
+    return fn
+
+
 class _StubItem:
     def __new__(cls, *args, **kwargs):
         if len(args) == 1 and callable(args[0]):
-            return args[0]
+            return _attach_invoke(args[0])
         return super().__new__(cls)
 
     def __init__(self, *args, **kwargs):
@@ -33,7 +44,7 @@ class _StubItem:
 
     def __call__(self, *args, **kwargs):
         if len(args) == 1 and callable(args[0]):
-            return args[0]
+            return _attach_invoke(args[0])
         return self
 
     def __getattr__(self, name):

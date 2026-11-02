@@ -33,7 +33,7 @@ def get_data_in_range(ticker, start_date, end_date, data_type, data_dir, period=
     try:
         if not os.path.exists(data_path):
             logger.warning(f"⚠️ [DEBUG] Data file does not exist: {data_path}")
-            logger.warning(f"⚠️ [DEBUG] Please make sure you have downloaded the relevant data or check the data directory configuration")
+            logger.warning("⚠️ [DEBUG] Please make sure you have downloaded the relevant data or check the data directory configuration")
             return {}
         
         with open(data_path, "r", encoding="utf-8") as f:

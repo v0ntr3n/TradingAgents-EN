@@ -411,10 +411,10 @@ async def _register_skill_to_registry(doc: Dict[str, Any]):
 
             if isinstance(impl, dict) and impl.get("script_path") and (impl.get("skill_dir") or doc.get("skill_dir")):
                 wrapper = _create_script_skill_wrapper(doc)
-                logger.info(f"   → Using scripted Skill wrappers (execute_cli mode)")
+                logger.info("   → Using scripted Skill wrappers (execute_cli mode)")
             else:
                 wrapper = SkillExecutor.create_sync_wrapper(skill)
-                logger.info(f"   → Using the generic SkillExecutor synchronization wrapper")
+                logger.info("   → Using the generic SkillExecutor synchronization wrapper")
 
             # 🔥 category Must be a ToolCategory enumeration value, otherwise mapped to external
             from core.tools.config import ToolCategory
@@ -914,7 +914,7 @@ def _execute_python_sandbox(code: str, args: Dict[str, Any], timeout: int) -> Di
             result_str = stdout[start:end].strip()
             try:
                 result = json.loads(result_str)
-            except:
+            except Exception:
                 result = result_str
             return {"success": True, "result": result, "execution_time_ms": 0}
         else:
@@ -2202,15 +2202,15 @@ async def import_local_skill(
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    f"Knowledge-based Skills (without scripts/ directory) do not support import."
-                    f"This project only supports Python script skills that contain executable scripts."
+                    "Knowledge-based Skills (without scripts/ directory) do not support import."
+                    "This project only supports Python script skills that contain executable scripts."
                 ),
             )
         script_files = [f for f in scripts_dir.iterdir() if f.is_file() and f.suffix == ".py"]
         if not script_files:
             raise HTTPException(
                 status_code=400,
-                detail=f"scripts/ There is no Python script file in the directory and cannot be imported.",
+                detail="scripts/ There is no Python script file in the directory and cannot be imported.",
             )
 
         doc = await _import_local_skill_to_db(str(skill_dir_path), db, source_type="local")

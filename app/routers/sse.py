@@ -49,7 +49,7 @@ async def task_progress_generator(task_id: str, user_id: str):
             logger.error(f"❌ [SSE-Task] Failed to subscribe to channel: {subscribe_error}")
             try:
                 await pubsub.close()
-                logger.info(f"🧹 [SSE-Task] PubSub connection closed after subscription failed")
+                logger.info("🧹 [SSE-Task] PubSub connection closed after subscription failed")
             except Exception as close_error:
                 logger.error(f"❌ [SSE-Task] Failed to close PubSub connection: {close_error}")
             # Rethrow the exception and let the outer except handle it
@@ -135,12 +135,12 @@ async def batch_progress_generator(batch_id: str, user_id: str):
                 # Get current batch status
                 batch_data = await svc.get_batch(batch_id)
                 if not batch_data:
-                    yield f"event: error\ndata: {{\"error\": \"Batch does not exist\"}}\n\n"
+                    yield "event: error\ndata: {\"error\": \"Batch does not exist\"}\n\n"
                     break
 
                 # Check if batch belongs to user
                 if batch_data.get("user") != user_id:
-                    yield f"event: error\ndata: {{\"error\": \"No permission to access this batch\"}}\n\n"
+                    yield "event: error\ndata: {\"error\": \"No permission to access this batch\"}\n\n"
                     break
 
                 # Calculate batch progress based on task statuses

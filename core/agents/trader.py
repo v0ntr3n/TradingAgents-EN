@@ -333,7 +333,7 @@ class TraderAgent(BaseAgent):
             Parsed Transaction Analysis Plan Dictionary
         """
         # 🔍 debug log
-        logger.info(f"🔍 [TraderAgent._parse_response] Start parsing the response")
+        logger.info("🔍 [TraderAgent._parse_response] Start parsing the response")
         logger.info(f"🔍 [TraderAgent._parse_response] response length: {len(response)}")
 
         # Default implementation: return text directly
@@ -342,7 +342,7 @@ class TraderAgent(BaseAgent):
             "success": True
         }
 
-        logger.info(f"🔍 [TraderAgent._parse_response] The parsing is completed and the dictionary is returned.")
+        logger.info("🔍 [TraderAgent._parse_response] The parsing is completed and the dictionary is returned.")
         return result
 
     @property

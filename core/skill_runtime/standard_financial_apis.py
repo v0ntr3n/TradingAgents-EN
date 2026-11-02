@@ -3232,7 +3232,7 @@ def get_pledge_historical_series(
 
     # 🔍 Debug log: print the statistical results of each cycle
     logger.info(f"\n{'='*80}")
-    logger.info(f"🔍 [Staking trend debugging] Statistical results for each cycle:")
+    logger.info("🔍 [Staking trend debugging] Statistical results for each cycle:")
     for item in series:
         logger.info(
             f"   {item.get('period')}: "

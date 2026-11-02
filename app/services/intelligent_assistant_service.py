@@ -1092,7 +1092,7 @@ def _format_user_context_block(user_context: dict) -> str:
         lines.append(f"- 引导流程: {guide}")
     errors = user_context.get("recent_console_errors") or []
     if errors:
-        lines.append(f"- Recent browser errors(Up to 3 items):")
+        lines.append("- Recent browser errors(Up to 3 items):")
         for err in errors[:3]:
             err_text = str(err)[:200]
             lines.append(f"    • {err_text}")
@@ -1214,7 +1214,7 @@ def _build_stock_scope_block(user_context: Optional[dict]) -> str:
     # ── Guide to market data tools (the first choice for trend/rebound/callback issues) ──
     lines.append("")
     lines.append("【本股行情数据工具指引】")
-    lines.append(f"- When users ask questions about the current stock price trend, whether it rebounds/callbacks/breakthroughs, the range of increases and decreases, and technical signals, etc.**Priority must be given to calling market data tools to obtain real K-line data.**, Don t search with web_search instead:")
+    lines.append("- When users ask questions about the current stock price trend, whether it rebounds/callbacks/breakthroughs, the range of increases and decreases, and technical signals, etc.**Priority must be given to calling market data tools to obtain real K-line data.**, Don t search with web_search instead:")
     lines.append(f"  • get_stock_market_data_unified(ticker=\"{code}\", start_date=Last trading day, end_date=Last trading day) Get the historical K-line (in the past 1 year, including the increase and decrease)")
     lines.append(f"  • get_technical_indicators(ticker=\"{code}\", indicators=\"macd,rsi_14,kdj\") Get MACD/RSI/KDJ technical indicators")
     lines.append("- Use search_recent_information/web_search only when asking for non-market information such as recent news/announcements/industry trends.")

@@ -140,7 +140,7 @@ class AKShareSyncService:
             stats["end_time"] = datetime.utcnow()
             stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
             
-            logger.info(f"🎉 Basic stock information is synchronized!")
+            logger.info("🎉 Basic stock information is synchronized!")
             logger.info(f"📊 total: {stats['total_processed']}only, "
                        f"success: {stats['success_count']}, "
                        f"Error: {stats['error_count']}, "
@@ -445,7 +445,7 @@ class AKShareSyncService:
 
             # 🔥 Optimization: If you only synchronize 1 stock, call the single stock interface directly instead of using the batch interface.
             if len(symbols) == 1:
-                logger.info(f"📈 Single stock synchronization, directly use the get_stock_quotes interface")
+                logger.info("📈 Single stock synchronization, directly use the get_stock_quotes interface")
                 symbol = symbols[0]
                 
                 # 🔥 Check data freshness and completeness first
@@ -645,7 +645,7 @@ class AKShareSyncService:
             stats["end_time"] = datetime.utcnow()
             stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
 
-            logger.info(f"🎉 Real-time market conditions are synchronized!")
+            logger.info("🎉 Real-time market conditions are synchronized!")
             logger.info(f"📊 total: {stats['total_processed']}only, "
                        f"success: {stats['success_count']}, "
                        f"Error: {stats['error_count']}, "
@@ -1072,7 +1072,7 @@ class AKShareSyncService:
                 # Skip processed stocks
                 symbols = symbols[start_index:]
                 if not symbols:
-                    logger.warning(f"⚠️ All stocks have been processed, no need to continue synchronization")
+                    logger.warning("⚠️ All stocks have been processed, no need to continue synchronization")
                     stats["total_processed"] = original_total_symbols
                     stats["success_count"] = start_index
                     return stats
@@ -1107,7 +1107,7 @@ class AKShareSyncService:
                 try:
                     current_loop = asyncio.get_running_loop()
                     if current_loop.is_closed():
-                        logger.warning(f"⚠️ [AKShare] The event loop of the current thread has been closed, stopping the synchronization task")
+                        logger.warning("⚠️ [AKShare] The event loop of the current thread has been closed, stopping the synchronization task")
                         stats["stopped"] = True
                         stats["errors"].append({"error": "Event loop is closed", "context": "sync_historical_data"})
                         break
@@ -1207,7 +1207,7 @@ class AKShareSyncService:
                         if existing_progress_str:
                             try:
                                 progress_data = json.loads(existing_progress_str)
-                            except:
+                            except Exception:
                                 progress_data = {}
                         else:
                             progress_data = {}
@@ -1237,7 +1237,7 @@ class AKShareSyncService:
                 
                 return stats
 
-            logger.info(f"🎉 Historical data synchronization completed!")
+            logger.info("🎉 Historical data synchronization completed!")
             logger.info(f"📊 total: {stats['total_processed']}only stocks, "
                        f"success: {stats['success_count']}, "
                        f"record: {stats['total_records']}Article, "
@@ -1344,7 +1344,7 @@ class AKShareSyncService:
                             if existing_progress_str:
                                 try:
                                     progress_data = json.loads(existing_progress_str)
-                                except:
+                                except Exception:
                                     progress_data = {}
                             else:
                                 progress_data = {}
@@ -1660,7 +1660,7 @@ class AKShareSyncService:
             stats["end_time"] = datetime.utcnow()
             stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
 
-            logger.info(f"🎉 Financial data synchronization completed!")
+            logger.info("🎉 Financial data synchronization completed!")
             logger.info(f"📊 total: {stats['total_processed']}only stocks, "
                        f"success: {stats['success_count']}, "
                        f"Error: {stats['error_count']}, "
@@ -2145,7 +2145,7 @@ class AKShareSyncService:
             or (not error.get("is_retryable", True) and error.get("error_category") != "retryable_error")
         ]
         
-        logger.info(f"🔄 Start retrying failed stocks...")
+        logger.info("🔄 Start retrying failed stocks...")
         logger.info(f"   Retryable errors: {len(retryable_errors)} a")
         logger.info(f"   No data error (skip): {len(no_data_errors)} a")
         
@@ -2289,9 +2289,9 @@ async def run_akshare_basic_info_sync(force_update: bool = False, **kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
@@ -2308,14 +2308,14 @@ async def run_akshare_basic_info_sync(force_update: bool = False, **kwargs):
             logger.info(f"✅ AKShare Basic information synchronization completed: {sync_result.result}")
             return sync_result.result
         elif sync_result.error and ("Cancel" in sync_result.error or "cancelled" in sync_result.error.lower()):
-            logger.info(f"ℹ️ AKShare The basic information synchronization task has been canceled by the user")
+            logger.info("ℹ️ AKShare The basic information synchronization task has been canceled by the user")
             return {"cancelled": True, "message": sync_result.error}
         else:
             raise RuntimeError(sync_result.error or "Sync failed")
     except Exception as e:
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ AKShare The basic information synchronization task has been canceled by the user")
+            logger.info("ℹ️ AKShare The basic information synchronization task has been canceled by the user")
             return {"cancelled": True, "message": str(e)}
         logger.error(f"❌ AKShare Basic information synchronization failed: {e}")
         raise
@@ -2347,9 +2347,9 @@ async def run_akshare_quotes_sync(force: bool = False, **kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
@@ -2367,14 +2367,14 @@ async def run_akshare_quotes_sync(force: bool = False, **kwargs):
             logger.info(f"✅ AKShare Market synchronization completed: {sync_result.result}")
             return sync_result.result
         elif sync_result.error and ("Cancel" in sync_result.error or "cancelled" in sync_result.error.lower()):
-            logger.info(f"ℹ️ AKShare The market synchronization task has been canceled by the user")
+            logger.info("ℹ️ AKShare The market synchronization task has been canceled by the user")
             return {"cancelled": True, "message": sync_result.error}
         else:
             raise RuntimeError(sync_result.error or "Sync failed")
     except Exception as e:
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ AKShare The market synchronization task has been canceled by the user")
+            logger.info("ℹ️ AKShare The market synchronization task has been canceled by the user")
             return {"cancelled": True, "message": str(e)}
         logger.error(f"❌ AKShare Market synchronization failed: {e}")
         raise
@@ -2403,9 +2403,9 @@ async def run_akshare_historical_sync(incremental: bool = True, **kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         # 🔥 Use unified thread pool synchronization service
@@ -2445,7 +2445,7 @@ async def run_akshare_historical_sync(incremental: bool = True, **kwargs):
         else:
             # 🔥 Check if the task is canceled
             if "Cancel" in sync_result.error or "cancelled" in sync_result.error.lower():
-                logger.info(f"ℹ️ AKShare The historical data synchronization task has been canceled by the user")
+                logger.info("ℹ️ AKShare The historical data synchronization task has been canceled by the user")
                 return {"cancelled": True, "message": sync_result.error}
             else:
                 logger.error(f"❌ AKShare Historical data synchronization failed: {sync_result.error}")
@@ -2455,7 +2455,7 @@ async def run_akshare_historical_sync(incremental: bool = True, **kwargs):
         # Check whether it is a task cancellation exception (the user actively cancels and should not be recorded as an error)
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ AKShare The historical data synchronization task has been canceled by the user")
+            logger.info("ℹ️ AKShare The historical data synchronization task has been canceled by the user")
             return {"cancelled": True, "message": "The task has been canceled by the user"}
         # Other exceptions are recorded as errors
         logger.error(f"❌ AKShare Historical data synchronization failed: {e}")
@@ -2485,9 +2485,9 @@ async def run_akshare_financial_sync(**kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         # 🔥 Use unified financial data synchronization service (thread pool version)
@@ -2527,7 +2527,7 @@ async def run_akshare_financial_sync(**kwargs):
         # Check whether it is a task cancellation exception (the user actively cancels and should not be recorded as an error)
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ AKShare The financial data synchronization task has been canceled by the user")
+            logger.info("ℹ️ AKShare The financial data synchronization task has been canceled by the user")
             return {"cancelled": True, "message": "The task has been canceled by the user"}
         # Other exceptions are recorded as errors
         logger.error(f"❌ AKShare Financial data synchronization failed: {e}", exc_info=True)
@@ -2578,7 +2578,7 @@ async def run_akshare_news_sync(max_news_per_stock: int = 20, **kwargs):
                 progress=0,
                 message=f"Task failed: {str(e)}"
             )
-        except:
+        except Exception:
             pass
         logger.error(f"❌ AKShare News data synchronization failed: {e}")
         raise

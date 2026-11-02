@@ -37,138 +37,12 @@ def format_http_error_detail(exc: Exception) -> str:
     return ErrorFormatter.format_user_message(str(exc))
 
 
-# 🔥 Unified result data formatting functions
-def normalize_result_data(result_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Unified formatting of analysis result data to ensure that all interfaces return a consistent format
-
-    Main processing:
-    1. recommendation Field: Use compliance terms and do not include specific prices
-    2. key_points Field: Convert JSON field name to Chinese description
-    3. decision Field: supports old and new field names
-    4. action Field: Map old terms (buy/sell/hold) to compliance terms (optimistic/cautious/neutral)
-    """
-    if not result_data:
-        return result_data
-
-    # 🔥 Term Mapping: Converting legacy terms into compliant terms
-    ACTION_TRANSLATION = {
-        'BUY': 'optimistic', 'SELL': 'Prudence', 'HOLD': 'Neutral',
-        'buy': 'optimistic', 'sell': 'Prudence', 'hold': 'Neutral',
-        'buy': 'optimistic', 'sell': 'Prudence', 'hold': 'Neutral',  # Compatible with old data
-        'bullish': 'optimistic', 'Bearish': 'Prudence', 'Neutral': 'Neutral',  # Compatible with old data
-        'optimistic': 'optimistic', 'Prudence': 'Prudence', 'Neutral': 'Neutral',  # keep new terms unchanged
-    }
-
-    # 1. Process decision field (supports old and new field names)
-    decision = result_data.get('decision', {})
-    if isinstance(decision, dict):
-        # Support new and old field names
-        raw_action = decision.get('analysis_view') or decision.get('action')
-        # 🔥 Map to compliance terms
-        action = ACTION_TRANSLATION.get(raw_action, raw_action) if raw_action else None
-
-        # 🔥 Update the action field in the decision object to the compliance term
-        if action and raw_action != action:
-            decision['action'] = action
-            # If there is an analysis_view field, update it as well
-            if 'analysis_view' in decision:
-                decision['analysis_view'] = action
-
-        # 🔥 Prefer price_analysis_range (price range) instead of target_price (single value)
-        price_range = decision.get('price_analysis_range')
-        # If there is no price_analysis_range, target_price is used (but this is a single value and should not be used for price range display)
-        if not price_range:
-            target_price = decision.get('target_price')
-            if target_price:
-                logger.warning(f"⚠️ [normalize_result_data] decision There is no price_analysis_range in , only target_price: {target_price}, The frontend will show '-'")
-        
-        confidence = decision.get('confidence')
-        # 🔥 Prioritize getting risk_score (risk manager's assessment result) from decision
-        risk_score = decision.get('risk_score')
-        risk_level = decision.get('risk_level')
-        reasoning = decision.get('reasoning', '')
-        
-        # 🔥 Debug log: record decision field
-        logger.info(f"🔍 [normalize_result_data] decision Field check: price_analysis_range={price_range}, risk_score={risk_score}, target_price={decision.get('target_price')}")
-
-        # 2. Format recommendation (if empty or contains old terms)
-        recommendation = result_data.get('recommendation', '')
-        if not recommendation or 'investment advice' in recommendation or 'target price' in recommendation or 'buy' in recommendation or 'sell' in recommendation:
-            # Regenerate compliant recommendation
-            recommendation = f"Analysis point of view:{action}; " if action else ""
-            if reasoning and len(reasoning) < 100:
-                recommendation += f"Analysis basis:{reasoning}"
-            elif reasoning and reasoning != "No analytical reasoning yet":
-                short_reasoning = reasoning[:50] + "..." if len(reasoning) > 50 else reasoning
-                recommendation += f"Analysis basis:{short_reasoning}"
-            result_data['recommendation'] = recommendation
-
-        # 3. Format key_points (if containing JSON field names)
-        key_points = result_data.get('key_points', [])
-        if key_points and isinstance(key_points, list):
-            # Check if it contains a JSON field name (e.g. "analysis_view": "Neutral") 
-            if any('"' in str(kp) and ':' in str(kp) for kp in key_points):
-                # Regenerate key_points
-                new_key_points = []
-                if action:
-                    new_key_points.append(f"analysis point of view: {action}")
-                # 🔥 Only price ranges are shown, not individual values
-                if price_range:
-                    if isinstance(price_range, (list, tuple)) and len(price_range) == 2:
-                        new_key_points.append(f"price analysis range: {price_range[0]}-{price_range[1]}Yuan")
-                    else:
-                        logger.warning(f"⚠️ [normalize_result_data] price_range Not a valid range format: {price_range}")
-                # Do not add target_price to key_points (because this is a single value and does not meet compliance requirements)
-                if confidence is not None:
-                    new_key_points.append(f"Confidence: {confidence * 100:.1f}%" if confidence <= 1 else f"Confidence: {confidence}%")
-                if risk_level:
-                    new_key_points.append(f"risk level: {risk_level}")
-                if risk_score is not None:
-                    new_key_points.append(f"risk score: {risk_score * 100:.1f}%" if risk_score <= 1 else f"risk score: {risk_score}%")
-
-                result_data['key_points'] = new_key_points[:5]
-
-    return result_data
-
-
-def _has_meaningful_text(value: Any, min_length: int = 1) -> bool:
-    return isinstance(value, str) and len(value.strip()) >= min_length
-
-
-def _summarize_result_completeness(result_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    if not isinstance(result_data, dict):
-        return {
-            "has_summary": False,
-            "has_recommendation": False,
-            "report_count": 0,
-            "has_action": False,
-            "has_reasoning": False,
-            "has_price_range": False,
-            "has_confidence": False,
-            "has_risk_score": False,
-            "is_complete": False,
-        }
-
-    decision = result_data.get("decision") if isinstance(result_data.get("decision"), dict) else {}
-    reports = result_data.get("reports") if isinstance(result_data.get("reports"), dict) else {}
-    summary = {
-        "has_summary": _has_meaningful_text(result_data.get("summary"), 8),
-        "has_recommendation": _has_meaningful_text(result_data.get("recommendation"), 8),
-        "report_count": len([key for key, value in reports.items() if _has_meaningful_text(value, 10)]),
-        "has_action": bool(decision.get("analysis_view") or decision.get("action")),
-        "has_reasoning": _has_meaningful_text(decision.get("reasoning"), 10),
-        "has_price_range": decision.get("price_analysis_range") is not None,
-        "has_confidence": decision.get("confidence") is not None,
-        "has_risk_score": decision.get("risk_score") is not None,
-    }
-    summary["is_complete"] = bool(
-        summary["has_summary"] or
-        summary["report_count"] > 0 or
-        summary["has_action"] or
-        summary["has_reasoning"]
-    )
-    return summary
+from app.services.analysis.result_formatter import (
+    has_meaningful_result_payload,
+    has_meaningful_text as _has_meaningful_text,
+    normalize_result_data,
+    summarize_result_completeness as _summarize_result_completeness,
+)
 
 
 def _log_result_completeness(source: str, task_id: str, result_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -296,7 +170,7 @@ async def submit_single_analysis(
         )
         
         if is_v2_engine:
-            logger.info(f"✅ [Engine judgment] Confirmed as v2 engine, using unified task service")
+            logger.info("✅ [Engine judgment] Confirmed as v2 engine, using unified task service")
             # v2 Engine: Created using Unified Task Service UnifiedAnalysisTask
             from app.services.task_analysis_service import get_task_analysis_service
             from app.models.analysis import AnalysisTaskType
@@ -738,13 +612,13 @@ async def get_task_status_new(
 
             # 🔥 Format result_data if present
             if status_data.get("result_data"):
-                logger.info(f"📊 [STATUS] ========== unified_tasks result_data Before formatting ==========")
+                logger.info("📊 [STATUS] ========== unified_tasks result_data Before formatting ==========")
                 logger.info(f"📊 [STATUS] recommendation: {status_data['result_data'].get('recommendation', '')[:200]}")
                 logger.info(f"📊 [STATUS] key_points: {status_data['result_data'].get('key_points', [])[:3]}")
 
                 status_data["result_data"] = normalize_result_data(status_data["result_data"])
 
-                logger.info(f"📊 [STATUS] ========== unified_tasks result_data After formatting ==========")
+                logger.info("📊 [STATUS] ========== unified_tasks result_data After formatting ==========")
                 logger.info(f"📊 [STATUS] recommendation: {status_data['result_data'].get('recommendation', '')[:200]}")
                 logger.info(f"📊 [STATUS] key_points: {status_data['result_data'].get('key_points', [])[:3]}")
 
@@ -907,11 +781,11 @@ async def get_task_result(
         if task_status and task_status.get('status') == 'completed':
             # Get result data from memory
             result_data = task_status.get('result_data')
-            logger.info(f"📊 [RESULT] Get result data from memory")
+            logger.info("📊 [RESULT] Get result data from memory")
 
             # 🔍 Debugging: Inspecting in-memory data structures
             if result_data:
-                logger.info(f"📊 [RESULT] ========== Before formatting ==========")
+                logger.info("📊 [RESULT] ========== Before formatting ==========")
                 logger.info(f"📊 [RESULT] memory data key: {list(result_data.keys())}")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
@@ -924,7 +798,7 @@ async def get_task_result(
 
                 completeness = _log_result_completeness("memory", task_id, result_data)
 
-                logger.info(f"📊 [RESULT] ========== After formatting ==========")
+                logger.info("📊 [RESULT] ========== After formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
 
@@ -932,7 +806,7 @@ async def get_task_result(
                     logger.warning(f"⚠️ [RESULT] The result_data in the memory is incomplete. Continue to roll back to query the persistent results.: {task_id}")
                     result_data = None
             else:
-                logger.warning(f"⚠️ [RESULT] result_data in memory is empty")
+                logger.warning("⚠️ [RESULT] result_data in memory is empty")
 
         if not result_data:
             # Not found in memory, try to find it from MongoDB
@@ -997,7 +871,7 @@ async def get_task_result(
                 if include_detailed:
                     result_data["detailed_analysis"] = result.get("detailed_analysis", {})
 
-                logger.info(f"📊 [RESULT] ========== unified_tasks Before formatting ==========")
+                logger.info("📊 [RESULT] ========== unified_tasks Before formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
                 if result_data.get('decision'):
@@ -1008,7 +882,7 @@ async def get_task_result(
                 result_data = normalize_result_data(result_data)
                 completeness = _log_result_completeness("unified_tasks", task_id, result_data)
 
-                logger.info(f"📊 [RESULT] ========== unified_tasks After formatting ==========")
+                logger.info("📊 [RESULT] ========== unified_tasks After formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
 
@@ -1059,7 +933,7 @@ async def get_task_result(
                     "source": "mongodb"  # Mark data sources
                 }
 
-                logger.info(f"📊 [RESULT] ========== MongoDB Before formatting ==========")
+                logger.info("📊 [RESULT] ========== MongoDB Before formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
                 if result_data.get('decision'):
@@ -1070,7 +944,7 @@ async def get_task_result(
                 result_data = normalize_result_data(result_data)
                 _log_result_completeness("mongodb", task_id, result_data)
 
-                logger.info(f"📊 [RESULT] ========== MongoDB After formatting ==========")
+                logger.info("📊 [RESULT] ========== MongoDB After formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
             else:
@@ -1122,7 +996,7 @@ async def get_task_result(
                     if include_detailed:
                         result_data["detailed_analysis"] = r.get("detailed_analysis", {})
 
-                    logger.info(f"📊 [RESULT] ========== analysis_tasks Before formatting ==========")
+                    logger.info("📊 [RESULT] ========== analysis_tasks Before formatting ==========")
                     logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                     logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
                     if result_data.get('decision'):
@@ -1133,7 +1007,7 @@ async def get_task_result(
                     result_data = normalize_result_data(result_data)
                     _log_result_completeness("analysis_tasks", task_id, result_data)
 
-                    logger.info(f"📊 [RESULT] ========== analysis_tasks After formatting ==========")
+                    logger.info("📊 [RESULT] ========== analysis_tasks After formatting ==========")
                     logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                     logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
 
@@ -1195,7 +1069,7 @@ async def get_task_result(
                 logger.warning(f"⚠️ [RESULT] Loading report from file system failed: {fs_err}")
 
             if 'reports' not in result_data or not result_data['reports']:
-                logger.info(f"📊 [RESULT] reports Field is missing, try to extract from state")
+                logger.info("📊 [RESULT] reports Field is missing, try to extract from state")
 
                 # Extract report content from state
                 reports = {}
@@ -1296,7 +1170,7 @@ async def get_task_result(
 
                 # If there are no valid reports after cleaning, set to an empty dictionary
                 if not cleaned_reports:
-                    logger.warning(f"⚠️ [RESULT] No valid reports after cleaning")
+                    logger.warning("⚠️ [RESULT] No valid reports after cleaning")
                     result_data['reports'] = {}
             else:
                 logger.warning(f"⚠️ [RESULT] reports Field is not a dictionary type: {type(reports)}")
@@ -1596,7 +1470,7 @@ async def list_all_tasks(
     Note: If limit is not specified, all records will be returned and paging will be handled by the front end.
     """
     try:
-        logger.info(f"📋 Query all task lists")
+        logger.info("📋 Query all task lists")
 
         # If limit is not specified, all records are returned
         actual_limit = limit if limit is not None else 999999

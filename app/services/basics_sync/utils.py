@@ -34,7 +34,7 @@ def fetch_stock_basic_df():
     wait_interval = 0.1
     elapsed = 0.0
 
-    logger.info(f"⏳ Waiting for Tushare to connect...")
+    logger.info("⏳ Waiting for Tushare to connect...")
     while not getattr(provider, "connected", False) and elapsed < max_wait_seconds:
         time.sleep(wait_interval)
         elapsed += wait_interval
@@ -42,16 +42,16 @@ def fetch_stock_basic_df():
     # Check connection status and API availability
     if not getattr(provider, "connected", False) or provider.api is None:
         logger.error(f"❌ Tushare 连接失败（等待 {max_wait_seconds}s 后超时）")
-        logger.error(f"💡 Please check:")
-        logger.error(f"   1. .env A valid TUSHARE_TOKEN")
-        logger.error(f"   2. Tushare Token Not expired and have enough points")
-        logger.error(f"   3. 网络连接正常")
+        logger.error("💡 Please check:")
+        logger.error("   1. .env A valid TUSHARE_TOKEN")
+        logger.error("   2. Tushare Token Not expired and have enough points")
+        logger.error("   3. 网络连接正常")
         raise RuntimeError(
             f"Tushare not connected after waiting {max_wait_seconds}s. "
             "Check TUSHARE_TOKEN in .env and ensure it's valid."
         )
 
-    logger.info(f"✅ Tushare Connected, start getting stock list...")
+    logger.info("✅ Tushare Connected, start getting stock list...")
 
     # Directly call Tushare API to obtain DataFrame
     try:
@@ -62,19 +62,19 @@ def fetch_stock_basic_df():
 
         # 🔧 Enhanced error diagnosis
         if df is None:
-            logger.error(f"❌ Tushare API Return None")
-            logger.error(f"💡 Possible reasons:")
-            logger.error(f"   1. Tushare Token Invalid or expired")
-            logger.error(f"   2. API 积分不足")
-            logger.error(f"   3. 网络连接问题")
+            logger.error("❌ Tushare API Return None")
+            logger.error("💡 Possible reasons:")
+            logger.error("   1. Tushare Token Invalid or expired")
+            logger.error("   2. API 积分不足")
+            logger.error("   3. 网络连接问题")
             raise RuntimeError("Tushare API returned None. Check token validity and API credits.")
 
         if hasattr(df, 'empty') and df.empty:
-            logger.error(f"❌ Tushare API Return empty DataFrame")
-            logger.error(f"💡 Possible reasons:")
-            logger.error(f"   1. list_status='L' Parameter may be incorrect")
-            logger.error(f"   2. Tushare Data source is temporarily unavailable")
-            logger.error(f"   3. API Call limits (please check points and call frequency)")
+            logger.error("❌ Tushare API Return empty DataFrame")
+            logger.error("💡 Possible reasons:")
+            logger.error("   1. list_status='L' Parameter may be incorrect")
+            logger.error("   2. Tushare Data source is temporarily unavailable")
+            logger.error("   3. API Call limits (please check points and call frequency)")
             raise RuntimeError("Tushare API returned empty DataFrame. Check API parameters and data availability.")
 
         logger.info(f"✅ 成功获取 {len(df)} 条股票数据")

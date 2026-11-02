@@ -200,9 +200,9 @@ def get_technical_indicators(
                     report_lines.append(f"  - Signal: {macds:.4f}")
                     report_lines.append(f"  - Hist: {macdh:.4f}")
                     if macdh > 0 and stock['macdh'].iloc[-2] <= 0:
-                        report_lines.append(f"  - signal: Golden Cross (positive kinetic energy signal)📈")
+                        report_lines.append("  - signal: Golden Cross (positive kinetic energy signal)📈")
                     elif macdh < 0 and stock['macdh'].iloc[-2] >= 0:
-                        report_lines.append(f"  - signal: Death Cross (negative kinetic energy signal)📉")
+                        report_lines.append("  - signal: Death Cross (negative kinetic energy signal)📉")
 
             except Exception as e:
                 report_lines.append(f"- {ind}: 计算失败 ({e})")

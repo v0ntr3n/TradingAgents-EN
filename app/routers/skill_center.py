@@ -80,7 +80,7 @@ async def _check_registry_status(tool_id: str) -> bool:
     try:
         registry = get_tool_registry()
         return registry.has_tool(tool_id)
-    except:
+    except Exception:
         return False
 
 @router.get("/skills", response_model=List[SkillSummary])

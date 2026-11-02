@@ -330,7 +330,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A stock code, such as 60
                 d3_score += 2.0
                 d3_signals.append(f"应收账款增长({ar_growth*100:.1f}%)快于营收")
             else:
-                d3_signals.append(f"应收账款与营收增长匹配")
+                d3_signals.append("应收账款与营收增长匹配")
 
         # 3c: Inventory growing much faster than COGS
         # Approximate COGS as revenue - gross_profit, or check directly
@@ -347,9 +347,9 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A stock code, such as 60
                     d3_signals.append(f"存货增长({inv_growth*100:.1f}%)远超营业成本增长({cogs_growth*100:.1f}%)，可能存在滞销")
                 elif inv_cogs_gap > 0.15:
                     d3_score += 2.0
-                    d3_signals.append(f"存货增长快于营业成本")
+                    d3_signals.append("存货增长快于营业成本")
                 else:
-                    d3_signals.append(f"存货与营业成本增长匹配")
+                    d3_signals.append("存货与营业成本增长匹配")
         else:
             warnings.append("Inventory data is missing and inventory signal is skipped")
 

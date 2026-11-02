@@ -63,9 +63,9 @@ class ReviewManagerAgent(BaseAgent):
         emotion_analysis = state.get("emotion_analysis", "No sentiment analysis")
         attribution_analysis = state.get("attribution_analysis", "No attribution analysis")
 
-        logger.info(f"📝 [Review summary expert] Start generating review report...")
+        logger.info("📝 [Review summary expert] Start generating review report...")
         logger.info(f"   📋 stocks: {trade_info.get('code', 'N/A')}")
-        logger.info(f"   📊 Analysis collected:")
+        logger.info("   📊 Analysis collected:")
         logger.info(f"      - Timing analysis: {len(timing_analysis)}character")
         logger.info(f"      - Position analysis: {len(position_analysis)}character")
         logger.info(f"      - sentiment analysis: {len(emotion_analysis)}character")
@@ -82,7 +82,7 @@ class ReviewManagerAgent(BaseAgent):
 
         if self._llm:
             try:
-                logger.info(f"   🤖 Call LLM to generate a summary...")
+                logger.info("   🤖 Call LLM to generate a summary...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
                 logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
@@ -90,10 +90,10 @@ class ReviewManagerAgent(BaseAgent):
                 logger.error(f"   ❌ [Review summary expert] LLM call failed: {e}")
                 analysis = f"Review summary failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM Not configured")
+            logger.warning("   ⚠️ LLM Not configured")
             analysis = "LLM Not configured, review summary cannot be performed"
 
-        logger.info(f"📝 [Review summary expert] ✅ Report generation completed")
+        logger.info("📝 [Review summary expert] ✅ Report generation completed")
 
         # Only return new fields
         return {
@@ -192,6 +192,6 @@ Please make sure the output is in valid JSON format, use```json and```package.""
         if prompt:
             logger.info(f"✅ [Review summary expert] Successfully obtained the prompt word from the template system (length: {len(prompt)})")
             return prompt
-        logger.warning(f"⚠️ [Review summary expert] The template system did not return the prompt word, use the downgrade prompt word")
+        logger.warning("⚠️ [Review summary expert] The template system did not return the prompt word, use the downgrade prompt word")
         return fallback_prompt
 

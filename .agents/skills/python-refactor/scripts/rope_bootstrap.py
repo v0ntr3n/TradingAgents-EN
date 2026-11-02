@@ -1,0 +1,994 @@
+"""Bootstrap for rope refactor scripts.
+
+Handles project setup, diff preview mode, and change output.
+Every refactor script imports this and calls `run()` with a refactor function.
+
+Usage in refactor scripts:
+
+    from rope_bootstrap import run, RefactorContext
+    from rope.refactor.rename import Rename
+
+    def setup_args(parser):
+        parser.add_argument("source", type=Path, help="Source file")
+
+    def refactor(ctx: RefactorContext) -> None:
+        resource = ctx.get_resource(ctx.args.source)
+        pymodule = ctx.project.get_pymodule(resource)
+        source = resource.read()
+        line_start = pymodule.lines.get_line_start(line_number)
+        offset = line_start + source[line_start:].index("symbol_name")
+        changes = Rename(ctx.project, resource, offset).get_changes("new_name")
+        ctx.do(changes)
+
+    if __name__ == "__main__":
+        run(refactor, description="My refactor script", setup_args=setup_args)
+"""
+
+from __future__ import annotations
+
+import hashlib
+import os
+import shutil
+import subprocess
+import sys
+import tomllib
+from argparse import ArgumentParser, Namespace
+from collections.abc import Iterable
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Protocol
+
+from rope.base.change import Change, ChangeContents, ChangeSet, MoveResource
+from rope.base.project import Project
+from rope.base.resources import File
+
+
+# ---------------------------------------------------------------------------
+# PEP 484 annotation-aware type hinting for rope
+# ---------------------------------------------------------------------------
+# Rope's built-in TypeHintingFactory only resolves parameter types from
+# docstrings.  This subclass adds a provider that reads inline PEP 484
+# annotations (e.g. ``def f(x: MyClass)``), enabling rename/move refactors
+# to follow attribute access through annotated parameters.
+#
+# All rope.base.oi.type_hinting imports are deferred to avoid a circular
+# import that occurs when these modules are loaded before rope.base.project.
+
+
+def _build_annotation_aware_factory():
+    """Create the factory lazily to avoid circular imports at module level."""
+    import ast as stdlib_ast
+
+    from rope.base.oi.type_hinting.factory import TypeHintingFactory
+    from rope.base.oi.type_hinting.providers import (
+        composite as composite_providers,
+        inheritance,
+        interfaces as provider_interfaces,
+    )
+
+    class _AnnotationParamProvider(provider_interfaces.IParamProvider):
+        """Resolve parameter types from PEP 484 inline annotations."""
+
+        def __init__(self, resolver):
+            self._resolve = resolver
+
+        def __call__(self, pyfunc, param_name):
+            for arg in pyfunc.get_ast().args.args:
+                if arg.arg == param_name and arg.annotation:
+                    type_str = stdlib_ast.unparse(arg.annotation)
+                    return self._resolve(type_str, pyfunc)
+
+    class _AnnotationAwareHintingFactory(TypeHintingFactory):
+        def make_param_provider(self):
+            base = super().make_param_provider()
+            annotation_provider = _AnnotationParamProvider(self.make_resolver())
+            return inheritance.ParamProvider(
+                composite_providers.ParamProvider(annotation_provider, base)
+            )
+
+    return _AnnotationAwareHintingFactory()
+
+
+annotation_aware_type_hinting_factory = _build_annotation_aware_factory()
+
+# Prefix used to tag ChangeSet descriptions with a refactor run hash.
+# Format: [refactor:<8-char-hex>] <original description>
+REFACTOR_TAG_PREFIX = "[refactor:"
+
+
+class SetupArgsFn(Protocol):
+    """Callback to add script-specific arguments to the parser."""
+
+    def __call__(self, parser: ArgumentParser) -> None: ...
+
+
+class RefactorFn(Protocol):
+    """Refactor callback. Use ctx.do() to apply changes — never call
+    resource.write() directly, as that bypasses diff tracking and undo."""
+
+    def __call__(self, ctx: RefactorContext) -> None: ...
+
+
+@dataclass
+class FileDiff:
+    """A recorded content change for diff display."""
+
+    path: str
+    original: str | None  # None for new files
+    new_source: str | None  # None for removals
+    new_path: str | None = None  # set if file was moved/renamed
+    step: int = 0  # which ctx.do() call produced this diff
+
+
+@dataclass
+class GitSnapshot:
+    """Captures git working tree state for undo verification."""
+
+    _tree: str | None
+    _cwd: Path
+
+    @classmethod
+    def capture(cls, cwd: Path) -> GitSnapshot:
+        """Snapshot current state: staged, unstaged, and untracked files."""
+        tree = cls._capture_tree(cwd)
+        return cls(_tree=tree, _cwd=cwd)
+
+    @classmethod
+    def unavailable(cls, cwd: Path) -> GitSnapshot:
+        """Return a no-op snapshot when not in a git repo."""
+        return cls(_tree=None, _cwd=cwd)
+
+    @staticmethod
+    def _capture_tree(cwd: Path) -> str | None:
+        """Create a stash commit and return its tree hash (timestamp-independent)."""
+        stash = subprocess.run(
+            ["git", "stash", "create", "--include-untracked"],
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+        )
+        commit_sha = stash.stdout.strip()
+        if not commit_sha:
+            return None
+        tree = subprocess.run(
+            ["git", "rev-parse", f"{commit_sha}^{{tree}}"],
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+        )
+        return tree.stdout.strip() or None
+
+    def verify(self) -> list[str]:
+        """Compare current state to snapshot. Returns difference descriptions.
+        Empty list means undo was perfect."""
+        if self._tree is None:
+            # No git or clean tree at capture time — nothing to compare against
+            return []
+
+        current_tree = self._capture_tree(self._cwd)
+
+        if self._tree == current_tree:
+            return []
+
+        if current_tree is None:
+            # Tree is now clean but wasn't at capture — that's unexpected after undo
+            return [f"Working tree is clean but snapshot tree {self._tree[:8]} existed"]
+
+        result = subprocess.run(
+            ["git", "diff", self._tree, current_tree, "--stat"],
+            capture_output=True,
+            text=True,
+            cwd=self._cwd,
+        )
+        if result.stdout.strip():
+            return result.stdout.strip().splitlines()
+        return []
+
+
+def _is_dir_empty(path: Path) -> bool:
+    """Check if a directory is empty, ignoring __pycache__."""
+    children = list(path.iterdir())
+    return not children or all(c.name == "__pycache__" for c in children)
+
+
+def _rm_empty_dir(path: Path) -> bool:
+    """Remove a directory if empty (ignoring __pycache__). Returns True if removed."""
+    if not path.exists() or not _is_dir_empty(path):
+        return False
+    pycache = path / "__pycache__"
+    if pycache.exists():
+        shutil.rmtree(pycache)
+    path.rmdir()
+    return True
+
+
+def _compute_state_hash(project_root: Path) -> str:
+    """Compute a hash identifying the current codebase state.
+
+    Combines git HEAD and git status to produce an 8-char hex prefix.
+    This tags ChangeSets so undo/redo scripts can identify all changes
+    from a single refactor run.
+
+    Returns an empty string if not in a git repo.
+    """
+    git_root = _git_repo_root(project_root)
+    if git_root is None:
+        return ""
+
+    h = hashlib.sha256()
+
+    # Git HEAD (identifies the codebase version)
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        cwd=git_root,
+    )
+    h.update(head.stdout.strip().encode())
+
+    # Git status (identifies uncommitted state)
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        cwd=git_root,
+    )
+    h.update(status.stdout.encode())
+
+    return h.hexdigest()[:8]
+
+
+@dataclass
+class RefactorContext:
+    """Passed to refactor functions. All changes are applied to disk
+    immediately via project.do() and can be undone via undo_all()."""
+
+    project: Project
+    args: Namespace
+    dry_run: bool
+    _checkpoint: int = field(init=False)
+    _diffs: list[FileDiff] = field(default_factory=list)
+    _step: int = field(init=False, default=0)
+    _state_hash: str = field(init=False, default="")
+    _scaffolded_inits: list[Path] = field(default_factory=list)
+    _scaffolded_modules: list[Path] = field(default_factory=list)
+    _scaffolded_dirs: list[Path] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self._checkpoint = len(self.project.history.undo_list)
+        project_root = Path(self.project.root.real_path)
+        self._state_hash = _compute_state_hash(project_root)
+
+    def get_resource(self, file_path: str | Path) -> File:
+        path = Path(file_path)
+        if path.is_absolute():
+            rel = str(path.relative_to(self.project.address))
+        else:
+            rel = str(path)
+        return self.project.get_resource(rel)
+
+    def ensure_package(self, dest_dir: str) -> None:
+        """Create directories and __init__.py files needed for rope import resolution.
+
+        Creates scaffolding directly on the filesystem — not through rope's
+        Change API — so it never enters rope's undo history. Call
+        cleanup_scaffolding() to remove them after the refactor (or undo).
+
+        Skips __init__.py creation for directories that rope recognises as
+        source folders (both user-configured and auto-discovered), since adding
+        __init__.py would turn them into packages and break import resolution
+        (e.g. ``src/`` would produce ``src.myapp.x`` imports).
+        """
+        project_root = Path(self.project.root.real_path)
+        resolved = (project_root / dest_dir).resolve()
+        assert resolved.is_relative_to(project_root), (
+            f"ensure_package refusing to create __init__.py outside project root: {resolved}"
+        )
+        source_folders = {sf.path for sf in self.project.get_source_folders()}
+        parts = Path(dest_dir).parts
+
+        for i in range(len(parts)):
+            current = Path(*parts[: i + 1])
+            full = project_root / current
+
+            if not full.exists():
+                full.mkdir()
+                self._scaffolded_dirs.append(full)
+                print(f"  Scaffolded directory: {current}")
+
+            if str(current) in source_folders:
+                continue
+
+            init = full / "__init__.py"
+            if not init.exists():
+                init.touch()
+                self._scaffolded_inits.append(init)
+                print(f"  Scaffolded __init__.py: {current / '__init__.py'}")
+
+        self.project.validate()
+
+    def _package_dirs_for(self, resource: File) -> list[Path]:
+        """Return absolute directory paths that need __init__.py for rope to resolve imports.
+
+        Includes the file's own parent package chain and the parent chains of
+        all project-internal modules it imports from.  Every returned path is
+        guaranteed to be absolute and inside the project root.
+        """
+        project_root = Path(self.project.root.real_path)
+        candidates: list[str] = []
+
+        own_parent = str(Path(resource.path).parent)
+        if own_parent != ".":
+            candidates.append(own_parent)
+
+        pymodule = self.project.get_pymodule(resource)
+        for name in pymodule.get_scope().get_defined_names():
+            pyname = pymodule.get_scope()[name]
+            module_info = getattr(pyname, "get_definition_location", None)
+            if module_info is None:
+                continue
+            definition_module, _ = module_info()
+            if definition_module is None:
+                continue
+            dep_resource = definition_module.get_resource()
+            if dep_resource is None or dep_resource == resource:
+                continue
+            parent = str(Path(dep_resource.path).parent)
+            if parent != ".":
+                candidates.append(parent)
+
+        source_folders = [
+            Path(sf.real_path) for sf in self.project.get_source_folders()
+        ]
+        dirs: list[Path] = []
+        for candidate in candidates:
+            absolute = (project_root / candidate).resolve()
+            if not absolute.is_relative_to(project_root):
+                continue
+            if not any(absolute.is_relative_to(sf) for sf in source_folders):
+                continue
+            dirs.append(absolute)
+
+        return dirs
+
+    def ensure_packages(self, resource: "File | Folder") -> None:
+        """Ensure __init__.py exists for a file's own package and all imported packages.
+
+        Rope's ``modname()`` walks parent directories only while each has
+        ``__init__.py``. Without this, moves/renames produce truncated bare
+        imports like ``from transport import X`` instead of
+        ``from pkg.sub.transport import X``.
+
+        Accepts a File or a Folder (package). For folders, scans every .py
+        file in the package tree.
+        """
+        if resource.is_folder():
+            files = [
+                r
+                for r in self.project.get_python_files()
+                if r.path.startswith(resource.path + "/") or r.path == resource.path
+            ]
+        else:
+            files = [resource]
+
+        project_root = Path(self.project.root.real_path)
+        seen: set[Path] = set()
+        for f in files:
+            for pkg_dir in self._package_dirs_for(f):
+                if pkg_dir not in seen:
+                    seen.add(pkg_dir)
+                    self.ensure_package(str(pkg_dir.relative_to(project_root)))
+
+    def _resolve_source_root(
+        self, dotted_name: str, source_root: Path | None
+    ) -> Path | None:
+        """Resolve the source folder for scaffolding a new module.
+
+        1. If source_root is provided, use it directly.
+        2. Try to find the top-level package via rope's find_module and
+           determine which source folder contains it.
+        3. If still unknown: use the sole source folder, or raise if ambiguous.
+        """
+        if source_root is not None:
+            return source_root
+
+        project_root = Path(self.project.root.real_path)
+        parts = dotted_name.split(".")
+        top_resource = self.project.find_module(parts[0])
+        if top_resource is not None:
+            for sf in self.project.get_source_folders():
+                if sf.contains(top_resource):
+                    return Path(sf.real_path).relative_to(project_root)
+
+        source_folders = self.project.get_source_folders()
+        if len(source_folders) == 1:
+            return Path(source_folders[0].real_path).relative_to(project_root)
+
+        if len(source_folders) > 1:
+            names = [sf.path for sf in source_folders]
+            raise ValueError(
+                f"Multiple source folders {names} and top-level package "
+                f"'{parts[0]}' not found in any. Pass source_root to ensure_module()."
+            )
+
+        raise ValueError(
+            "No source folders found in the project. "
+            "Pass source_root to ensure_module()."
+        )
+
+    def ensure_module(self, dotted_name: str, source_root: Path | None = None) -> Path:
+        """Ensure a dotted module path exists on disk, creating packages and leaf file.
+
+        Creates intermediate directories + __init__.py via ensure_package(),
+        then creates the leaf .py file if needed. Everything is scaffolding.
+        Returns the absolute path to the leaf module file.
+
+        Args:
+            source_root: Source folder relative to project root (e.g. Path("src")).
+                If None, resolved automatically from rope's source folders.
+        """
+        project_root = Path(self.project.root.real_path)
+        parts = dotted_name.split(".")
+
+        dest_resource = self.project.find_module(dotted_name)
+        if dest_resource is not None:
+            # Module exists, but parent directories may lack __init__.py.
+            # Without them rope can't resolve the full package path and
+            # generates broken bare imports (e.g. ``from ble import X``
+            # instead of ``from pendant.daemon.status.ble import X``).
+            if len(parts) > 1:
+                dest_path = Path(dest_resource.path)
+                pkg_dir = str(dest_path.parent)
+                self.ensure_package(pkg_dir)
+            return project_root / dest_resource.path
+
+        base = self._resolve_source_root(dotted_name, source_root)
+
+        if len(parts) > 1:
+            pkg_parts = Path(*parts[:-1])
+            pkg_dir = str(base / pkg_parts) if base else str(pkg_parts)
+            self.ensure_package(pkg_dir)
+
+        leaf_filename = parts[-1] + ".py"
+        leaf_parts = (
+            Path(*parts[:-1]) / leaf_filename if len(parts) > 1 else Path(leaf_filename)
+        )
+        leaf_path = (
+            project_root / base / leaf_parts if base else project_root / leaf_parts
+        )
+
+        if not leaf_path.exists():
+            leaf_path.touch()
+            self._scaffolded_modules.append(leaf_path)
+            self.project.validate()
+            print(f"  Scaffolded module: {leaf_path.relative_to(project_root)}")
+
+        return leaf_path
+
+    def cleanup_scaffolding(self, *, keep_modules: bool = False) -> None:
+        """Remove scaffolded files and empty directories.
+
+        Always removes __init__.py files and empty directories.
+        Only removes leaf module files when keep_modules is False — on
+        real applies rope has written content into them.
+        """
+        project_root = Path(self.project.root.real_path)
+        removed: list[str] = []
+        if not keep_modules:
+            for f in reversed(self._scaffolded_modules):
+                if f.exists():
+                    f.unlink()
+                    removed.append(str(f.relative_to(project_root)))
+        self._scaffolded_modules.clear()
+        for f in reversed(self._scaffolded_inits):
+            if f.exists():
+                f.unlink()
+                removed.append(str(f.relative_to(project_root)))
+        self._scaffolded_inits.clear()
+        # Also consider parent directories of removed files — they may now be
+        # empty (e.g. rope's ModuleToPackage undo couldn't remove the directory
+        # because scaffolded files were still present at undo time).
+        dirs_to_check: list[Path] = list(reversed(self._scaffolded_dirs))
+        for rel in removed:
+            parent = (project_root / rel).parent
+            if parent != project_root and parent not in self._scaffolded_dirs:
+                dirs_to_check.append(parent)
+        for d in dirs_to_check:
+            if _rm_empty_dir(d):
+                removed.append(str(d.relative_to(project_root)))
+        self._scaffolded_dirs.clear()
+        if removed:
+            print(f"  Cleaned up scaffolding: {', '.join(removed)}")
+        self.project.validate()
+
+    def find_files(
+        self,
+        patterns: Iterable[str] = (),
+        include: Iterable[str] = (),
+        exclude: Iterable[str] = (),
+    ) -> list[Path]:
+        """Find .py files, optionally containing ``patterns``, filtered by globs.
+
+        When ``patterns`` is non-empty, uses ripgrep (falling back to grep)
+        to pre-filter to only files containing a match. The result is then
+        intersected with include/exclude globs.
+
+        When ``patterns`` is empty, returns all glob-matched files.
+        """
+        directory = Path(self.project.root.real_path)
+        pattern_list = list(patterns)
+        include_list = list(include)
+        exclude_list = list(exclude)
+
+        # Step 1: glob-based file set
+        if include_list:
+            allowed: set[Path] = set()
+            for pattern in include_list:
+                allowed.update(directory.glob(pattern))
+        else:
+            allowed = set(directory.rglob("*.py"))
+        for pattern in exclude_list:
+            allowed -= set(directory.glob(pattern))
+
+        print(f"  glob: {len(allowed)} .py file(s) in {directory}")
+        if include_list:
+            print(f"    include: {include_list}")
+        if exclude_list:
+            print(f"    exclude: {exclude_list}")
+
+        if not pattern_list:
+            return sorted(allowed)
+
+        # Step 2: text pre-filter with rg, falling back to grep
+        candidates = self._grep_files(directory, pattern_list)
+        result = sorted(candidates & allowed)
+        excluded_by_grep = allowed - candidates
+        print(
+            f"  grep: {len(candidates)} file(s) contain {pattern_list}, "
+            f"{len(excluded_by_grep)} excluded"
+        )
+
+        return result
+
+    def _grep_files(self, directory: Path, patterns: list[str]) -> set[Path]:
+        """Find .py files containing any pattern using rg, falling back to grep."""
+        regex = "|".join(patterns)
+
+        rg = shutil.which("rg")
+        if rg:
+            cmd = [rg, "-l", "--type=py", regex, str(directory)]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            print(f"  search: rg {regex}")
+            if result.returncode == 1:  # no matches
+                return set()
+            result.check_returncode()
+            return {Path(line) for line in result.stdout.splitlines() if line}
+
+        grep = shutil.which("grep")
+        if grep:
+            cmd = [grep, "-rlE", "--include=*.py", regex, str(directory)]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            print(f"  search: grep -rlE {regex}")
+            if result.returncode == 1:  # no matches
+                return set()
+            result.check_returncode()
+            return {Path(line) for line in result.stdout.splitlines() if line}
+
+        raise FileNotFoundError(
+            "Neither rg (ripgrep) nor grep found on PATH. "
+            "Install ripgrep or ensure grep is available."
+        )
+
+    def do(self, changes: Change) -> None:
+        """Apply a rope Change to disk and record diffs for display.
+
+        Tags the change description with [refactor:<hash>] so undo/redo
+        scripts can identify all changes from a single refactor run.
+        """
+        self._step += 1
+
+        # Tag the change with our run hash
+        if self._state_hash and hasattr(changes, "description"):
+            tag = f"{REFACTOR_TAG_PREFIX}{self._state_hash}]"
+            if not changes.description.startswith(REFACTOR_TAG_PREFIX):
+                changes.description = f"{tag} {changes.description}"
+
+        leaves = self._iter_changes(changes)
+
+        # Collect moves and snapshot originals before applying
+        moves: dict[str, str] = {}
+        snapshots: dict[str, str] = {}
+        for leaf in leaves:
+            if isinstance(leaf, MoveResource):
+                moves[leaf.resource.path] = leaf.new_resource.path
+        for leaf in leaves:
+            if isinstance(leaf, ChangeContents):
+                try:
+                    snapshots[leaf.resource.path] = leaf.resource.read()
+                except (FileNotFoundError, AttributeError) as e:
+                    print(f"  Warning: could not read {leaf.resource.path}: {e}")
+                    snapshots[leaf.resource.path] = ""
+
+        # Ensure files targeted by MoveResource are tracked by git so that
+        # rope's GITCommands.move() (which uses `git mv`) doesn't silently
+        # fail, leaving the file unmoved on disk.
+        if moves:
+            self._git_track_for_moves(moves)
+
+        self.project.do(changes)
+
+        # Record diffs
+        for path, original in snapshots.items():
+            actual_path = moves.get(path, path)
+            # If a parent directory was moved, resolve the new path
+            if actual_path == path:
+                p = Path(path)
+                for old_dir, new_dir in moves.items():
+                    try:
+                        rel = p.relative_to(old_dir)
+                    except ValueError:
+                        continue
+                    actual_path = str(Path(new_dir) / rel)
+                    break
+            resource = self.project.get_resource(actual_path)
+            self._diffs.append(
+                FileDiff(
+                    path=path,
+                    original=original,
+                    new_source=resource.read(),
+                    new_path=actual_path if actual_path != path else None,
+                    step=self._step,
+                )
+            )
+        # Record pure moves (no content change) so they appear in diffs
+        for old_path, new_path in moves.items():
+            if old_path not in snapshots:
+                resource = self.project.get_resource(new_path)
+                content = "" if resource.is_folder() else resource.read()
+                self._diffs.append(
+                    FileDiff(
+                        path=old_path,
+                        original=content,
+                        new_source=content,
+                        new_path=new_path,
+                        step=self._step,
+                    )
+                )
+
+    def undo_all(self, *, drop: bool = False, verbose: bool = False) -> None:
+        """Undo all changes back to the checkpoint, then remove scaffolding.
+
+        Args:
+            drop: If True, undone changes are not kept in redo history.
+                Use drop=True for failed refactors (partial garbage).
+                Use drop=False for dry-run (valid changes, keep for redo).
+            verbose: If True, print each changeset being undone.
+        """
+        to_undo = len(self.project.history.undo_list) - self._checkpoint
+        if verbose:
+            print(
+                f"  Undo: {to_undo} change(s) to undo "
+                f"(history={len(self.project.history.undo_list)}, "
+                f"checkpoint={self._checkpoint})"
+            )
+        if to_undo <= 0:
+            self.cleanup_scaffolding()
+            return
+        undone = 0
+        while len(self.project.history.undo_list) > self._checkpoint:
+            change = self.project.history.undo_list[-1]
+            # Access description before undo — forces rope to resolve lazy state
+            desc = getattr(change, "description", str(change))
+            self.project.history.undo(drop=drop)
+            undone += 1
+            if verbose:
+                print(f"  [{undone}/{to_undo}] Undone: {desc}")
+        self.cleanup_scaffolding()
+
+    def _git_track_for_moves(self, moves: dict[str, str]) -> None:
+        """Ensure source paths of MoveResource are git-tracked.
+
+        Rope's GITCommands.move() uses ``git mv`` which silently fails for
+        untracked files — the file never moves on disk.  By ``git add``-ing
+        untracked sources first, ``git mv`` succeeds.
+        """
+        project_path = Path(self.project.address)
+        git_root = _git_repo_root(project_path)
+        if git_root is None:
+            return
+
+        # Ask git which of the source paths are untracked
+        abs_sources = []
+        for src in moves:
+            abs_path = project_path / src
+            if abs_path.exists():
+                abs_sources.append(str(abs_path))
+        if not abs_sources:
+            return
+
+        result = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", "--"] + abs_sources,
+            capture_output=True,
+            text=True,
+            cwd=git_root,
+        )
+        if result.returncode == 0:
+            return  # all tracked
+
+        # Some files are untracked — add them so git mv works
+        # Use ls-files --others to find exactly which ones
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard", "--"] + abs_sources,
+            capture_output=True,
+            text=True,
+            cwd=git_root,
+        )
+        untracked = [line for line in result.stdout.splitlines() if line.strip()]
+        if untracked:
+            subprocess.run(
+                ["git", "add", "--"] + untracked,
+                capture_output=True,
+                cwd=git_root,
+            )
+
+    def _iter_changes(self, changes: Change) -> list[Change]:
+        """Flatten a Change tree into leaf changes."""
+        if isinstance(changes, ChangeSet):
+            result: list[Change] = []
+            for child in changes.changes:
+                result.extend(self._iter_changes(child))
+            return result
+        return [changes]
+
+
+def extract_refactor_hash(description: str) -> str | None:
+    """Extract the refactor hash from a tagged change description.
+
+    Returns the 8-char hex hash, or None if the description is not tagged.
+    """
+    if description.startswith(REFACTOR_TAG_PREFIX):
+        end = description.find("]", len(REFACTOR_TAG_PREFIX))
+        if end == -1:
+            return None
+        return description[len(REFACTOR_TAG_PREFIX) : end]
+    return None
+
+
+def _git_repo_root(cwd: Path) -> Path | None:
+    """Return the git repository root, or None if not in a repo."""
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        cwd=cwd,
+    )
+    if result.returncode == 0:
+        return Path(result.stdout.strip())
+    return None
+
+
+def resolve_project_root(project_root: Path | None) -> Path:
+    """Resolve the project root, defaulting to the git repository root."""
+    if project_root is not None:
+        return project_root.resolve()
+    detected = _git_repo_root(Path.cwd())
+    if detected is None:
+        print("Error: not in a git repo. Pass --project-root explicitly.")
+        sys.exit(1)
+    return detected
+
+
+def _print_changes(
+    diffs: list[FileDiff], show_diff: bool, *, applied: bool = False
+) -> None:
+    """Print change summary, grouping diffs by step when steps are non-trivial.
+
+    Only shows step headers when there are multiple steps AND at least one
+    step produced multiple diffs (i.e., a multi-file operation like MoveModule).
+    Single-file-per-step patterns (like add_imports iterating files) stay flat.
+    """
+    total = len(diffs)
+    max_step = max((d.step for d in diffs), default=0)
+    # Show step grouping when steps are meaningful (not just one diff per step)
+    group_steps = max_step > 1 and total > max_step
+
+    if applied:
+        print(f"Applied {total} change(s):")
+    else:
+        print(f"Would apply {total} change(s):")
+
+    prev_step = 0
+    for diff in diffs:
+        if group_steps and diff.step != prev_step:
+            print(f"  Step {diff.step}:")
+            prev_step = diff.step
+        if show_diff and not applied:
+            sys.stdout.write(_format_diff(diff))
+        else:
+            label = diff.path
+            if diff.new_path:
+                label = f"{diff.path} -> {diff.new_path}"
+            indent = "    " if group_steps else "  "
+            print(f"{indent}{label}")
+
+
+def _verify_snapshot(snapshot: GitSnapshot, context: str) -> None:
+    """Warn if undo didn't fully restore the original state."""
+    diffs = snapshot.verify()
+    if diffs:
+        print(f"ERROR: {context} — files differ from pre-refactor state:")
+        for line in diffs:
+            print(f"  {line}")
+        print(
+            "This is a bug. Run `git diff` to inspect and `git checkout .` to recover."
+        )
+
+
+def build_parser(
+    description: str = "",
+    setup_args: SetupArgsFn | None = None,
+) -> ArgumentParser:
+    """Build the argument parser for a refactor script."""
+    parser = ArgumentParser(description=description or "Rope refactor script")
+    parser.add_argument(
+        "--project-root",
+        type=Path,
+        default=None,
+        help="Rope project root (default: git repository root)",
+    )
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="Show unified diff of changes without applying",
+    )
+    if setup_args:
+        setup_args(parser)
+    return parser
+
+
+def run(
+    refactor_fn: RefactorFn,
+    *,
+    description: str = "",
+    setup_args: SetupArgsFn | None = None,
+    args: Namespace | None = None,
+) -> None:
+    """Bootstrap entry point. Parses args, sets up rope, runs the refactor."""
+    if args is None:
+        args = build_parser(description, setup_args).parse_args()
+
+    project_root = resolve_project_root(args.project_root)
+    dry_run = args.diff
+    show_diff = args.diff
+
+    project = Project(str(project_root))
+
+    # Use annotation-aware type hinting so rope resolves PEP 484 parameter
+    # annotations (e.g. `def f(x: MyClass)`) for rename/move refactors.
+    # Only override if the user hasn't configured a custom factory.
+    _default_thf = "rope.base.oi.type_hinting.factory.default_type_hinting_factory"
+    if project.prefs.get("type_hinting_factory", _default_thf) == _default_thf:
+        project.prefs.set(
+            "type_hinting_factory",
+            "rope_bootstrap.annotation_aware_type_hinting_factory",
+        )
+
+    # Read [tool.rope] from pyproject.toml to respect explicit project overrides.
+    pyproject = project_root / "pyproject.toml"
+    if pyproject.exists():
+        rope_cfg = tomllib.loads(pyproject.read_text()).get("tool", {}).get("rope", {})
+    else:
+        rope_cfg = {}
+
+    # Dry-run undo needs all changes in history; rope's default (32) is too low.
+    rope_max_history = rope_cfg.get("max_history_items")
+    if rope_max_history is None:
+        project.prefs.set("max_history_items", 10_000)
+    elif rope_max_history <= 32:
+        print(
+            f"Warning: [tool.rope] max_history_items = {rope_max_history} may be"
+            " too low for batch refactors with dry-run undo (default override: 10000)"
+        )
+
+    # Prevent rope from merging new imports into existing from-import lines.
+    # Without this, MoveGlobal can merge a submodule name into an unrelated
+    # from-import (e.g. `from pkg import existing_symbol, new_module`) instead
+    # of producing `from pkg.new_module import symbol`. Ruff consolidates the
+    # split imports afterward when appropriate.
+    # Note: rope's actions.py reads prefs.get("split_imports") (top-level) but
+    # pyproject.toml populates prefs.imports.split_imports (nested), so we must
+    # set it manually.
+    rope_split = rope_cfg.get("imports", {}).get("split_imports")
+    if rope_split is None:
+        project.prefs.set("split_imports", True)
+    ctx = RefactorContext(project=project, args=args, dry_run=dry_run)
+
+    if ctx._state_hash:
+        print(f"Refactor run {ctx._state_hash}")
+
+    # Snapshot git state for undo verification (use repo root, not project root)
+    git_root = _git_repo_root(project_root)
+    if git_root is not None:
+        snapshot = GitSnapshot.capture(git_root)
+    else:
+        snapshot = GitSnapshot.unavailable(project_root)
+
+    try:
+        refactor_fn(ctx)
+    except Exception:
+        ctx.undo_all(drop=True, verbose=True)
+        _verify_snapshot(snapshot, "after failed refactor undo")
+        project.close()
+        raise
+
+    if not ctx._diffs:
+        print("No changes needed.")
+    elif dry_run:
+        _print_changes(ctx._diffs, show_diff)
+        ctx.undo_all(verbose=True)
+        _verify_snapshot(snapshot, "after dry-run undo")
+        print()
+        print("To apply, re-run without --diff.")
+    else:
+        ctx.cleanup_scaffolding(keep_modules=True)
+        _print_changes(ctx._diffs, show_diff=False, applied=True)
+
+    project.close()
+
+
+# ANSI color codes for diff output (respect NO_COLOR convention)
+if os.environ.get("NO_COLOR") is not None:
+    _RED = _GREEN = _CYAN = _BOLD = _DIM = _RESET = ""
+else:
+    _RED = "\033[31m"
+    _GREEN = "\033[32m"
+    _CYAN = "\033[36m"
+    _BOLD = "\033[1m"
+    _DIM = "\033[2m"
+    _RESET = "\033[0m"
+
+
+def _format_diff(diff: FileDiff) -> str:
+    """Return a unified diff string with line numbers and ANSI colors."""
+    import difflib
+    import re
+
+    old_path = diff.path
+    new_path = diff.new_path or old_path
+    original = diff.original or ""
+    new_source = diff.new_source or ""
+    original_lines = original.splitlines(keepends=True)
+    new_lines = new_source.splitlines(keepends=True)
+    raw = difflib.unified_diff(
+        original_lines, new_lines, f"a/{old_path}", f"b/{new_path}"
+    )
+
+    out: list[str] = []
+    old_ln = new_ln = 0
+    # Determine width needed for line numbers
+    max_ln = max(len(original_lines), len(new_lines))
+    w = max(len(str(max_ln)), 1)
+    for line in raw:
+        if line.startswith("@@"):
+            m = re.match(r"@@ -(\d+)", line)
+            if m:
+                old_ln = int(m.group(1))
+            m2 = re.match(r"@@ -\d+(?:,\d+)? \+(\d+)", line)
+            if m2:
+                new_ln = int(m2.group(1))
+            out.append(f"{_CYAN}{line}{_RESET}")
+        elif line.startswith("---"):
+            out.append(f"{_BOLD}{line}{_RESET}")
+        elif line.startswith("+++"):
+            out.append(f"{_BOLD}{line}{_RESET}")
+        elif line.startswith("-"):
+            out.append(f"{_DIM}{old_ln:>{w}}\u2192 {_RESET}{_RED}{line}{_RESET}")
+            old_ln += 1
+        elif line.startswith("+"):
+            out.append(f"{_DIM}{new_ln:>{w}}\u2192 {_RESET}{_GREEN}{line}{_RESET}")
+            new_ln += 1
+        else:
+            out.append(f"{_DIM}{old_ln:>{w}}\u2192 {_RESET}{line}")
+            old_ln += 1
+            new_ln += 1
+    return "".join(out)

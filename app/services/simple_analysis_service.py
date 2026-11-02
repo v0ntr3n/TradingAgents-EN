@@ -127,7 +127,7 @@ async def get_provider_by_model_name(model_name: str, preferred_provider: Option
         # Get system configuration from configuration service
         system_config = await config_service.get_system_config()
         if not system_config or not system_config.llm_configs:
-            logger.warning(f"⚠️ System configuration is empty, using default vendor mapping")
+            logger.warning("⚠️ System configuration is empty, using default vendor mapping")
             return _get_default_provider_by_model(model_name)
 
         normalized_provider = str(preferred_provider or "").strip().lower()
@@ -355,7 +355,7 @@ def get_provider_and_url_by_model_sync(
             if not api_key:
                 api_key = _get_env_api_key_for_provider(provider)
                 if api_key:
-                    logger.info(f"✅ [Synchronous query] using environment variables API Key")
+                    logger.info("✅ [Synchronous query] using environment variables API Key")
 
             client.close()
             return {
@@ -783,7 +783,7 @@ def create_analysis_config(
                    f"timeout={deep_model_config.get('timeout')}, "
                    f"retry_times={deep_model_config.get('retry_times')}")
 
-    logger.info(f"📋 ========== Creating analysis configuration is complete ==========")
+    logger.info("📋 ========== Creating analysis configuration is complete ==========")
     logger.info(f"   🎯 研究深度: {research_depth}")
     logger.info(f"   🔥 辩论轮次: {config['max_debate_rounds']}")
     logger.info(f"   🧠 推理思考预算: {config['depth_reasoning_effort']}（火山方舟推理模型生效，DB显式配置优先）")
@@ -793,7 +793,7 @@ def create_analysis_config(
     logger.info(f"   🤖 LLM供应商: {llm_provider}")
     logger.info(f"   ⚡ 快速模型: {config['quick_think_llm']}")
     logger.info(f"   🧠 深度模型: {config['deep_think_llm']}")
-    logger.info(f"📋 ========================================")
+    logger.info("📋 ========================================")
 
     return config
 
@@ -815,7 +815,7 @@ class SimpleAnalysisService:
 
         logger.info(f"🔧 [Service initialization] SimpleAnalysisService Example ID: {id(self)}")
         logger.info(f"🔧 [Service initialization] Memory manager instance ID: {id(self.memory_manager)}")
-        logger.info(f"🔧 [Service initialization] Maximum number of concurrent thread pools: 3")
+        logger.info("🔧 [Service initialization] Maximum number of concurrent thread pools: 3")
 
         # Set up the WebSocket manager
         # Simple stock name caching to reduce duplicate queries
@@ -936,7 +936,7 @@ class SimpleAnalysisService:
         # pragma: no cover - The following original code is retained but not executed in preparation for v4.0 deletion
         # 🔧 [Concurrency safety] Create new instances every time to avoid sharing state among multiple threads
         # Caching is no longer used because TradingAgentsGraph has mutable instance variables
-        logger.info(f"🔧 Create a new TradingAgents instance (concurrent safe mode)...")
+        logger.info("🔧 Create a new TradingAgents instance (concurrent safe mode)...")
 
         trading_graph = TradingAgentsGraph(
             selected_analysts=config.get("selected_analysts", ["market", "fundamentals"]),
@@ -1625,7 +1625,7 @@ class SimpleAnalysisService:
                         logger.warning(warning)
 
                     # If the model is not suitable, automatically switch to the recommended model
-                    logger.info(f"🔄 Automatically switch to recommended models...")
+                    logger.info("🔄 Automatically switch to recommended models...")
                     quick_model, deep_model = capability_service.recommend_models_for_depth(
                         research_depth
                     )
@@ -1731,7 +1731,7 @@ class SimpleAnalysisService:
 
             logger.info(f"📅 分析目标日期: {analysis_date}")
             logger.info(f"📅 数据查询范围: {data_start_date} 至 {data_end_date} (最近10天)")
-            logger.info(f"💡 Description: Get 10 days of data to automatically handle weekends, holidays and data delays")
+            logger.info("💡 Description: Get 10 days of data to automatically handle weekends, holidays and data delays")
 
             # Start analysis - 10% progress, about to enter the analyst stage
             # Note: Do not manually set the progress too high and let graph_progress_callback update the actual analysis progress.
@@ -1851,7 +1851,7 @@ class SimpleAnalysisService:
                 try:
                     logger.info(f"🎯🎯🎯 [Graph progress callback is called] message={message}")
                     if not progress_tracker:
-                        logger.warning(f"⚠️ progress_tracker If None, progress cannot be updated")
+                        logger.warning("⚠️ progress_tracker If None, progress cannot be updated")
                         return
 
                     # Find the progress percentage corresponding to the node
@@ -1950,7 +1950,7 @@ class SimpleAnalysisService:
                 logger.info(f"[diagnose] inject AgentContext(simple) task_id={task_id} user_id={user_id} symbol={stock_code} date={analysis_date}")
             except Exception:
                 ctx = None
-                logger.info(f"[diagnose] inject AgentContext(simple) failed, continue without context")
+                logger.info("[diagnose] inject AgentContext(simple) failed, continue without context")
 
             state, decision = trading_graph.propagate(
                 stock_code,  # 🔑 Fix: use stock_code variable instead request.stock_code
@@ -1960,7 +1960,7 @@ class SimpleAnalysisService:
                 agent_context=(ctx.__dict__ if ctx else None)
             )
 
-            logger.info(f"✅ trading_graph.propagate Execution completed")
+            logger.info("✅ trading_graph.propagate Execution completed")
 
             # 🔍 Debugging: Check the structure of the decision
             logger.info(f"🔍 [DEBUG] Decision Type: {type(decision)}")
@@ -2275,11 +2275,11 @@ class SimpleAnalysisService:
             # 5. Last resort
             if not summary:
                 summary = f"对{request.stock_code}的分析已完成，请查看详细报告。"
-                logger.warning(f"⚠️ [SUMMARY] Use alternate summaries")
+                logger.warning("⚠️ [SUMMARY] Use alternate summaries")
 
             if not recommendation or recommendation == "Analytical opinion: Neutral":
                 recommendation = "Please refer to the detailed analysis report."
-                logger.warning(f"⚠️ [RECOMMENDATION] Use backup suggestions")
+                logger.warning("⚠️ [RECOMMENDATION] Use backup suggestions")
 
             # Extract model information from decisions
             model_info = decision.get('model_info', 'Unknown') if isinstance(decision, dict) else 'Unknown'
@@ -2378,7 +2378,7 @@ class SimpleAnalysisService:
                 if result_data.get('decision'):
                     logger.debug(f"🔍 [GET_STATUS] decision content: {result_data['decision']}")
             else:
-                logger.debug(f"🔍 [GET_STATUS] result_data Is empty or does not exist (the task is running, this is normal)")
+                logger.debug("🔍 [GET_STATUS] result_data Is empty or does not exist (the task is running, this is normal)")
 
             # Get detailed progress information from Redis first
             redis_progress = get_progress_by_id(task_id)
@@ -2569,7 +2569,7 @@ class SimpleAnalysisService:
             # Because graph_progress_callback may directly update MongoDB, and the in-memory data may be old
 
             # 3) Read historical tasks from MongoDB (for merging or checking)
-            logger.info(f"📋 [Tasks] Read historical tasks from MongoDB")
+            logger.info("📋 [Tasks] Read historical tasks from MongoDB")
             mongo_tasks: List[Dict[str, Any]] = []
             count = 0
             try:
@@ -3074,25 +3074,25 @@ class SimpleAnalysisService:
             logger.info(f"💾 Start saving analysis results completely: {stock_symbol}")
 
             # 1. Save sub-module reports to local directory
-            logger.info(f"📁 [Save locally] Start saving sub-module reports to the local directory")
+            logger.info("📁 [Save locally] Start saving sub-module reports to the local directory")
             local_files = await self._save_modular_reports_to_data_dir(result, stock_symbol)
             if local_files:
                 logger.info(f"✅ [本地保存] 已保存 {len(local_files)} 个本地报告文件")
                 for module, path in local_files.items():
                     logger.info(f"  - {module}: {path}")
             else:
-                logger.warning(f"⚠️ [Save locally] Failed to save local report file")
+                logger.warning("⚠️ [Save locally] Failed to save local report file")
 
             # 2. Save analysis report to database
-            logger.info(f"🗄️ [Database save] Start saving the analysis report to the database")
+            logger.info("🗄️ [Database save] Start saving the analysis report to the database")
             await self._save_analysis_result_web_style(task_id, result)
-            logger.info(f"✅ [Database save] The analysis report has been successfully saved to the database")
+            logger.info("✅ [Database save] The analysis report has been successfully saved to the database")
 
             # 3. Record saving results
             if local_files:
-                logger.info(f"✅ Analysis reports are saved to database and local files")
+                logger.info("✅ Analysis reports are saved to database and local files")
             else:
-                logger.warning(f"⚠️ The database was saved successfully, but the local file failed.")
+                logger.warning("⚠️ The database was saved successfully, but the local file failed.")
 
         except Exception as save_error:
             logger.error(f"❌ [save completely] An error occurred while saving the analysis report: {str(save_error)}")
@@ -3250,7 +3250,7 @@ class SimpleAnalysisService:
                 decision_content = f"# {stock_symbol} 最终研究结论\n\n"
 
                 if isinstance(decision, dict):
-                    decision_content += f"## 市场分析\n\n"
+                    decision_content += "## 市场分析\n\n"
                     decision_content += f"**分析观点**: {decision.get('action', 'N/A')}\n\n"
                     decision_content += f"**置信度**: {decision.get('confidence', 0):.1%}\n\n"
                     decision_content += f"**风险评分**: {decision.get('risk_score', 0):.1%}\n\n"

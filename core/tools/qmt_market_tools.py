@@ -996,7 +996,7 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
 
             report_lines.extend([
                 f"- 周期判断: **{cycle_label}**",
-                f"- 判断依据:",
+                "- 判断依据:",
             ])
             for s in cycle_signals:
                 report_lines.append(f"  - {s}")

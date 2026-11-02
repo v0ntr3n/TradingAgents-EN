@@ -341,7 +341,7 @@ class ChatDeepSeek(ChatOpenAI):
 
                     if usage_record:
                         if usage_record.cost == 0.0:
-                            logger.warning(f"⚠️ [DeepSeek] The cost calculation is 0, there may be a configuration problem")
+                            logger.warning("⚠️ [DeepSeek] The cost calculation is 0, there may be a configuration problem")
                         else:
                             logger.info(f"💰 [DeepSeek] Cost of this call: ¥{usage_record.cost:.6f}")
 
@@ -353,7 +353,7 @@ class ChatDeepSeek(ChatOpenAI):
                             session_id
                         )
                     else:
-                        logger.warning(f"⚠️ [DeepSeek] No usage record created")
+                        logger.warning("⚠️ [DeepSeek] No usage record created")
 
                 except Exception as track_error:
                     logger.error(f"⚠️ [DeepSeek] Token Statistics failed: {track_error}", exc_info=True)

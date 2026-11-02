@@ -63,7 +63,7 @@ class IntegratedCacheManager:
             mongodb_available = self.db_manager.is_mongodb_available()
             redis_available = self.db_manager.is_redis_available()
             
-            self.logger.info(f"📊 缓存配置:")
+            self.logger.info("📊 缓存配置:")
             self.logger.info(f"  主要后端: {backend}")
             self.logger.info(f"  MongoDB: {'✅ Available' if mongodb_available else '❌ Not available'}")
             self.logger.info(f"  Redis: {'✅ Available' if redis_available else '❌ Not available'}")
@@ -479,10 +479,10 @@ class IntegratedCacheManager:
                 if max_age_days == 0:
                     # Clear all cache
                     redis_client.flushdb()
-                    self.logger.info(f"🧹 Redis All caches have been cleared")
+                    self.logger.info("🧹 Redis All caches have been cleared")
                 else:
                     # Redis It will expire automatically. Only logs will be recorded here.
-                    self.logger.info(f"🧹 Redis The cache will automatically expire (TTL mechanism)")
+                    self.logger.info("🧹 Redis The cache will automatically expire (TTL mechanism)")
             except Exception as e:
                 self.logger.error(f"⚠️ Redis Cache cleanup failed: {e}")
 
@@ -519,7 +519,7 @@ class IntegratedCacheManager:
                 cleared_count += file_cleared
                 self.logger.info(f"🧹 文件缓存清理了 {file_cleared} 个文件")
             else:
-                self.logger.info(f"🧹 File cache cleanup completed (return value is None)")
+                self.logger.info("🧹 File cache cleanup completed (return value is None)")
         except Exception as e:
             self.logger.error(f"⚠️ 文件缓存清理失败: {e}")
 

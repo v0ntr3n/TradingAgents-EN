@@ -280,7 +280,7 @@ Please write a detailed position analysis report, including:
 It is prohibited to output future positions increase or decrease plans, target positions or specific execution actions."""
 
         # Print template variables (for debugging)
-        logger.info(f"📊 [Position Analyst] Template variables:")
+        logger.info("📊 [Position Analyst] Template variables:")
         for key, value in template_variables.items():
             logger.info(f"  - {key}: {value}")
 

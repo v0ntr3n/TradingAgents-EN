@@ -268,17 +268,17 @@ status = check_service_status  # Alias
 
 if __name__ == '__main__':
     # Simple command line test
-    logger.debug(f"🔍 Stock data API testing")
-    logger.info(f"=" * 50)
+    logger.debug("🔍 Stock data API testing")
+    logger.info("=" * 50)
     
     # Check service status
-    logger.info(f"\n📊 Service status check:")
+    logger.info("\n📊 Service status check:")
     status_info = check_service_status()
     for key, value in status_info.items():
         logger.info(f"  {key}: {value}")
     
     # Test to obtain single stock information
-    logger.info(f"\n🏢 Get Ping An Bank information:")
+    logger.info("\n🏢 Get Ping An Bank information:")
     stock_info = get_stock_info('000001')
     if 'error' not in stock_info:
         logger.info(f"  code: {stock_info.get('code')}")
@@ -290,14 +290,14 @@ if __name__ == '__main__':
         logger.error(f"  Error: {stock_info.get('error')}")
     
     # Test search functionality
-    logger.debug(f"\n🔍 Search'Peace'Related stocks:")
+    logger.debug("\n🔍 Search'Peace'Related stocks:")
     search_results = search_stocks('Peace')
     for i, stock in enumerate(search_results[:3]):  # Show only first 3 results
         if 'error' not in stock:
             logger.info(f"  {i+1}. {stock.get('code')}")
 
     # Test market overview
-    logger.info(f"\n📈 Market overview:")
+    logger.info("\n📈 Market overview:")
     summary = get_market_summary()
     if 'error' not in summary:
         logger.info(f"  Total number of shares: {summary.get('total_count')}")

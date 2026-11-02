@@ -1166,7 +1166,7 @@ class QMTAdapter(DataSourceAdapter):
                 callback=callback
             )
 
-            logger.info(f"QMT: Financial data download completed")
+            logger.info("QMT: Financial data download completed")
             return True
 
         except Exception as e:

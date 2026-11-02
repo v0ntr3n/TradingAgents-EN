@@ -101,7 +101,7 @@ class RealtimeNewsAggregator:
 
             all_news.extend(newsapi_news)
         else:
-            logger.info(f"[news aggregator] NewsAPI Key not configured, skip this news feed")
+            logger.info("[news aggregator] NewsAPI Key not configured, skip this news feed")
 
         # 4. Chinese financial news source
         logger.info(f"[新闻聚合器] 尝试获取 {ticker} 的中文财经新闻")
@@ -220,7 +220,7 @@ class RealtimeNewsAggregator:
                     time_str = item.get('time_published', '')
                     try:
                         publish_time = datetime.strptime(time_str, '%Y%m%dT%H%M%S').replace(tzinfo=ZoneInfo(get_timezone_name()))
-                    except:
+                    except Exception:
                         continue
 
                     # Check timeliness
@@ -279,7 +279,7 @@ class RealtimeNewsAggregator:
                 time_str = item.get('publishedAt', '')
                 try:
                     publish_time = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
-                except:
+                except Exception:
                     continue
 
                 urgency = self._assess_news_urgency(item.get('title', ''), item.get('description', ''))
@@ -311,7 +311,7 @@ class RealtimeNewsAggregator:
 
             # 1. Try using AKShare to get Oriental Fortune stock news
             try:
-                logger.info(f"[Chinese financial news] Try getting news via AKShare Provider")
+                logger.info("[Chinese financial news] Try getting news via AKShare Provider")
                 from tradingagents.dataflows.providers.china.akshare import AKShareProvider
 
                 provider = AKShareProvider()
@@ -345,15 +345,14 @@ class RealtimeNewsAggregator:
                                     # Try parsing the time format, probably'2023-01-01 12:34:56'Format
                                     try:
                                         publish_time = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(get_timezone_name()))
-                                    except:
-                                        # Try other possible formats
+                                    except Exception: # Try other possible formats
                                         try:
                                             publish_time = datetime.strptime(time_str, '%Y-%m-%d').replace(tzinfo=ZoneInfo(get_timezone_name()))
-                                        except:
+                                        except Exception:
                                             logger.warning(f"[Chinese financial news] Unable to parse time format: {time_str}, Use current time")
                                             publish_time = datetime.now(ZoneInfo(get_timezone_name()))
                                 else:
-                                    logger.warning(f"[Chinese financial news] The news time is empty, use the current time")
+                                    logger.warning("[Chinese financial news] The news time is empty, use the current time")
                                     publish_time = datetime.now(ZoneInfo(get_timezone_name()))
 
                                 # Check timeliness
@@ -387,7 +386,7 @@ class RealtimeNewsAggregator:
                 logger.error(f"[Chinese financial news] Failed to obtain Oriental Fortune News: {ak_e}")
 
             # 2. Financial Associated Press RSS (if available)
-            logger.info(f"[Chinese financial news] Start getting RSS news from Cailianshe")
+            logger.info("[Chinese financial news] Start getting RSS news from Cailianshe")
             rss_start_time = datetime.now(ZoneInfo(get_timezone_name()))
             rss_sources = [
                 "https://www.cls.cn/api/sw?app=CailianpressWeb&os=web&sv=7.7.5",
@@ -441,11 +440,11 @@ class RealtimeNewsAggregator:
             # Here is a simplified implementation, which should be replaced with real RSS parsing logic in actual projects
             import feedparser
 
-            logger.info(f"[RSS parse] Try to get RSS feed content")
+            logger.info("[RSS parse] Try to get RSS feed content")
             feed = feedparser.parse(rss_url)
 
             if not feed or not feed.entries:
-                logger.warning(f"[RSS parse] RSS Source did not return valid content")
+                logger.warning("[RSS parse] RSS Source did not return valid content")
                 return []
 
             logger.info(f"[RSS解析] 成功获取RSS源，包含 {len(feed.entries)} 条条目")
@@ -459,7 +458,7 @@ class RealtimeNewsAggregator:
                     if hasattr(entry, 'published_parsed') and entry.published_parsed:
                         publish_time = datetime.fromtimestamp(time.mktime(entry.published_parsed), tz=ZoneInfo(get_timezone_name()))
                     else:
-                        logger.warning(f"[RSS parse] Entry is missing publication time, use current time")
+                        logger.warning("[RSS parse] Entry is missing publication time, use current time")
                         publish_time = datetime.now(ZoneInfo(get_timezone_name()))
 
                     # Check timeliness
@@ -496,7 +495,7 @@ class RealtimeNewsAggregator:
             logger.info(f"[RSS解析] RSS源解析完成，成功: {processed_count}条，跳过: {skipped_count}条，耗时: {total_time:.2f}秒")
             return news_items
         except ImportError:
-            logger.error(f"[RSS parse] feedparser The library is not installed and cannot parse RSS feeds")
+            logger.error("[RSS parse] feedparser The library is not installed and cannot parse RSS feeds")
             return []
         except Exception as e:
             logger.error(f"[RSS parse] Failed to parse RSS feed: {e}")
@@ -656,7 +655,7 @@ class RealtimeNewsAggregator:
         latest_news = max(news_items, key=lambda x: x.publish_time)
         time_diff = datetime.now(ZoneInfo(get_timezone_name())) - latest_news.publish_time
 
-        report += f"\n## ⏰ 数据时效性\n"
+        report += "\n## ⏰ 数据时效性\n"
         report += f"最新新闻发布于: {time_diff.total_seconds() / 60:.0f}分钟前\n"
 
         if time_diff.total_seconds() < 1800:  # 30 within minutes
@@ -684,21 +683,21 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
     """
     The main interface function for obtaining real-time stock news
     """
-    logger.info(f"[news analysis] ========== Function entry ==========")
-    logger.info(f"[news analysis] function: get_realtime_stock_news")
+    logger.info("[news analysis] ========== Function entry ==========")
+    logger.info("[news analysis] function: get_realtime_stock_news")
     logger.info(f"[news analysis] parameters: ticker={ticker}, curr_date={curr_date}, hours_back={hours_back}")
     logger.info(f"[新闻分析] 开始获取 {ticker} 的实时新闻，日期: {curr_date}, 回溯时间: {hours_back}小时")
     start_total_time = datetime.now(ZoneInfo(get_timezone_name()))
     logger.info(f"[新闻分析] 开始时间: {start_total_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
 
     # Determine stock type
-    logger.info(f"[news analysis] ========== steps 1: Stock type judgment ==========")
+    logger.info("[news analysis] ========== steps 1: Stock type judgment ==========")
     stock_type = "未知"
     is_china_stock = False
     logger.info(f"[news analysis] original ticker: {ticker}")
 
     if '.' in ticker:
-        logger.info(f"[news analysis] It is detected that the ticker contains a period and performs suffix matching.")
+        logger.info("[news analysis] It is detected that the ticker contains a period and performs suffix matching.")
         if any(suffix in ticker for suffix in ['.SH', '.SZ', '.SS', '.XSHE', '.XSHG']):
             stock_type = "A股"
             is_china_stock = True
@@ -710,25 +709,25 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
             stock_type = "美股"
             logger.info(f"[news analysis] Match to US stock suffix, stock type: {stock_type}")
         else:
-            logger.info(f"[news analysis] No known suffix was matched")
+            logger.info("[news analysis] No known suffix was matched")
     else:
-        logger.info(f"[news analysis] ticker Does not contain a dot, try to use StockUtils to determine")
+        logger.info("[news analysis] ticker Does not contain a dot, try to use StockUtils to determine")
         # Try using StockUtils to determine stock type
         try:
             from tradingagents.utils.stock_utils import StockUtils
-            logger.info(f"[news analysis] Successfully imported StockUtils and started to determine the stock type")
+            logger.info("[news analysis] Successfully imported StockUtils and started to determine the stock type")
             market_info = StockUtils.get_market_info(ticker)
             logger.info(f"[news analysis] StockUtils Return to market information: {market_info}")
             if market_info['is_china']:
                 stock_type = "A股"
                 is_china_stock = True
-                logger.info(f"[news analysis] StockUtils Determined to be A shares")
+                logger.info("[news analysis] StockUtils Determined to be A shares")
             elif market_info['is_hk']:
                 stock_type = "港股"
-                logger.info(f"[news analysis] StockUtils Judged as Hong Kong stocks")
+                logger.info("[news analysis] StockUtils Judged as Hong Kong stocks")
             elif market_info['is_us']:
                 stock_type = "美股"
-                logger.info(f"[news analysis] StockUtils Determined to be U.S. stocks")
+                logger.info("[news analysis] StockUtils Determined to be U.S. stocks")
         except Exception as e:
             logger.warning(f"[news analysis] Failed to use StockUtils to determine stock type: {e}")
 
@@ -736,14 +735,14 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
 
     # For A-shares, give priority to Oriental Fortune News Source
     if is_china_stock:
-        logger.info(f"[news analysis] ========== steps 2: A Shareholder side wealth news acquisition ==========")
+        logger.info("[news analysis] ========== steps 2: A Shareholder side wealth news acquisition ==========")
         logger.info(f"[news analysis] A-share stocks detected {ticker}, Prioritize trying to use Oriental Fortune News Source")
         try:
-            logger.info(f"[news analysis] Try getting news via AKShare Provider")
+            logger.info("[news analysis] Try getting news via AKShare Provider")
             from tradingagents.dataflows.providers.china.akshare import AKShareProvider
 
             provider = AKShareProvider()
-            logger.info(f"[news analysis] Successfully created AKShare Provider instance")
+            logger.info("[news analysis] Successfully created AKShare Provider instance")
 
             # Process A-share codes
             clean_ticker = ticker.replace('.SH', '').replace('.SZ', '').replace('.SS', '')\
@@ -785,7 +784,7 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
                 sample_titles = [row.get('新闻标题', '无标题') for _, row in news_df.head(3).iterrows()]
                 logger.info(f"[news analysis] News headline example: {', '.join(sample_titles)}")
 
-                logger.info(f"[news analysis] Start building a news report")
+                logger.info("[news analysis] Start building a news report")
                 for idx, (_, row) in enumerate(news_df.iterrows()):
                     if idx < 3:  # Only record the first 3 details
                         logger.info(f"[新闻分析] 第{idx+1}条新闻: 标题={row.get('新闻标题', '无标题')}, 时间={row.get('发布时间', '无时间')}")
@@ -797,7 +796,7 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
                 total_time_taken = (datetime.now(ZoneInfo(get_timezone_name())) - start_total_time).total_seconds()
                 logger.info(f"[新闻分析] 成功生成 {ticker} 的新闻报告，总耗时 {total_time_taken:.2f} 秒，新闻来源: 东方财富")
                 logger.info(f"[新闻分析] 报告长度: {len(report)} 字符")
-                logger.info(f"[news analysis] ========== Oriental Fortune News is successfully obtained and the function is about to return ==========")
+                logger.info("[news analysis] ========== Oriental Fortune News is successfully obtained and the function is about to return ==========")
                 return report
             else:
                 logger.warning(f"[news analysis] Eastern wealth has not been obtained {ticker} news, time-consuming {time_taken:.2f} Second, try another news source")
@@ -807,13 +806,13 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
             import traceback
             logger.error(f"[新闻分析] 异常堆栈: {traceback.format_exc()}")
     else:
-        logger.info(f"[news analysis] ========== Skip A Shareholder Fang Wealth News Get ==========")
+        logger.info("[news analysis] ========== Skip A Shareholder Fang Wealth News Get ==========")
         logger.info(f"[新闻分析] 股票类型为 {stock_type}，不是A股，跳过东方财富新闻源")
 
     # If it is not A-shares or A-share news acquisition fails, use real-time news aggregator
-    logger.info(f"[news analysis] ========== steps 3: real time news aggregator ==========")
+    logger.info("[news analysis] ========== steps 3: real time news aggregator ==========")
     aggregator = RealtimeNewsAggregator()
-    logger.info(f"[news analysis] Successfully created real-time news aggregator instance")
+    logger.info("[news analysis] Successfully created real-time news aggregator instance")
     try:
         logger.info(f"[新闻分析] 尝试使用实时新闻聚合器获取 {ticker} 的新闻")
         start_time = datetime.now(ZoneInfo(get_timezone_name()))
@@ -839,13 +838,13 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
             logger.info(f"[news analysis] News headline example: {', '.join(sample_titles)}")
 
             # Format reports
-            logger.info(f"[news analysis] Start formatting news report")
+            logger.info("[news analysis] Start formatting news report")
             report = aggregator.format_news_report(news_items, ticker)
             logger.info(f"[新闻分析] 报告格式化完成，长度: {len(report)} 字符")
 
             total_time_taken = (datetime.now(ZoneInfo(get_timezone_name())) - start_total_time).total_seconds()
             logger.info(f"[新闻分析] 成功生成 {ticker} 的新闻报告，总耗时 {total_time_taken:.2f} 秒，新闻来源: 实时新闻聚合器")
-            logger.info(f"[news analysis] ========== The real-time news aggregator is obtained successfully and the function is about to return ==========")
+            logger.info("[news analysis] ========== The real-time news aggregator is obtained successfully and the function is about to return ==========")
             return report
         else:
             logger.warning(f"[news analysis] Real-time news aggregator not getting {ticker} news, time-consuming {time_taken:.2f} seconds, try using an alternate news source")
@@ -894,7 +893,7 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
                     report += f"🔗 {row.get('News link', '')}\n\n"
                     report += f"{row.get('News content', 'No content')}\n\n"
 
-                logger.info(f"[news analysis] Successfully generated Oriental Fortune news report, news source: Oriental Fortune")
+                logger.info("[news analysis] Successfully generated Oriental Fortune news report, news source: Oriental Fortune")
                 return report
             else:
                 logger.warning(f"[news analysis] Eastern wealth has not been obtained {clean_ticker} news data, time-consuming {time_taken:.2f} seconds, try the next alternative")
@@ -939,7 +938,7 @@ def get_realtime_stock_news(ticker: str, curr_date: str, hours_back: int = 6) ->
             if sample_titles:
                 logger.info(f"[news analysis] News headline example: {', '.join(sample_titles)}")
 
-            logger.info(f"[news analysis] Successfully generated Google News report, news source: Google")
+            logger.info("[news analysis] Successfully generated Google News report, news source: Google")
             return google_news
         else:
             logger.warning(f"[新闻分析] Google 新闻未获取到 {ticker} 的新闻数据，耗时 {time_taken:.2f} 秒")

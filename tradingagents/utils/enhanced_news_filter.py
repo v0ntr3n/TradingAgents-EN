@@ -118,7 +118,7 @@ class EnhancedNewsFilter(NewsRelevanceFilter):
             logger.info(f"[Enhance filter] Enhanced filtering completed, retained {len(filtered_df)}news")
         else:
             filtered_df = pd.DataFrame()
-            logger.warning(f"[Enhance filter] All news has been filtered and no news meets the criteria")
+            logger.warning("[Enhance filter] All news has been filtered and no news meets the criteria")
 
         return filtered_df
 

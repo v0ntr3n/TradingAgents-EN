@@ -34,6 +34,8 @@ from typing import Dict, List, Any, Tuple, Optional
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+RESULTS_DIR = REPO_ROOT / "results"
+REPORTS_DIR = REPO_ROOT / "reports"
 sys.path.insert(0, str(REPO_ROOT))
 
 try:
@@ -3203,9 +3205,11 @@ def main():
     fig_out = results_dir / "regime_weight_trajectories"
     if cn_frontier_weights:
         render_regime_weight_figure(cn_frontier_weights, fig_out)
+        render_regime_weight_figure(cn_frontier_weights, reports_dir / "regime_weight_trajectories")
     eq_fig_out = results_dir / "phase5_equity_drawdown_curves"
     if cn_frontier_port and us_frontier_port:
         render_equity_and_drawdown_figure(cn_frontier_port, us_frontier_port, eq_fig_out)
+        render_equity_and_drawdown_figure(cn_frontier_port, us_frontier_port, reports_dir / "phase5_equity_drawdown_curves")
 
     cache.flush()
 

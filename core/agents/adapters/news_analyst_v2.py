@@ -507,7 +507,7 @@ Tool workflow requirements:
         # 🔑 Note: The data returned by the tool will be passed through ToolMessage and does not need to be checked in user_prompt
         
         # 🔍 Debugging: printing template variables
-        logger.info(f"🔍 [NewsAnalystV2] Prepare variables to be passed to the template system:")
+        logger.info("🔍 [NewsAnalystV2] Prepare variables to be passed to the template system:")
         for k, v in template_variables.items():
             logger.info(f"  - {k}: {v}")
         

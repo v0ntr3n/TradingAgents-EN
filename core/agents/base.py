@@ -94,7 +94,7 @@ class BaseAgent(ABC):
             llm: LangChain LLM Example (new version)
             tool_ids: Tool ID list (new version, optional)
         """
-        logger.info(f"[BaseAgent] 🚀 Start initialization Agent")
+        logger.info("[BaseAgent] 🚀 Start initialization Agent")
         # 🔥 Exclude llm_provider and llm_model as these should not be in the Agent configuration
         config_dict_log = config.model_dump(exclude={'llm_provider', 'llm_model'}) if config else None
         logger.info(f"   - config: {config_dict_log}")
@@ -115,9 +115,9 @@ class BaseAgent(ABC):
             self._load_tools_v2(tool_ids)
             logger.info(f"[BaseAgent] ✅ Tool loading completed, number of tools: {len(self._langchain_tools)}")
         else:
-            logger.info(f"[BaseAgent] ⚠️ tool_ids not provided, tool loading skipped")
+            logger.info("[BaseAgent] ⚠️ tool_ids not provided, tool loading skipped")
 
-        logger.info(f"[BaseAgent] ✅ Agent Initialization completed")
+        logger.info("[BaseAgent] ✅ Agent Initialization completed")
         logger.info(f"   - Agent ID: {self.agent_id if hasattr(self, 'agent_id') else 'N/A'}")
         logger.info(f"   - _llm: {type(self._llm).__name__ if self._llm else 'None'}")
         logger.info(f"   - _langchain_tools Quantity: {len(self._langchain_tools)}")
@@ -178,9 +178,9 @@ class BaseAgent(ABC):
                     api_key_val = api_key_val.get_secret_value()
                 logger.info(f"   - LLM API Key: {'valuable' if api_key_val else 'empty'}")
         
-        logger.info(f"[BaseAgent.initialize] 🔧 Start setting up tools...")
+        logger.info("[BaseAgent.initialize] 🔧 Start setting up tools...")
         self._setup_tools()
-        logger.info(f"[BaseAgent.initialize] 🔧 Start setting prompt words...")
+        logger.info("[BaseAgent.initialize] 🔧 Start setting prompt words...")
         self._setup_prompt()
         logger.info(f"[BaseAgent.initialize] ✅ Agent {self.agent_id} Initialization completed")
     
@@ -754,9 +754,9 @@ class BaseAgent(ABC):
             logger.info(f"💬 [{self.agent_id}] Call LLM, number of messages: {len(current_messages)}")
 
             # 🔍 Print LLM configuration information (including the first 5 digits of the API Key)
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
             logger.info(f"🔍 [{self.agent_id}] LLM Configuration information:")
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
             if hasattr(self._llm, 'model_name'):
                 logger.info(f"   model: {self._llm.model_name}")
             if hasattr(self._llm, 'openai_api_base') or hasattr(self._llm, 'base_url'):
@@ -768,39 +768,39 @@ class BaseAgent(ABC):
             # method 1: Get from client object
             if hasattr(self._llm, 'client') and hasattr(self._llm.client, 'api_key'):
                 api_key = self._llm.client.api_key
-                logger.info(f"   API Key Source: client.api_key")
+                logger.info("   API Key Source: client.api_key")
 
             # method 2: Get (private property) from _client object
             elif hasattr(self._llm, '_client') and hasattr(self._llm._client, 'api_key'):
                 api_key = self._llm._client.api_key
-                logger.info(f"   API Key Source: _client.api_key")
+                logger.info("   API Key Source: _client.api_key")
 
             # method 3: Get from environment variables (for comparison)
             else:
                 import os
                 env_api_key = os.getenv("DASHSCOPE_API_KEY")
                 if env_api_key:
-                    logger.info(f"   API Key Source: environment variables DASHSCOPE_API_KEY")
+                    logger.info("   API Key Source: environment variables DASHSCOPE_API_KEY")
                     logger.info(f"   environment variables API Key: {truncate_api_key(env_api_key)}")
 
                 # Try to get from attribute (may be desensitized)
                 api_key = getattr(self._llm, 'openai_api_key', None) or getattr(self._llm, 'api_key', None)
                 if api_key and str(api_key) != "**********":
-                    logger.info(f"   API Key Source: LLM Properties")
+                    logger.info("   API Key Source: LLM Properties")
                 else:
-                    logger.info(f"   API Key Source: LLM Properties (desensitized)")
+                    logger.info("   API Key Source: LLM Properties (desensitized)")
 
             # Print API Key information (full value, for debugging)
             if api_key:
                 api_key_str = str(api_key)
                 if api_key_str == "**********":
-                    logger.info(f"   API Key: Desensitized (unable to obtain true value)")
+                    logger.info("   API Key: Desensitized (unable to obtain true value)")
                 else:
-                    logger.info(f"   API Key: valuable")
+                    logger.info("   API Key: valuable")
                     #logger.info(f"   API Key: {truncate_api_key(api_key_str)}")
                     logger.info(f"   API Key length: {len(api_key_str)}")
             else:
-                logger.info(f"   API Key: empty")
+                logger.info("   API Key: empty")
             if hasattr(self._llm, 'temperature'):
                 logger.info(f"   Temperature: {self._llm.temperature}")
             if hasattr(self._llm, 'max_tokens'):
@@ -808,12 +808,12 @@ class BaseAgent(ABC):
             if hasattr(self._llm, 'timeout') or hasattr(self._llm, 'request_timeout'):
                 timeout = getattr(self._llm, 'timeout', None) or getattr(self._llm, 'request_timeout', None)
                 logger.info(f"   Timeout: {timeout}")
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
 
             # Print each message in detail
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
             logger.info(f"📋 [{self.agent_id}] No. {iteration + 1} LLM calls - message details:")
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
             for idx, msg in enumerate(current_messages):
                 msg_type = type(msg).__name__
                 if hasattr(msg, 'content'):
@@ -834,7 +834,7 @@ class BaseAgent(ABC):
                         logger.info(f"        [{tc_idx+1}] {tc.get('name', 'unknown')}: {tc.get('args', {})}")
                 else:
                     logger.info(f"  [{idx+1}] {msg_type}: {str(msg)[:200]}")
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
 
             # 🔥 Add a retry mechanism (use max_retries configured by agent, default 3 times)
             max_retries = getattr(self.config, 'max_retries', 3)
@@ -899,11 +899,11 @@ class BaseAgent(ABC):
                         logger.error(f"   Number of retries: {retry_count}/{max_retries}")
                         
                         if "choices" in error_msg.lower() or "null value" in error_msg.lower():
-                            logger.error(f"   This may be because:")
-                            logger.error(f"   1. LLM API Service exception")
-                            logger.error(f"   2. API Key is invalid or expired")
-                            logger.error(f"   3. Request parameters do not meet API requirements")
-                            logger.error(f"   4. API Service is temporarily unavailable")
+                            logger.error("   This may be because:")
+                            logger.error("   1. LLM API Service exception")
+                            logger.error("   2. API Key is invalid or expired")
+                            logger.error("   3. Request parameters do not meet API requirements")
+                            logger.error("   4. API Service is temporarily unavailable")
                             # 🔥 Try to get more debugging information
                             if hasattr(self._llm, 'model_name'):
                                 logger.error(f"   Model used: {self._llm.model_name}")
@@ -917,9 +917,9 @@ class BaseAgent(ABC):
                         raise ValueError(f"LLM API The call failed (retried {retry_count} times): {error_msg}") from last_error
 
             # Print response details
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
             logger.info(f"📤 [{self.agent_id}] LLM Response details:")
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
             logger.info(f"  response type: {type(response).__name__}")
             if hasattr(response, 'content'):
                 logger.info(f"  content length: {len(response.content)} character")
@@ -928,7 +928,7 @@ class BaseAgent(ABC):
                 logger.info(f"  tool_calls Quantity: {len(response.tool_calls)}")
                 for tc_idx, tc in enumerate(response.tool_calls):
                     logger.info(f"    [{tc_idx+1}] {tc.get('name', 'unknown')}: {tc.get('args', {})}")
-            logger.info(f"=" * 100)
+            logger.info("=" * 100)
             logger.info(f"💬 [{self.agent_id}] LLM Response completed")
 
             # Check if there is a tool call
@@ -968,9 +968,9 @@ Start writing your report now:"""
                 logger.info(f"📝 [{self.agent_id}] Current number of messages: {len(current_messages)}")
 
                 # Detailed printing of messages before the final report is generated
-                logger.info(f"=" * 100)
+                logger.info("=" * 100)
                 logger.info(f"📋 [{self.agent_id}] Final report generation - message details:")
-                logger.info(f"=" * 100)
+                logger.info("=" * 100)
                 for idx, msg in enumerate(current_messages):
                     msg_type = type(msg).__name__
                     if hasattr(msg, 'content'):
@@ -985,7 +985,7 @@ Start writing your report now:"""
                             logger.info(f"        [{tc_idx+1}] {tc.get('name', 'unknown')}: {tc.get('args', {})}")
                     else:
                         logger.info(f"  [{idx+1}] {msg_type}: {str(msg)[:200]}")
-                logger.info(f"=" * 100)
+                logger.info("=" * 100)
 
                 # 🔧 Directly call LLM to generate reports (without binding tools)
                 # Note: do not use bind_tools([]), Because DashScope does not accept an empty tools array
@@ -1031,11 +1031,11 @@ Start writing your report now:"""
                             logger.error(f"   Number of retries: {retry_count}/{max_retries}")
                             
                             if "choices" in error_msg.lower() or "null value" in error_msg.lower():
-                                logger.error(f"   This may be because:")
-                                logger.error(f"   1. LLM API Service exception")
-                                logger.error(f"   2. API Key is invalid or expired")
-                                logger.error(f"   3. Request parameters do not meet API requirements")
-                                logger.error(f"   4. API Service is temporarily unavailable")
+                                logger.error("   This may be because:")
+                                logger.error("   1. LLM API Service exception")
+                                logger.error("   2. API Key is invalid or expired")
+                                logger.error("   3. Request parameters do not meet API requirements")
+                                logger.error("   4. API Service is temporarily unavailable")
                                 # 🔥 Try to get more debugging information
                                 if hasattr(self._llm, 'model_name'):
                                     logger.error(f"   Model used: {self._llm.model_name}")
@@ -1049,9 +1049,9 @@ Start writing your report now:"""
                             raise ValueError(f"LLM API The call failed (retried {retry_count} times): {error_msg}") from last_error
 
                 # Print final response details
-                logger.info(f"=" * 100)
+                logger.info("=" * 100)
                 logger.info(f"📤 [{self.agent_id}] Final report response details:")
-                logger.info(f"=" * 100)
+                logger.info("=" * 100)
                 logger.info(f"  response type: {type(final_response).__name__}")
                 if hasattr(final_response, 'content'):
                     logger.info(f"  content length: {len(final_response.content)} character")
@@ -1060,7 +1060,7 @@ Start writing your report now:"""
                     logger.info(f"  tool_calls Quantity: {len(final_response.tool_calls)}")
                     for tc_idx, tc in enumerate(final_response.tool_calls):
                         logger.info(f"    [{tc_idx+1}] {tc.get('name', 'unknown')}: {tc.get('args', {})}")
-                logger.info(f"=" * 100)
+                logger.info("=" * 100)
 
                 # Check if there are still tool_calls (theoretically there should not be, because there is no binding tool)
                 if hasattr(final_response, 'tool_calls') and final_response.tool_calls:
@@ -1090,9 +1090,9 @@ Now start writing the report (output only the report text, nothing else):"""
                     logger.info(f"🔄 [{self.agent_id}] Retry generating report...")
 
                     # Detailed printing of messages before retry
-                    logger.info(f"=" * 100)
+                    logger.info("=" * 100)
                     logger.info(f"📋 [{self.agent_id}] Retry report generation - message details:")
-                    logger.info(f"=" * 100)
+                    logger.info("=" * 100)
                     for idx, msg in enumerate(current_messages):
                         msg_type = type(msg).__name__
                         if hasattr(msg, 'content'):
@@ -1107,7 +1107,7 @@ Now start writing the report (output only the report text, nothing else):"""
                                 logger.info(f"        [{tc_idx+1}] {tc.get('name', 'unknown')}: {tc.get('args', {})}")
                         else:
                             logger.info(f"  [{idx+1}] {msg_type}: {str(msg)[:200]}")
-                    logger.info(f"=" * 100)
+                    logger.info("=" * 100)
 
                     # 🔧 Call LLM directly when retrying (without binding the tool)
                     logger.info(f"🔗 [{self.agent_id}] Call LLM directly when retrying (no tool binding)")
@@ -1164,11 +1164,11 @@ Now start writing the report (output only the report text, nothing else):"""
                                 logger.error(f"   Number of retries: {retry_count}/{max_retries}")
                                 
                                 if "choices" in error_msg.lower() or "null value" in error_msg.lower():
-                                    logger.error(f"   This may be because:")
-                                    logger.error(f"   1. LLM API Service exception")
-                                    logger.error(f"   2. API Key is invalid or expired")
-                                    logger.error(f"   3. Request parameters do not meet API requirements")
-                                    logger.error(f"   4. API Service is temporarily unavailable")
+                                    logger.error("   This may be because:")
+                                    logger.error("   1. LLM API Service exception")
+                                    logger.error("   2. API Key is invalid or expired")
+                                    logger.error("   3. Request parameters do not meet API requirements")
+                                    logger.error("   4. API Service is temporarily unavailable")
                                     # 🔥 Try to get more debugging information
                                     if hasattr(self._llm, 'model_name'):
                                         logger.error(f"   Model used: {self._llm.model_name}")
@@ -1182,9 +1182,9 @@ Now start writing the report (output only the report text, nothing else):"""
                                 raise ValueError(f"LLM API The call failed (retried {retry_count} times): {error_msg}") from last_error
 
                     # Print retry response details
-                    logger.info(f"=" * 100)
+                    logger.info("=" * 100)
                     logger.info(f"📤 [{self.agent_id}] Retry response details:")
-                    logger.info(f"=" * 100)
+                    logger.info("=" * 100)
                     logger.info(f"  response type: {type(final_response).__name__}")
                     if hasattr(final_response, 'content'):
                         logger.info(f"  content length: {len(final_response.content)} character")
@@ -1193,7 +1193,7 @@ Now start writing the report (output only the report text, nothing else):"""
                         logger.info(f"  tool_calls Quantity: {len(final_response.tool_calls)}")
                         for tc_idx, tc in enumerate(final_response.tool_calls):
                             logger.info(f"    [{tc_idx+1}] {tc.get('name', 'unknown')}: {tc.get('args', {})}")
-                    logger.info(f"=" * 100)
+                    logger.info("=" * 100)
 
                     # Check again
                     if hasattr(final_response, 'tool_calls') and final_response.tool_calls:
@@ -1578,7 +1578,7 @@ Now start writing the report (output only the report text, nothing else):"""
             # 🔍 Debugging: Print variables passed to the template system
             logger.info(f"🔍 [_get_prompt_from_template] Prepare variables to be passed to the template system (total {len(variables)} a):")
             if not variables:
-                logger.warning(f"⚠️ [_get_prompt_from_template] The variable dictionary is empty!")
+                logger.warning("⚠️ [_get_prompt_from_template] The variable dictionary is empty!")
             else:
                 for k, v in variables.items():
                     if isinstance(v, str) and len(v) > 100:
@@ -1649,7 +1649,7 @@ Now start writing the report (output only the report text, nothing else):"""
 
                 return prompt
             else:
-                logger.warning(f"The template system returns empty prompt words, use downgrade prompt words")
+                logger.warning("The template system returns empty prompt words, use downgrade prompt words")
                 return fallback_prompt
 
         except Exception as e:

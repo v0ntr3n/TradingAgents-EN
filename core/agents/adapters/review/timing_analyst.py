@@ -51,7 +51,7 @@ class TimingAnalystAgent(BaseAgent):
             The updated status includes:
                 - timing_analysis: Timing Analysis Report
         """
-        logger.info(f"⏰ [timing analyst] Start analyzing trading opportunities...")
+        logger.info("⏰ [timing analyst] Start analyzing trading opportunities...")
 
         # Extract input data
         trade_info = state.get("trade_info", {})
@@ -68,7 +68,7 @@ class TimingAnalystAgent(BaseAgent):
         # call LLM
         if self._llm:
             try:
-                logger.info(f"   🤖 Call LLM analysis...")
+                logger.info("   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
                 logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
@@ -77,10 +77,10 @@ class TimingAnalystAgent(BaseAgent):
                 logger.error(f"   ❌ [timing analyst] LLM call failed: {e}")
                 analysis = f"Timing analysis failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM Not configured")
+            logger.warning("   ⚠️ LLM Not configured")
             analysis = "LLM Not configured, timing analysis cannot be performed"
 
-        logger.info(f"⏰ [timing analyst] ✅ Analysis completed")
+        logger.info("⏰ [timing analyst] ✅ Analysis completed")
 
         # Only the newly added fields are returned, not the entire state (to avoid concurrent update conflicts)
         return {

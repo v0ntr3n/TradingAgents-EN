@@ -160,7 +160,7 @@ def create_index_analyst(llm, toolkit):
                 future = executor.submit(run_async_in_thread)
                 index_data = future.result()
 
-            logger.info(f"✅ Obtaining market data is completed")
+            logger.info("✅ Obtaining market data is completed")
 
             # 🆕 Use LLM to analyze and interpret data
             index_report = _analyze_with_llm(
@@ -170,7 +170,7 @@ def create_index_analyst(llm, toolkit):
                 state=state
             )
 
-            logger.info(f"✅ The market analysis report is generated")
+            logger.info("✅ The market analysis report is generated")
 
             # 💾 Save to cache
             _save_index_report_to_cache(trade_date, index_report)
@@ -290,7 +290,7 @@ Please generate a professional market analysis report based on the above data. T
 Please output in Chinese, the analysis must be well-founded, and the conclusion must be clear, but it must not form investment advice or position instructions."""
 
         # Call LLM to generate analysis reports
-        logger.info(f"📤 [Market Analyst] Call LLM to generate analysis reports...")
+        logger.info("📤 [Market Analyst] Call LLM to generate analysis reports...")
         response = llm.invoke(analysis_request)
 
         # Extract response content

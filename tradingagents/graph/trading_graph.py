@@ -70,7 +70,7 @@ class _JDYunRateLimitedLLM:
     def invoke(self, messages, *args, **kwargs):
         last_error = None
         for attempt in range(1 + len(_JYDUN_RETRY_DELAYS)):
-            logger.debug(f"⏳ [JDYun Current limiting] Waiting for LLM call permission...")
+            logger.debug("⏳ [JDYun Current limiting] Waiting for LLM call permission...")
             acquired = _jdyun_llm_semaphore.acquire(timeout=300)
             if not acquired:
                 raise RuntimeError("[JDYun Current limiting] Timeout for obtaining LLM call permission (300s), there may be a deadlock")
@@ -90,7 +90,7 @@ class _JDYunRateLimitedLLM:
                     raise
             finally:
                 _jdyun_llm_semaphore.release()
-                logger.debug(f"🔓 [JDYun Current limiting] Release LLM calling permission")
+                logger.debug("🔓 [JDYun Current limiting] Release LLM calling permission")
 
         raise last_error
 
@@ -300,7 +300,7 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
             elif provider.lower() == "ollama":
                 # 🔥 Ollama It is a local model, does not require API Key, uses placeholders
                 api_key = "ollama"
-                logger.info(f"ℹ️  [Ollama] Local model, no API Key required, use placeholders")
+                logger.info("ℹ️  [Ollama] Local model, no API Key required, use placeholders")
         
         final_api_key = api_key  # Save for final use API Key
         logger.info(f"✅ [{provider.capitalize()}] final parameters: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
@@ -323,7 +323,7 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
             **_extra
         )
         if provider.lower() == "jdyun":
-            logger.info(f"🔒 [JDYun Current limiting] Enable serialization of LLM calls (avoids parallel Agent triggering 429)")
+            logger.info("🔒 [JDYun Current limiting] Enable serialization of LLM calls (avoids parallel Agent triggering 429)")
             return _JDYunRateLimitedLLM(llm)
         return llm
 
@@ -480,9 +480,9 @@ class TradingAgentsGraph:
 
         if quick_provider and deep_provider:
             if quick_provider != deep_provider:
-                logger.info(f"🔀 [blend mode] Model combinations from different manufacturers detected")
+                logger.info("🔀 [blend mode] Model combinations from different manufacturers detected")
             else:
-                logger.info(f"🧩 [Explicit model configuration] If a combination of models from the same manufacturer is detected, the one carried in the request will be used first. provider/api_key/backend_url")
+                logger.info("🧩 [Explicit model configuration] If a combination of models from the same manufacturer is detected, the one carried in the request will be used first. provider/api_key/backend_url")
 
             logger.info(f"   quick model: {self.config['quick_think_llm']} ({quick_provider})")
             logger.info(f"   deep model: {self.config['deep_think_llm']} ({deep_provider})")
@@ -510,7 +510,7 @@ class TradingAgentsGraph:
                 reasoning_effort=deep_reasoning_effort  # 🔧 Inference model thinking depth
             )
 
-            logger.info(f"✅ [Explicit model configuration] LLM Instance created successfully")
+            logger.info("✅ [Explicit model configuration] LLM Instance created successfully")
 
         elif self.config["llm_provider"].lower() in ["volcengine", "volcengine_coding"]:
             # 🔧 Volcano Ark: Support using create_llm_by_provider reasoning_effort
@@ -681,7 +681,7 @@ class TradingAgentsGraph:
             )
         elif self.config["llm_provider"].lower() == "google":
             # Use Google OpenAI compatible adapter to solve tool call format mismatch problem
-            logger.info(f"🔧 Using the Google AI OpenAI Compatible Adapter (Solve tool calling issues)")
+            logger.info("🔧 Using the Google AI OpenAI Compatible Adapter (Solve tool calling issues)")
 
             # 🔥 Priority is given to using the API Key configured in the database, otherwise reading from environment variables
             google_api_key = self.config.get("quick_api_key") or self.config.get("deep_api_key") or os.getenv('GOOGLE_API_KEY')
@@ -710,7 +710,7 @@ class TradingAgentsGraph:
             if backend_url:
                 logger.info(f"🔧 [Google AI] Use configured backend_url: {backend_url}")
             else:
-                logger.info(f"🔧 [Google AI] backend_url is not configured, default endpoint is used")
+                logger.info("🔧 [Google AI] backend_url is not configured, default endpoint is used")
 
             self.deep_thinking_llm = ChatGoogleOpenAI(
                 model=self.config["deep_think_llm"],
@@ -730,13 +730,13 @@ class TradingAgentsGraph:
                 transport="rest"
             )
 
-            logger.info(f"✅ [Google AI] Optimized tool invocation and content format processing enabled and application of user-configured model parameters")
+            logger.info("✅ [Google AI] Optimized tool invocation and content format processing enabled and application of user-configured model parameters")
         elif (self.config["llm_provider"].lower() == "dashscope" or
               self.config["llm_provider"].lower() == "alibaba" or
               "dashscope" in self.config["llm_provider"].lower() or
               "Ali Bailian" in self.config["llm_provider"]):
             # Use OpenAI compatible adapter to support native Function Calling
-            logger.info(f"🔧 Using Alibaba Bailian OpenAI compatible adapter (Support native tool calls)")
+            logger.info("🔧 Using Alibaba Bailian OpenAI compatible adapter (Support native tool calls)")
 
             # 🔥 Priority is given to using the API Key configured in the database, otherwise reading from environment variables
             dashscope_api_key = self.config.get("quick_api_key") or self.config.get("deep_api_key") or os.getenv('DASHSCOPE_API_KEY')
@@ -802,7 +802,7 @@ class TradingAgentsGraph:
                 max_tokens=quick_max_tokens,
                 request_timeout=quick_timeout
             )
-            logger.info(f"✅ [Ali Bailian] User-configured model parameters applied")
+            logger.info("✅ [Ali Bailian] User-configured model parameters applied")
         elif (self.config["llm_provider"].lower() == "deepseek" or
               "deepseek" in self.config["llm_provider"].lower()):
             # DeepSeek V3 Configuration - Use an adapter that supports token statistics
@@ -849,7 +849,7 @@ class TradingAgentsGraph:
                 timeout=quick_timeout
             )
 
-            logger.info(f"✅ [DeepSeek] The token statistics function has been enabled and user-configured model parameters have been applied.")
+            logger.info("✅ [DeepSeek] The token statistics function has been enabled and user-configured model parameters have been applied.")
         elif self.config["llm_provider"].lower() == "custom_openai":
             # Custom OpenAI endpoint configuration
             from tradingagents.llm_adapters.openai_compatible_base import create_openai_compatible_llm
@@ -894,7 +894,7 @@ class TradingAgentsGraph:
                 timeout=quick_timeout
             )
 
-            logger.info(f"✅ [Customize OpenAI] Custom endpoint configured and user-configured model parameters applied")
+            logger.info("✅ [Customize OpenAI] Custom endpoint configured and user-configured model parameters applied")
         elif self.config["llm_provider"].lower() == "qianfan":
             # Baidu Qianfan (Wen Xin Yiyan) configuration - uniformly read and verified internally by the adapter QIANFAN_API_KEY
             from tradingagents.llm_adapters.openai_compatible_base import create_openai_compatible_llm
@@ -961,7 +961,7 @@ class TradingAgentsGraph:
             if backend_url:
                 logger.info(f"🔧 [Wisdom spectrum AI] Use configured backend_url: {backend_url}")
             else:
-                logger.info(f"🔧 [Wisdom spectrum AI] backend_url is not configured, default endpoint is used")
+                logger.info("🔧 [Wisdom spectrum AI] backend_url is not configured, default endpoint is used")
             
             # Create LLM instance using specialized ChatZhipuOpenAI adapter
             self.deep_thinking_llm = ChatZhipuOpenAI(
@@ -1085,7 +1085,7 @@ class TradingAgentsGraph:
             max_debate_rounds=self.config.get("max_debate_rounds", 1),
             max_risk_discuss_rounds=self.config.get("max_risk_discuss_rounds", 1)
         )
-        logger.info(f"🔧 [ConditionalLogic] Initialization completed:")
+        logger.info("🔧 [ConditionalLogic] Initialization completed:")
         logger.info(f"   - max_debate_rounds: {self.conditional_logic.max_debate_rounds}")
         logger.info(f"   - max_risk_discuss_rounds: {self.conditional_logic.max_risk_discuss_rounds}")
 
@@ -1201,7 +1201,7 @@ class TradingAgentsGraph:
         """
 
         # Add detailed receiving log
-        logger.debug(f"🔍 [GRAPH DEBUG] ===== TradingAgentsGraph.propagate Receive parameters =====")
+        logger.debug("🔍 [GRAPH DEBUG] ===== TradingAgentsGraph.propagate Receive parameters =====")
         logger.debug(f"🔍 [GRAPH DEBUG] received company_name: '{company_name}' (Type: {type(company_name)})")
         logger.debug(f"🔍 [GRAPH DEBUG] received trade_date: '{trade_date}' (Type: {type(trade_date)})")
         logger.debug(f"🔍 [GRAPH DEBUG] received task_id: '{task_id}'")
@@ -1432,7 +1432,7 @@ class TradingAgentsGraph:
 
             # Check if it is the end node
             if '__end__' in chunk:
-                logger.info(f"📊 [Progress] __end__ node detected")
+                logger.info("📊 [Progress] __end__ node detected")
                 progress_callback("📊 Generate report")
                 return
 
@@ -1671,7 +1671,7 @@ class TradingAgentsGraph:
             logger.info(f"⚡ Fastest node: {fastest_node[0]} ({fastest_node[1]:.2f}seconds)")
 
         # Print LLM configuration information
-        logger.info(f"\n🤖 LLM Configuration:")
+        logger.info("\n🤖 LLM Configuration:")
         logger.info(f"  • provider: {self.config.get('llm_provider', 'unknown')}")
         logger.info(f"  • deep thinking model: {self.config.get('deep_think_llm', 'unknown')}")
         logger.info(f"  • quick thinking model: {self.config.get('quick_think_llm', 'unknown')}")

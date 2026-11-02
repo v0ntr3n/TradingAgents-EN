@@ -127,7 +127,7 @@ class ReportGeneratorV2(AnalystAgent):
         """
         super().__init__(config=config, llm=llm, tool_ids=tool_ids, **kwargs)
 
-        logger.debug(f"ReportGeneratorV2 Initialization completed")
+        logger.debug("ReportGeneratorV2 Initialization completed")
     
     def _build_system_prompt(self, state: Dict[str, Any]) -> str:
         """
@@ -293,7 +293,7 @@ Please start generating the report.
             # If it is structured data, convert it to JSON
             try:
                 return json.dumps(value, ensure_ascii=False, indent=2)
-            except:
+            except Exception:
                 return str(value)
 
         return str(value) if value else ""

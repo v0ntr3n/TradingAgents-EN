@@ -675,7 +675,7 @@ def get_stock_fundamentals_unified(
 
         if is_china:
             # China A shares
-            logger.info(f"🇨🇳 [Unified fundamental tools] Process A-share data...")
+            logger.info("🇨🇳 [Unified fundamental tools] Process A-share data...")
             normalized_ticker = _normalize_china_ticker(ticker)
             company_profile_data = ""
 
@@ -733,7 +733,7 @@ def get_stock_fundamentals_unified(
 
         elif is_hk:
             # Hong Kong stocks
-            logger.info(f"🇭🇰 [Unified fundamental tools] Processing Hong Kong stock data...")
+            logger.info("🇭🇰 [Unified fundamental tools] Processing Hong Kong stock data...")
 
             try:
                 from tradingagents.dataflows.interface import get_hk_stock_data_unified
@@ -749,7 +749,7 @@ def get_stock_fundamentals_unified(
 
         elif is_us:
             # US stocks
-            logger.info(f"🇺🇸 [Unified fundamental tools] Processing US stock data...")
+            logger.info("🇺🇸 [Unified fundamental tools] Processing US stock data...")
 
             try:
                 from tradingagents.dataflows.interface import get_fundamentals_openai

@@ -220,7 +220,7 @@ def get_market_news(
             if not feed:
                 return "# No market news found\n"
             
-            result = f"# Market News\n"
+            result = "# Market News\n"
             if topics:
                 result += f"# Topics: {topics}\n"
             if start_date and end_date:

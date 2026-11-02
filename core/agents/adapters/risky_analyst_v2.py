@@ -204,7 +204,7 @@ Requirements:
         }
 
         # 📊 Record input data length
-        logger.info(f"📊 [Risky Analyst] Input data length statistics:")
+        logger.info("📊 [Risky Analyst] Input data length statistics:")
         logger.info(f"  - market_report: {len(template_variables['market_report']):,} character")
         logger.info(f"  - sentiment_report: {len(template_variables['sentiment_report']):,} character")
         logger.info(f"  - news_report: {len(template_variables['news_report']):,} character")
@@ -257,7 +257,7 @@ Requirements:
     4. Do not output positions, target prices, profit margins or trading recommendations."""
 
         # Print template variables (for debugging)
-        logger.info(f"📊 [Highly Resilient Scenario Analyst] Template variables:")
+        logger.info("📊 [Highly Resilient Scenario Analyst] Template variables:")
         for key, value in template_variables.items():
             if isinstance(value, str) and len(value) > 100:
                 logger.info(f"  - {key}: {value[:100]}...")
@@ -353,7 +353,7 @@ Requirements:
             logger.info(f"System prompt word: {system_prompt}")
             logger.info(f"User prompt words: {user_prompt}")
 
-            logger.info(f"⏱️ [Risky Analyst] Start calling LLM...")
+            logger.info("⏱️ [Risky Analyst] Start calling LLM...")
             import time
             llm_start_time = time.time()
 
@@ -385,7 +385,7 @@ Requirements:
                 "count": new_count,
             }
 
-            logger.info(f"✅ Aggressive risk analysis completed")
+            logger.info("✅ Aggressive risk analysis completed")
 
             # Return the newly added fields and updated debate status
             return {

@@ -93,9 +93,9 @@ class StockDataCache:
         }
 
         logger.info(f"📁 The cache manager initialization is completed and the cache directory: {self.cache_dir}")
-        logger.info(f"🗄️ Database cache manager initialization completed")
-        logger.info(f"   美股数据: ✅ 已配置")
-        logger.info(f"   A股数据: ✅ 已配置")
+        logger.info("🗄️ Database cache manager initialization completed")
+        logger.info("   美股数据: ✅ 已配置")
+        logger.info("   A股数据: ✅ 已配置")
 
     def _determine_market_type(self, symbol: str) -> str:
         """根据股票代码确定市场类型"""
@@ -395,7 +395,7 @@ class StockDataCache:
             return search_key
 
         # If there is no exact match, look for partial matches (other caches of the same ticker)
-        for metadata_file in self.metadata_dir.glob(f"*_meta.json"):
+        for metadata_file in self.metadata_dir.glob("*_meta.json"):
             try:
                 with open(metadata_file, 'r', encoding='utf-8') as f:
                     metadata = json.load(f)
@@ -543,7 +543,7 @@ class StockDataCache:
             max_age_hours = 24
         
         # Find matching cache
-        for metadata_file in self.metadata_dir.glob(f"*_meta.json"):
+        for metadata_file in self.metadata_dir.glob("*_meta.json"):
             try:
                 with open(metadata_file, 'r', encoding='utf-8') as f:
                     metadata = json.load(f)

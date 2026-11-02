@@ -100,13 +100,13 @@ def create_news_analyst(llm, toolkit):
         logger.info(f"[news analyst] Company name: {company_name}")
         
         # 🔧 Use unified news tools to simplify tool calls
-        logger.info(f"[news analyst] Use unified news tools to automatically identify stock types and obtain corresponding news")
+        logger.info("[news analyst] Use unified news tools to automatically identify stock types and obtain corresponding news")
    # Create a unified news tool
         unified_news_tool = create_unified_news_tool(toolkit)
         unified_news_tool.name = "get_stock_news_unified"
         
         tools = [unified_news_tool]
-        logger.info(f"[news analyst] Unified news tool loaded: get_stock_news_unified")
+        logger.info("[news analyst] Unified news tool loaded: get_stock_news_unified")
 
         # 🆕 Use template system to get prompt words
         try:
@@ -187,7 +187,7 @@ def create_news_analyst(llm, toolkit):
                 model_info = f"{llm.__class__.__name__}:{llm.model_name}"
             else:
                 model_info = llm.__class__.__name__
-        except:
+        except Exception:
             model_info = "Unknown"
         
         logger.info(f"[news analyst] Prepare to call LLM for news analysis and model: {model_info}")
@@ -201,7 +201,7 @@ def create_news_analyst(llm, toolkit):
             logger.warning(f"[news analyst] 🚨 detected{llm.__class__.__name__}Model, start preprocessing to force news acquisition...")
             try:
                 # Force prefetching of news data
-                logger.info(f"[news analyst] 🔧 Preprocessing: Forced call of unified news tool...")
+                logger.info("[news analyst] 🔧 Preprocessing: Forced call of unified news tool...")
                 logger.info(f"[news analyst] 📊 Call parameters: stock_code={ticker}, max_news=10, model_info={model_info}")
 
                 pre_fetched_news = unified_news_tool(stock_code=ticker, max_news=10, model_info=model_info)
@@ -214,7 +214,7 @@ def create_news_analyst(llm, toolkit):
 
                     # Generate analysis directly based on pre-fetched news, skipping tool calls
                     # 🔧 Important: Build system prompts that do not include tool invocation guidance
-                    analysis_system_prompt = f"""You are a professional financial news analyst.
+                    analysis_system_prompt = """You are a professional financial news analyst.
 
 Your role will be to perform in-depth news analysis of stocks based on the news data provided.
 
@@ -238,7 +238,7 @@ Please write a detailed analysis report in Chinese, including:
 3. Market Sentiment Assessment
 4. Follow-up observations and risk warnings"""
 
-                    logger.info(f"[news analyst] 🔄 Generate analysis directly using pre-fetched news data...")
+                    logger.info("[news analyst] 🔄 Generate analysis directly using pre-fetched news data...")
                     logger.info(f"[news analyst] 📝 System prompt word length: {len(analysis_system_prompt)} character")
                     logger.info(f"[news analyst] 📝 User prompt word length: {len(enhanced_prompt)} character")
 
@@ -273,7 +273,7 @@ Please write a detailed analysis report in Chinese, including:
                             "news_tool_call_count": tool_call_count + 1
                         }
                     else:
-                        logger.warning(f"[news analyst] ⚠️ LLM The return result is empty and falls back to standard mode.")
+                        logger.warning("[news analyst] ⚠️ LLM The return result is empty and falls back to standard mode.")
 
                 else:
                     logger.warning(f"[news analyst] ⚠️ Preprocessing failed to obtain news or the content was too short ({len(pre_fetched_news) if pre_fetched_news else 0}characters), fall back to standard mode")
@@ -303,7 +303,7 @@ Please write a detailed analysis report in Chinese, including:
 
         # Call handlers using unified Google tools
         if GoogleToolCallHandler.is_google_model(llm):
-            logger.info(f"📊 [news analyst] Google model detected, processor invoked using unified tools")
+            logger.info("📊 [news analyst] Google model detected, processor invoked using unified tools")
             
             # Create analysis prompt words
             analysis_prompt_template = GoogleToolCallHandler.create_analysis_prompt(
@@ -338,7 +338,7 @@ Please write a detailed analysis report in Chinese, including:
 
                 try:
                     # Forced acquisition of news data
-                    logger.info(f"[news analyst] 🔧 Forcibly call the unified news tool to obtain news data...")
+                    logger.info("[news analyst] 🔧 Forcibly call the unified news tool to obtain news data...")
                     logger.info(f"[news analyst] 📊 Call parameters: stock_code={ticker}, max_news=10")
 
                     forced_news = unified_news_tool(stock_code=ticker, max_news=10, model_info=model_info)
@@ -362,7 +362,7 @@ You are a professional financial news analyst. Please base your opinion on the s
 Please write a detailed Chinese analysis report based on the above real news data.
 """
 
-                        logger.info(f"[news analyst] 🔄 Regenerate full analysis based on force-fetched news data...")
+                        logger.info("[news analyst] 🔄 Regenerate full analysis based on force-fetched news data...")
                         logger.info(f"[news analyst] 📝 Forced prompt word length: {len(forced_prompt)} character")
 
                         forced_result = llm.invoke([{"role": "user", "content": forced_prompt}])
@@ -372,7 +372,7 @@ Please write a detailed Chinese analysis report based on the above real news dat
                             logger.info(f"[news analyst] ✅ Force remediation successful, generate report based on real data, length: {len(report)} character")
                             logger.info(f"[news analyst] 📄 Report preview (first 300 characters): {report[:300]}")
                         else:
-                            logger.warning(f"[news analyst] ⚠️ Force the remediation LLM to return null, use the original result")
+                            logger.warning("[news analyst] ⚠️ Force the remediation LLM to return null, use the original result")
                             report = result.content if hasattr(result, 'content') else ""
                     else:
                         logger.warning(f"[news analyst] ⚠️ Unified news tool acquisition failed or the content is too short ({len(forced_news) if forced_news else 0}characters), use the original result")

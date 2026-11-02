@@ -216,7 +216,7 @@ async def delete_log_file(
             raise HTTPException(status_code=404, detail="Log file does not exist")
         
         # Security check: only allow deletion of .log files
-        if not filename.endswith('.log') and not '.log.' in filename:
+        if not filename.endswith('.log') and '.log.' not in filename:
             raise HTTPException(status_code=400, detail="Only log files can be deleted")
         
         file_path.unlink()

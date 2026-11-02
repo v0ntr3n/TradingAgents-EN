@@ -289,12 +289,12 @@ class UnifiedAnalysisEngine:
         model_api_key = model_config.get("api_key", "")
         if model_api_key and model_api_key.strip() and model_api_key != "your-api-key" and not model_api_key.startswith("sk-xxx"):
             api_key = model_api_key
-            self.logger.info(f"✅ [LLM Configuration] Configured using models API Key")
+            self.logger.info("✅ [LLM Configuration] Configured using models API Key")
         elif provider_doc:
             provider_api_key = provider_doc.get("api_key", "")
             if provider_api_key and provider_api_key.strip() and provider_api_key != "your-api-key" and not provider_api_key.startswith("sk-xxx"):
                 api_key = provider_api_key
-                self.logger.info(f"✅ [LLM Configuration] Use factory configured API Key")
+                self.logger.info("✅ [LLM Configuration] Use factory configured API Key")
         
         backend_url = model_config.get("api_base", "")
         if provider_doc and not backend_url:
@@ -346,14 +346,14 @@ class UnifiedAnalysisEngine:
             deep_model_api_key = deep_model_config.get("api_key", "")
             if deep_model_api_key and deep_model_api_key.strip() and deep_model_api_key != "your-api-key" and not deep_model_api_key.startswith("sk-xxx"):
                 deep_api_key = deep_model_api_key
-                self.logger.info(f"✅ [LLM Configuration] The depth model uses the model configuration API Key")
+                self.logger.info("✅ [LLM Configuration] The depth model uses the model configuration API Key")
             elif deep_provider_name != provider_name:
                 deep_provider_doc = await db.llm_providers.find_one({"name": deep_provider_name})
                 if deep_provider_doc:
                     deep_provider_api_key = deep_provider_doc.get("api_key", "")
                     if deep_provider_api_key and deep_provider_api_key.strip() and deep_provider_api_key != "your-api-key" and not deep_provider_api_key.startswith("sk-xxx"):
                         deep_api_key = deep_provider_api_key
-                        self.logger.info(f"✅ [LLM Configuration] The depth model uses the factory configured API Key")
+                        self.logger.info("✅ [LLM Configuration] The depth model uses the factory configured API Key")
                     deep_backend_url = deep_model_config.get("api_base", "") or deep_provider_doc.get("default_base_url", "")
             if not deep_api_key or deep_api_key.startswith("sk-xxx"):
                         import os
@@ -799,7 +799,7 @@ class UnifiedAnalysisEngine:
             % getattr(task, "task_id", "<unknown>")
         )
         # pragma: no cover - The following original code is retained but not executed in preparation for v4.0 deletion
-        self.logger.info(f"🔄 Execute using old engine: TradingAgentsGraph")
+        self.logger.info("🔄 Execute using old engine: TradingAgentsGraph")
 
         # Only supports stock analysis tasks
         if task.task_type != AnalysisTaskType.STOCK_ANALYSIS:
@@ -852,7 +852,7 @@ class UnifiedAnalysisEngine:
         Returns:
             Execution result
         """
-        self.logger.info(f"🔄 Use LLM to call execution directly")
+        self.logger.info("🔄 Use LLM to call execution directly")
 
         # Import LLM Manager
         from core.llm.llm_manager import LLMManager

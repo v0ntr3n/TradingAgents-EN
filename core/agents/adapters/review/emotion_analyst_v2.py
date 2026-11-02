@@ -235,7 +235,7 @@ Please write a detailed sentiment analysis report, including:
 It is prohibited to output future buying and selling orders, stop-loss and take-profit or position adjustment suggestions."""
 
         # Print template variables (for debugging)
-        logger.info(f"📊 [sentiment analyst] Template variables:")
+        logger.info("📊 [sentiment analyst] Template variables:")
         for key, value in template_variables.items():
             logger.info(f"  - {key}: {value}")
 

@@ -114,7 +114,7 @@ def create_social_media_analyst(llm, toolkit):
 
         # Unified use of get_stock_sentiment_unified tool
         # The tool internally automatically identifies the stock type and calls the corresponding sentiment data source
-        logger.info(f"[social media analyst] Use unified sentiment analysis tools to automatically identify stock types")
+        logger.info("[social media analyst] Use unified sentiment analysis tools to automatically identify stock types")
         tools = [toolkit.get_stock_sentiment_unified]
 
         # 🆕 Use template system to get prompt words
@@ -194,7 +194,7 @@ def create_social_media_analyst(llm, toolkit):
 
         # Call handlers using unified Google tools
         if GoogleToolCallHandler.is_google_model(llm):
-            logger.info(f"📊 [social media analyst] Google model detected, processor invoked using unified tools")
+            logger.info("📊 [social media analyst] Google model detected, processor invoked using unified tools")
             
             # Create analysis prompt words
             analysis_prompt_template = GoogleToolCallHandler.create_analysis_prompt(

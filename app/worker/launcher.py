@@ -83,7 +83,7 @@ def write_exit_report(pid: int, returncode: int, runtime_seconds: float):
             f.flush()
         
         print(f"\n{'='*60}")
-        print(f"Worker Child process exit report")
+        print("Worker Child process exit report")
         print(f"{'='*60}")
         print(f"child process PID: {pid}")
         print(f"exit code: {returncode}")

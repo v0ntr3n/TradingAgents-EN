@@ -483,7 +483,7 @@ class NewsDataService:
         try:
             collection = self._get_collection()
 
-            self.logger.info(f"🔍 [query_news] Start querying news data")
+            self.logger.info("🔍 [query_news] Start querying news data")
             self.logger.info(f"   参数: symbol={params.symbol}, start_time={params.start_time}, end_time={params.end_time}, limit={params.limit}")
 
             # Build query conditions
@@ -552,11 +552,11 @@ class NewsDataService:
             results = convert_objectid_to_str(results)
 
             if results:
-                self.logger.info(f"   前3条预览:")
+                self.logger.info("   前3条预览:")
                 for i, r in enumerate(results[:3], 1):
                     self.logger.info(f"      {i}. symbol={r.get('symbol')}, title={r.get('title', 'N/A')[:50]}..., publish_time={r.get('publish_time')}")
             else:
-                self.logger.warning(f"   ⚠️ 查询结果为空")
+                self.logger.warning("   ⚠️ 查询结果为空")
 
             self.logger.info(f"✅ [query_news] 查询完成，返回 {len(results)} 条记录")
             return results

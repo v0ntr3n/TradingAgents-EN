@@ -43,7 +43,7 @@ def bridge_config_to_env():
         from tradingagents.config.mongodb_utils import build_mongodb_connection_string
         mongodb_conn_str = build_mongodb_connection_string()
         os.environ["MONGODB_CONNECTION_STRING"] = mongodb_conn_str
-        logger.info(f"  ✓ bridge MONGODB_CONNECTION_STRING")
+        logger.info("  ✓ bridge MONGODB_CONNECTION_STRING")
         bridged_count += 1
 
         # Bridge MongoDB database name
@@ -182,7 +182,7 @@ def bridge_config_to_env():
         if is_jdyun_mode():
             tushare_token = os.getenv('TUSHARE_TOKEN', '')
             if tushare_token:
-                logger.info(f"  ✓ Jingdong cloud model: Use environment variables TUSHARE_TOKEN")
+                logger.info("  ✓ Jingdong cloud model: Use environment variables TUSHARE_TOKEN")
                 bridged_count += 1
             else:
                 logger.warning("  ⚠️  Jingdong cloud model: TUSHARE_TOKEN Environment variable not set")
@@ -199,15 +199,15 @@ def bridge_config_to_env():
                     # Prefer database configuration
                     if ds_config.api_key and not ds_config.api_key.startswith("your_"):
                         os.environ['TUSHARE_TOKEN'] = ds_config.api_key
-                        logger.info(f"  ✓ Use the database TUSHARE_TOKEN")
+                        logger.info("  ✓ Use the database TUSHARE_TOKEN")
                         if existing_token and existing_token != ds_config.api_key:
-                            logger.info(f"  ℹ️  Overridden in .env file TUSHARE_TOKEN")
+                            logger.info("  ℹ️  Overridden in .env file TUSHARE_TOKEN")
                     # Downgrade to .env file configuration
                     elif existing_token and not existing_token.startswith("your_"):
-                        logger.info(f"  ✓ Use the TUSHARE_TOKEN")
-                        logger.info(f"  ℹ️  No valid TUSHARE_TOKEN is configured in the database, use .env downgrade scheme")
+                        logger.info("  ✓ Use the TUSHARE_TOKEN")
+                        logger.info("  ℹ️  No valid TUSHARE_TOKEN is configured in the database, use .env downgrade scheme")
                     else:
-                        logger.warning(f"  ⚠️  TUSHARE_TOKEN No valid values configured in either database or .env")
+                        logger.warning("  ⚠️  TUSHARE_TOKEN No valid values configured in either database or .env")
                         continue
                     bridged_count += 1
 
@@ -219,15 +219,15 @@ def bridge_config_to_env():
                     # Prefer database configuration
                     if ds_config.api_key and not ds_config.api_key.startswith("your_"):
                         os.environ['FINNHUB_API_KEY'] = ds_config.api_key
-                        logger.info(f"  ✓ Use the database FINNHUB_API_KEY")
+                        logger.info("  ✓ Use the database FINNHUB_API_KEY")
                         if existing_key and existing_key != ds_config.api_key:
-                            logger.info(f"  ℹ️  Overridden in .env file FINNHUB_API_KEY")
+                            logger.info("  ℹ️  Overridden in .env file FINNHUB_API_KEY")
                     # Downgrade to .env file configuration
                     elif existing_key and not existing_key.startswith("your_"):
-                        logger.info(f"  ✓ Use the FINNHUB_API_KEY")
-                        logger.info(f"  ℹ️  A valid FINNHUB_API_KEY is not configured in the database, use the .env downgrade scheme")
+                        logger.info("  ✓ Use the FINNHUB_API_KEY")
+                        logger.info("  ℹ️  A valid FINNHUB_API_KEY is not configured in the database, use the .env downgrade scheme")
                     else:
-                        logger.warning(f"  ⚠️  FINNHUB_API_KEY No valid values configured in either database or .env")
+                        logger.warning("  ⚠️  FINNHUB_API_KEY No valid values configured in either database or .env")
                         continue
                     bridged_count += 1
 
@@ -583,29 +583,29 @@ def _bridge_system_settings() -> int:
 
         # Sync to file system (for use by unified_config)
         try:
-            print(f"🔄 [config_bridge] Prepare to synchronize system settings to the file system")
+            print("🔄 [config_bridge] Prepare to synchronize system settings to the file system")
             print(f"🔄 [config_bridge] system_settings contains {len(system_settings)} item")
 
             # Check key fields
             if "quick_analysis_model" in system_settings:
                 print(f"  ✓ [config_bridge] contains quick_analysis_model: {system_settings['quick_analysis_model']}")
             else:
-                print(f"  ⚠️  [config_bridge] Not included quick_analysis_model")
+                print("  ⚠️  [config_bridge] Not included quick_analysis_model")
 
             if "deep_analysis_model" in system_settings:
                 print(f"  ✓ [config_bridge] contains deep_analysis_model: {system_settings['deep_analysis_model']}")
             else:
-                print(f"  ⚠️  [config_bridge] Not included deep_analysis_model")
+                print("  ⚠️  [config_bridge] Not included deep_analysis_model")
 
             from app.core.unified_config import unified_config
             result = unified_config.save_system_settings(system_settings)
 
             if result:
-                logger.info(f"  ✓ System settings synced to file system")
-                print(f"✅ [config_bridge] System settings synchronized successfully")
+                logger.info("  ✓ System settings synced to file system")
+                print("✅ [config_bridge] System settings synchronized successfully")
             else:
-                logger.warning(f"  ⚠️  System settings sync return False")
-                print(f"⚠️  [config_bridge] System settings sync return False")
+                logger.warning("  ⚠️  System settings sync return False")
+                print("⚠️  [config_bridge] System settings sync return False")
         except Exception as e:
             logger.warning(f"  ⚠️  Syncing system settings to file system failed: {e}")
             print(f"❌ [config_bridge] Syncing system settings to file system failed: {e}")

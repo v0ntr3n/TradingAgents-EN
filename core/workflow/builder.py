@@ -371,13 +371,13 @@ class LegacyDependencyProvider:
         if quick_api_key:
             logger.info(f"  - Quick API Key: configured ({truncate_api_key(quick_api_key)})")
         else:
-            logger.info(f"  - Quick API Key: empty")
+            logger.info("  - Quick API Key: empty")
         logger.info(f"  - Deep: provider={deep_provider}, model={deep_model}, url={deep_url[:50] if deep_url else 'None'}...")
         logger.info(f"  - Deep API Key Source: {'Explicitly specified by the user' if deep_api_key_from_config else ('Database configuration' if deep_api_key_from_db else ('inheritance Quick' if quick_api_key else 'Not configured (environment variables will be used)'))}")
         if deep_api_key:
             logger.info(f"  - Deep API Key: configured ({truncate_api_key(deep_api_key)})")
         else:
-            logger.info(f"  - Deep API Key: empty")
+            logger.info("  - Deep API Key: empty")
 
         try:
             # 🔧 Read model configuration from database (max_tokens, temperature, timeout, reasoning_effort) 
@@ -513,7 +513,7 @@ class LegacyDependencyProvider:
         if api_key:
             logger.info(f"  - API Key: configured ({truncate_api_key(api_key)})")
         else:
-            logger.info(f"  - API Key: empty")
+            logger.info("  - API Key: empty")
 
         return create_llm_by_provider(
             provider=provider,
@@ -578,12 +578,12 @@ class LegacyDependencyProvider:
             model_api_key = default_config.get("api_key", "")
             if model_api_key and model_api_key.strip() and model_api_key != "your-api-key" and not model_api_key.startswith("sk-xxx"):
                 api_key = model_api_key
-                logger.info(f"✅ [Depend on provider] Configured using models API Key")
+                logger.info("✅ [Depend on provider] Configured using models API Key")
             elif provider_doc:
                 provider_api_key = provider_doc.get("api_key", "")
                 if provider_api_key and provider_api_key.strip() and provider_api_key != "your-api-key" and not provider_api_key.startswith("sk-xxx"):
                     api_key = provider_api_key
-                    logger.info(f"✅ [Depend on provider] Use factory configured API Key")
+                    logger.info("✅ [Depend on provider] Use factory configured API Key")
             
             backend_url = default_config.get("api_base", "")
             if provider_doc and not backend_url:
@@ -593,7 +593,7 @@ class LegacyDependencyProvider:
             if not api_key:
                 api_key = self._get_env_api_key(provider_name)
                 if api_key:
-                    logger.info(f"✅ [Depend on provider] using environment variables API Key")
+                    logger.info("✅ [Depend on provider] using environment variables API Key")
 
             result = {
                 "llm_provider": provider_name,
@@ -1697,7 +1697,7 @@ class WorkflowBuilder:
 
         # First try to create an agent using the new schema (registered OR with agent_configs record in database)
         if self.registry.is_registered(agent_id) or self._has_agent_config_in_db(agent_id):
-            logger.info(f"=" * 80)
+            logger.info("=" * 80)
             logger.info(f"[Agent creation] Start creating Agent: {agent_id} (node={node_id})")
 
             # 🆕 Three-level priority tool query:node > workflow > agent Default
@@ -2260,7 +2260,7 @@ class WorkflowBuilder:
                     f"Error summary: {type(exc).__name__}\n\n"
                     f"The analysis results of the remaining nodes are not affected, please refer to other reports."
                 ),
-                f"_node_errors": {
+                "_node_errors": {
                     **(state.get("_node_errors", {}) if isinstance(state, dict) else {}),
                     node_id: {
                         "agent_id": agent_id,

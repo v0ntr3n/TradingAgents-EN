@@ -52,13 +52,13 @@ def create_trader(llm, memory):
 
         # Check if memory is available
         if memory is not None:
-            logger.warning(f"⚠️ [DEBUG] memory Available, get historical memory")
+            logger.warning("⚠️ [DEBUG] memory Available, get historical memory")
             past_memories = memory.get_memories(curr_situation, n_matches=2)
             past_memory_str = ""
             for i, rec in enumerate(past_memories, 1):
                 past_memory_str += rec["recommendation"] + "\n\n"
         else:
-            logger.warning(f"⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
+            logger.warning("⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
             past_memories = []
             past_memory_str = "There is currently no historical memory data for reference."
 
@@ -143,10 +143,10 @@ Past Trading Reflections and Lessons Learned:
 
         result = llm.invoke(messages)
 
-        logger.debug(f"💰 [DEBUG] LLM Call completed")
+        logger.debug("💰 [DEBUG] LLM Call completed")
         logger.debug(f"💰 [DEBUG] Trader reply length: {len(result.content)}")
         logger.debug(f"💰 [DEBUG] Trader s first 500 characters of reply: {result.content[:500]}...")
-        logger.debug(f"💰 [DEBUG] ===== Trader node ends =====")
+        logger.debug("💰 [DEBUG] ===== Trader node ends =====")
 
         return {
             "messages": [result],

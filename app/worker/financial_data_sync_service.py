@@ -602,7 +602,7 @@ class FinancialDataSyncService:
                             if isinstance(execution_time, str):
                                 try:
                                     execution_time = datetime.fromisoformat(execution_time.replace('Z', '+00:00'))
-                                except:
+                                except Exception:
                                     execution_time = None
                             
                             if execution_time:

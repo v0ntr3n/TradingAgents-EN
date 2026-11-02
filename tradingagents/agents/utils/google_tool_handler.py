@@ -444,7 +444,7 @@ class GoogleToolCallHandler:
                         fixed_tool_call['args'] = json.loads(fixed_tool_call['args'])
                     else:
                         fixed_tool_call['args'] = {}
-                except:
+                except Exception:
                     fixed_tool_call['args'] = {}
             
             # Repair ID

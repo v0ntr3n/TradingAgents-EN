@@ -26,7 +26,7 @@ try:
     MONGODB_AVAILABLE = True
 except ImportError:
     MONGODB_AVAILABLE = False
-    logger.warning(f"⚠️ pymongo Not installed, MongoDB functionality is not available")
+    logger.warning("⚠️ pymongo Not installed, MongoDB functionality is not available")
 
 # Redis
 try:
@@ -35,7 +35,7 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
-    logger.warning(f"⚠️ redis Not installed, Redis function is not available")
+    logger.warning("⚠️ redis Not installed, Redis function is not available")
 
 
 class DatabaseCacheManager:
@@ -88,7 +88,7 @@ class DatabaseCacheManager:
         self._init_mongodb()
         self._init_redis()
 
-        logger.info(f"🗄️ Database cache manager initialization completed")
+        logger.info("🗄️ Database cache manager initialization completed")
         logger.error(f"   MongoDB: {'✅ Connected' if self.mongodb_client else '❌ Not connected'}")
         logger.error(f"   Redis: {'✅ Connected' if self.redis_client else '❌ Not connected'}")
 
@@ -181,7 +181,7 @@ class DatabaseCacheManager:
             ])
             fundamentals_collection.create_index([("created_at", 1)])
 
-            logger.info(f"✅ MongoDB Index creation completed")
+            logger.info("✅ MongoDB Index creation completed")
 
         except Exception as e:
             logger.error(f"⚠️ MongoDB Index creation failed: {e}")
@@ -320,7 +320,7 @@ class DatabaseCacheManager:
                                 6 * 3600,
                                 json.dumps(redis_data, ensure_ascii=False)
                             )
-                            logger.info(f"⚡ Data has been synchronized to Redis cache")
+                            logger.info("⚡ Data has been synchronized to Redis cache")
                         except Exception as e:
                             logger.error(f"⚠️ Redis Sync failed: {e}")
 
@@ -573,11 +573,11 @@ class DatabaseCacheManager:
         """关闭数据库连接"""
         if self.mongodb_client:
             self.mongodb_client.close()
-            logger.info(f"🔒 MongoDB connection closed")
+            logger.info("🔒 MongoDB connection closed")
 
         if self.redis_client:
             self.redis_client.close()
-            logger.info(f"🔒 Redis连接已关闭")
+            logger.info("🔒 Redis连接已关闭")
 
 
 # Global database cache instance

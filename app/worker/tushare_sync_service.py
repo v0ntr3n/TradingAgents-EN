@@ -247,7 +247,7 @@ class TushareSyncService:
                         code = stock_info.dict().get("code", "unknown")
                     else:
                         code = stock_info.get("code", "unknown")
-                except:
+                except Exception:
                     code = "unknown"
 
                 batch_stats["errors"].append({
@@ -843,7 +843,7 @@ class TushareSyncService:
                         else:
                             logger.warning(f"⚠️ There is no valid execution record processed_items ({processed_items}), Will start execution from 0")
                     else:
-                        logger.info(f"📊 No pending or running execution record found, execution will start from 0")
+                        logger.info("📊 No pending or running execution record found, execution will start from 0")
                 except Exception as e:
                     logger.warning(f"⚠️ Check for pending task failure, start execution from: {e}", exc_info=True)
             
@@ -1041,7 +1041,7 @@ class TushareSyncService:
                                         likely_reason = "There is no trading data for this stock during this period (possible suspension, delisting or data source issues)"
                                         # In other cases, it may be a real failure or there may be no data. It is conservatively judged as no data.
                                         is_no_data = True
-                            except:
+                            except Exception:
                                 likely_reason = "There may be a problem with the date range"
                                 is_no_data = True  # Date parsing failed, there may be no data
                         
@@ -1283,7 +1283,7 @@ class TushareSyncService:
                             or error.get("is_retryable", False)
                         ]
                         if not remaining_retryable:
-                            logger.info(f"✅ All retryable errors resolved, stop automatic retries")
+                            logger.info("✅ All retryable errors resolved, stop automatic retries")
                             break
                     
                     # Record automatic retry statistics
@@ -1424,7 +1424,7 @@ class TushareSyncService:
                 return f"{symbol}.BJ"  # North Exchange (8/4 old number section, 920 will be the unified number section from 2025-10)
             else:
                 return f"{symbol}.SZ"  # Default Shenzhen Stock Exchange
-        except:
+        except Exception:
             return f"{symbol}.SZ"
     
     def _get_list_date(self, symbol: str) -> str:
@@ -1461,10 +1461,10 @@ class TushareSyncService:
                             return list_date
                         else:
                             return list_date.strftime('%Y-%m-%d')
-            except:
+            except Exception:
                 pass
             return "unknown"
-        except:
+        except Exception:
             return "unknown"
     
     async def _check_stock_exists(self, symbol: str) -> bool:
@@ -1526,8 +1526,7 @@ class TushareSyncService:
                             return today_str
                         
                         return next_date_str
-                    except:
-                        # If the date format is incorrect, return directly
+                    except Exception: # If the date format is incorrect, return directly
                         return latest_date
                 else:
                     # 🔥 When there is no historical data, all data will be synchronized starting from the launch date.
@@ -2170,7 +2169,7 @@ class TushareSyncService:
             or (not error.get("is_retryable", True) and error.get("error_category") != "retryable_error")
         ]
         
-        logger.info(f"🔄 Start retrying failed stocks...")
+        logger.info("🔄 Start retrying failed stocks...")
         logger.info(f"   Retryable errors: {len(retryable_errors)} a")
         logger.info(f"   No data error (skip): {len(no_data_errors)} a")
         
@@ -2368,9 +2367,9 @@ async def run_tushare_basic_info_sync(force_update: bool = False, **kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         service = await get_tushare_sync_service()
@@ -2432,9 +2431,9 @@ async def run_tushare_realtime_quotes_hourly(**kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         current_time = now_tz()
@@ -2447,7 +2446,7 @@ async def run_tushare_realtime_quotes_hourly(**kwargs):
         result = await service.sync_realtime_quotes(force=True)  # Force sync, skip transaction time check
         
         if not result.get("success_count", 0) > 0:
-            logger.warning(f"⚠️ [Tushare Real-time quotes synchronized every hour] Synchronization failed or data was not obtained")
+            logger.warning("⚠️ [Tushare Real-time quotes synchronized every hour] Synchronization failed or data was not obtained")
             
             # 🔥 Update task status is failed
             job_id = "tushare_realtime_quotes_hourly"
@@ -2468,7 +2467,7 @@ async def run_tushare_realtime_quotes_hourly(**kwargs):
         
         # If it is after 3 p.m. (15:00) , Save real-time quotes to historical data
         if current_hour >= 15:
-            logger.info(f"📊 [Tushare Real-time quotes synchronized every hour] The current time exceeds 15:00, Start saving real-time quotes to historical data...")
+            logger.info("📊 [Tushare Real-time quotes synchronized every hour] The current time exceeds 15:00, Start saving real-time quotes to historical data...")
             
             try:
                 db = get_mongo_db()
@@ -2484,7 +2483,7 @@ async def run_tushare_realtime_quotes_hourly(**kwargs):
                 quotes_list = await cursor.to_list(length=None)
                 
                 if not quotes_list:
-                    logger.warning(f"⚠️ [Tushare Real-time quotes synchronized every hour] market_quotes The collection is empty and historical data cannot be saved.")
+                    logger.warning("⚠️ [Tushare Real-time quotes synchronized every hour] market_quotes The collection is empty and historical data cannot be saved.")
                     # 🔥 Although the real-time market synchronization was successful, the historical data failed to be saved and was marked as partial failure.
                     job_id = "tushare_realtime_quotes_hourly"
                     try:
@@ -2584,7 +2583,7 @@ async def run_tushare_realtime_quotes_hourly(**kwargs):
                 logger.error(f"❌ [Tushare Real-time quotes synchronized every hour] Failed to save historical data: {e}", exc_info=True)
                 result["historical_save_error"] = str(e)
         else:
-            logger.info(f"📊 [Tushare Real-time quotes synchronized every hour] The current time has not exceeded 15:00, Only update real-time quotes")
+            logger.info("📊 [Tushare Real-time quotes synchronized every hour] The current time has not exceeded 15:00, Only update real-time quotes")
         
         # 🔥 Update task status to Completed (successful)
         job_id = "tushare_realtime_quotes_hourly"
@@ -2627,7 +2626,7 @@ async def run_tushare_historical_sync(incremental: bool = True, **kwargs):
         if resume_from_index is not None or resume_execution_id is not None:
             logger.info(f"🔄 [APScheduler] Resume execution from section {resume_from_index} positions to continue (execution_id={resume_execution_id})")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
         # When resuming execution or forcing execution, concurrency is not checked and execution is allowed directly.
     else:
         # 🔥 Check whether there is already an instance running (normal manual triggers should also be checked)
@@ -2655,7 +2654,7 @@ async def run_tushare_historical_sync(incremental: bool = True, **kwargs):
         
         # 🔥 Create an independent service instance for historical synchronization to avoid cross-event loop connection pollution caused by reusing global singletons
         service = await create_tushare_sync_service()
-        logger.info(f"✅ [APScheduler] Tushare The independent synchronization service has been initialized (only for historical synchronization)")
+        logger.info("✅ [APScheduler] Tushare The independent synchronization service has been initialized (only for historical synchronization)")
         
         # 🔥 Execute synchronized methods in thread pool
         sync_result = await unified_service.execute_sync_method(
@@ -2681,7 +2680,7 @@ async def run_tushare_historical_sync(incremental: bool = True, **kwargs):
         else:
             # 🔥 Check if the task is canceled
             if "Cancel" in sync_result.error or "cancelled" in sync_result.error.lower():
-                logger.info(f"ℹ️ [APScheduler] Tushare The historical data synchronization task has been canceled by the user")
+                logger.info("ℹ️ [APScheduler] Tushare The historical data synchronization task has been canceled by the user")
                 return {"cancelled": True, "message": sync_result.error}
             else:
                 logger.error(f"❌ [APScheduler] Tushare Historical data synchronization failed: {sync_result.error}")
@@ -2691,7 +2690,7 @@ async def run_tushare_historical_sync(incremental: bool = True, **kwargs):
         # Check whether it is a task cancellation exception (the user actively cancels and should not be recorded as an error)
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ [APScheduler] Tushare The historical data synchronization task has been canceled by the user")
+            logger.info("ℹ️ [APScheduler] Tushare The historical data synchronization task has been canceled by the user")
             return {"cancelled": True, "message": "The task has been canceled by the user"}
         # Other exceptions are recorded as errors
         logger.error(f"❌ [APScheduler] Tushare Historical data synchronization failed: {e}", exc_info=True)
@@ -2725,7 +2724,7 @@ async def run_tushare_financial_sync(**kwargs):
             }
     else:
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         # 🔥 Use unified financial data synchronization service (thread pool version)
@@ -2765,7 +2764,7 @@ async def run_tushare_financial_sync(**kwargs):
         # Check whether it is a task cancellation exception (the user actively cancels and should not be recorded as an error)
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ Tushare The financial data synchronization task has been canceled by the user")
+            logger.info("ℹ️ Tushare The financial data synchronization task has been canceled by the user")
             return {"cancelled": True, "message": "The task has been canceled by the user"}
         # Other exceptions are recorded as errors
         logger.error(f"❌ Tushare Financial data synchronization failed: {e}", exc_info=True)
@@ -2803,9 +2802,9 @@ async def run_tushare_news_sync(hours_back: int = 24, max_news_per_stock: int = 
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         service = await get_tushare_sync_service()

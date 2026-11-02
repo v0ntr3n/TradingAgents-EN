@@ -39,7 +39,7 @@ class RiskAssessorAgent(BaseAgent):
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Perform risk assessment"""
-        logger.info(f"⚠️ [risk assessor] Start assessment...")
+        logger.info("⚠️ [risk assessor] Start assessment...")
 
         position_info = state.get("position_info", {})
         capital_info = state.get("capital_info", {})
@@ -54,7 +54,7 @@ class RiskAssessorAgent(BaseAgent):
 
         if self._llm:
             try:
-                logger.info(f"   🤖 Call LLM analysis...")
+                logger.info("   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
                 logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
@@ -62,10 +62,10 @@ class RiskAssessorAgent(BaseAgent):
                 logger.error(f"   ❌ LLM call failed: {e}")
                 analysis = f"Risk assessment failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM Not configured")
+            logger.warning("   ⚠️ LLM Not configured")
             analysis = "LLM Not configured for risk assessment"
 
-        logger.info(f"⚠️ [risk assessor] ✅ Assessment completed")
+        logger.info("⚠️ [risk assessor] ✅ Assessment completed")
         return {"risk_analysis": analysis}
     
     def _build_prompt(self, position_info: Dict, capital_info: Dict, market_data: Dict,
@@ -122,8 +122,8 @@ Please answer in concise and professional language."""
             fallback_prompt=fallback_prompt
         )
         if prompt:
-            logger.info(f"✅ [risk assessor] Successfully obtained the prompt word from the template system")
+            logger.info("✅ [risk assessor] Successfully obtained the prompt word from the template system")
             return prompt
-        logger.warning(f"⚠️ [risk assessor] The template system did not return the prompt word, use the downgrade prompt word")
+        logger.warning("⚠️ [risk assessor] The template system did not return the prompt word, use the downgrade prompt word")
         return fallback_prompt
 

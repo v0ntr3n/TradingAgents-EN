@@ -72,7 +72,7 @@ class GenericHttpTool:
                     # Try to parse the response
                     try:
                         result = await response.json()
-                    except:
+                    except Exception:
                         result = await response.text()
                         
                     if response.status >= 400:

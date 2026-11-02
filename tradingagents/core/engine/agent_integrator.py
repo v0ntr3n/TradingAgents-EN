@@ -94,7 +94,7 @@ class AgentIntegrator:
                 self._metadata_cache[agent_id] = metadata
             return metadata
         except ImportError:
-            logger.warning(f"⚠️ [AgentIntegrator] Unable to import BUILTIN_AGENTS configuration")
+            logger.warning("⚠️ [AgentIntegrator] Unable to import BUILTIN_AGENTS configuration")
             return None
 
     def get_output_field(self, agent_id: str) -> Optional[str]:

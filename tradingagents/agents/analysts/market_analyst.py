@@ -99,7 +99,7 @@ def _get_company_name(ticker: str, market_info: dict) -> str:
 def create_market_analyst(llm, toolkit):
 
     def market_analyst_node(state):
-        logger.debug(f"📈 [DEBUG] ===== Market analyst node starts =====")
+        logger.debug("📈 [DEBUG] ===== Market analyst node starts =====")
 
         # 🔧 Tool call counter - prevent infinite loops
         tool_call_count = state.get("market_tool_call_count", 0)
@@ -126,7 +126,7 @@ def create_market_analyst(llm, toolkit):
 
         # Unified use of get_stock_market_data_unified tool
         # The tool will automatically identify the stock type (A shares/Hong Kong stocks/US stocks) internally and call the corresponding data source
-        logger.info(f"📊 [market analyst] Use unified market data tools to automatically identify stock types")
+        logger.info("📊 [market analyst] Use unified market data tools to automatically identify stock types")
         tools = [toolkit.get_stock_market_data_unified]
 
         # Safely obtain tool names for debugging
@@ -224,7 +224,7 @@ def create_market_analyst(llm, toolkit):
         logger.info("📊 [market analyst] ==========================================")
 
         # Print the actual message delivered to LLM
-        logger.info(f"📊 [market analyst] ========== Message passed to LLM ==========")
+        logger.info("📊 [market analyst] ========== Message passed to LLM ==========")
         for i, msg in enumerate(state["messages"]):
             msg_type = type(msg).__name__
             # 🔥 Fix: More secure extraction of message content
@@ -236,11 +236,11 @@ def create_market_analyst(llm, toolkit):
             else:
                 msg_content = str(msg)[:500]
             logger.info(f"📊 [market analyst] news[{i}] Type={msg_type}, content={msg_content}")
-        logger.info(f"📊 [market analyst] ========== End of message list ==========")
+        logger.info("📊 [market analyst] ========== End of message list ==========")
 
         chain = prompt | llm.bind_tools(tools)
 
-        logger.info(f"📊 [market analyst] Start calling LLM...")
+        logger.info("📊 [market analyst] Start calling LLM...")
         # 🔑 Fix: Pass all template variables, not just messages
         invoke_params = {
             "messages": state["messages"],
@@ -248,19 +248,19 @@ def create_market_analyst(llm, toolkit):
         }
         logger.debug(f"📊 [market analyst] Call parameters: {list(invoke_params.keys())}")
         result = chain.invoke(invoke_params)
-        logger.info(f"📊 [market analyst] LLM Call completed")
+        logger.info("📊 [market analyst] LLM Call completed")
 
         # Print LLM response
-        logger.info(f"📊 [market analyst] ========== LLM Response starts ==========")
+        logger.info("📊 [market analyst] ========== LLM Response starts ==========")
         logger.info(f"📊 [market analyst] response type: {type(result).__name__}")
         logger.info(f"📊 [market analyst] Response content: {str(result.content)[:1000]}...")
         if hasattr(result, 'tool_calls') and result.tool_calls:
             logger.info(f"📊 [market analyst] Tool call: {result.tool_calls}")
-        logger.info(f"📊 [market analyst] ========== LLM End of response ==========")
+        logger.info("📊 [market analyst] ========== LLM End of response ==========")
 
         # Call handlers using unified Google tools
         if GoogleToolCallHandler.is_google_model(llm):
-            logger.info(f"📊 [market analyst] Google model detected, processor invoked using unified tools")
+            logger.info("📊 [market analyst] Google model detected, processor invoked using unified tools")
             
             # Create analysis prompt words
             analysis_prompt_template = GoogleToolCallHandler.create_analysis_prompt(
@@ -289,7 +289,7 @@ def create_market_analyst(llm, toolkit):
         else:
             # Processing logic for non-Google models
             logger.info(f"📊 [market analyst] Non-Google model ({llm.__class__.__name__}), Use standard processing logic")
-            logger.info(f"📊 [market analyst] Check LLM return results...")
+            logger.info("📊 [market analyst] Check LLM return results...")
             logger.info(f"📊 [market analyst] - Is there tool_calls: {hasattr(result, 'tool_calls')}")
             if hasattr(result, 'tool_calls'):
                 logger.info(f"📊 [market analyst] - tool_calls Quantity: {len(result.tool_calls)}")

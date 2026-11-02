@@ -76,7 +76,7 @@ class MongoDBStorage:
             
         except (ConnectionFailure, ServerSelectionTimeoutError) as e:
             logger.error(f"❌ MongoDB Connection failed: {e}")
-            logger.info(f"Will use local JSON file storage")
+            logger.info("Will use local JSON file storage")
             self._connected = False
         except Exception as e:
             logger.error(f"❌ MongoDB Initialization failed: {e}")
@@ -108,7 +108,7 @@ class MongoDBStorage:
     def save_usage_record(self, record: UsageRecord) -> bool:
         """Save individual usage records to MongoDB"""
         if not self._connected:
-            logger.warning(f"⚠️ [MongoDB storage] Not connected, unable to save record")
+            logger.warning("⚠️ [MongoDB storage] Not connected, unable to save record")
             return False
 
         try:
@@ -129,7 +129,7 @@ class MongoDBStorage:
                 logger.info(f"✅ [MongoDB storage] Record saved: ID={result.inserted_id}, {record.provider}/{record.model_name}, ¥{record.cost:.4f}")
                 return True
             else:
-                logger.error(f"❌ [MongoDB storage] Insert failed: Insert not returned ID")
+                logger.error("❌ [MongoDB storage] Insert failed: Insert not returned ID")
                 return False
 
         except Exception as e:
@@ -299,4 +299,4 @@ class MongoDBStorage:
         if self.client:
             self.client.close()
             self._connected = False
-            logger.info(f"MongoDB connection closed")
+            logger.info("MongoDB connection closed")

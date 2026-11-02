@@ -51,9 +51,9 @@ class StockDataService:
             try:
                 self.db_manager = get_database_manager()
                 if self.db_manager.is_mongodb_available():
-                    logger.info(f"✅ MongoDB Connection successful")
+                    logger.info("✅ MongoDB Connection successful")
                 else:
-                    logger.error(f"⚠️ MongoDB Connection failed, other data source will be used")
+                    logger.error("⚠️ MongoDB Connection failed, other data source will be used")
             except Exception as e:
                 logger.error(f"⚠️ Database manager initialization failed: {e}")
                 self.db_manager = None
@@ -81,7 +81,7 @@ class StockDataService:
                 logger.error(f"⚠️ MongoDB Query failed: {e}")
         
         # 2. Downgrade to boost getter
-        logger.info(f"🔄 MongoDB Not available, downgraded to enhanced getter")
+        logger.info("🔄 MongoDB Not available, downgraded to enhanced getter")
         if ENHANCED_FETCHER_AVAILABLE:
             try:
                 result = self._get_from_enhanced_fetcher(stock_code)
@@ -94,7 +94,7 @@ class StockDataService:
                 logger.error(f"⚠️ Enhanced getter query failed: {e}")
         
         # 3. The final downgrade option
-        logger.error(f"❌ 所有数据源都不可用")
+        logger.error("❌ 所有数据源都不可用")
         return self._get_fallback_data(stock_code)
     
     def _get_from_mongodb(self, stock_code: str = None) -> Optional[Dict[str, Any]]:

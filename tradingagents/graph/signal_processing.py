@@ -67,7 +67,7 @@ class SignalProcessor:
         # Clean and validate signal content
         full_signal = full_signal.strip()
         if len(full_signal) == 0:
-            logger.error(f"❌ [SignalProcessor] Signal content is empty")
+            logger.error("❌ [SignalProcessor] Signal content is empty")
             return {
                 'action': 'hold',
                 'target_price': None,
@@ -121,13 +121,13 @@ If some information is not explicitly mentioned in the report, use reasonable de
 
         # Verify message content
         if not messages or len(messages) == 0:
-            logger.error(f"❌ [SignalProcessor] messages is empty")
+            logger.error("❌ [SignalProcessor] messages is empty")
             return self._get_default_decision()
         
         # Verify human message content
         human_content = messages[1][1] if len(messages) > 1 else ""
         if not human_content or len(human_content.strip()) == 0:
-            logger.error(f"❌ [SignalProcessor] human The message content is empty")
+            logger.error("❌ [SignalProcessor] human The message content is empty")
             return self._get_default_decision()
 
         logger.debug(f"🔍 [SignalProcessor] Prepare to call LLM, number of messages: {len(messages)}, Signal length: {len(full_signal)}")
@@ -203,7 +203,7 @@ If some information is not explicitly mentioned in the report, use reasonable de
                             logger.debug(f"🔍 [SignalProcessor] Intelligent calculation of target price: {target_price}")
                         else:
                             target_price = None
-                            logger.warning(f"🔍 [SignalProcessor] Failed to extract target price, set to None")
+                            logger.warning("🔍 [SignalProcessor] Failed to extract target price, set to None")
                 else:
                     # Make sure the price is a numeric type
                     try:
@@ -216,7 +216,7 @@ If some information is not explicitly mentioned in the report, use reasonable de
                         logger.debug(f"🔍 [SignalProcessor] Processed target price: {target_price}")
                     except (ValueError, TypeError):
                         target_price = None
-                        logger.warning(f"🔍 [SignalProcessor] Price conversion failed, set to None")
+                        logger.warning("🔍 [SignalProcessor] Price conversion failed, set to None")
 
                 result = {
                     'action': action,

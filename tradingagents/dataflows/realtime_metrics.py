@@ -90,14 +90,14 @@ def calculate_realtime_pe_pb(
         if not basic_info:
             # 🔥 Diagnostics: See what data sources are in MongoDB
             all_sources = list(db.stock_basic_info.find({"code": code6}, {"source": 1, "_id": 0}))
-            logger.warning(f"⚠️ [Dynamic PE calculation] Tushare data not found")
+            logger.warning("⚠️ [Dynamic PE calculation] Tushare data not found")
             logger.warning(f"   MongoDB The data source for this stock: {[s.get('source') for s in all_sources]}")
 
             # If there is no Tushare data, try querying other data sources
             basic_info = db.stock_basic_info.find_one({"code": code6})
             if not basic_info:
                 logger.warning(f"⚠️ [动态PE计算-失败] 未找到股票 {code6} 的基础信息")
-                logger.warning(f"   Suggestions: Run the Tushare data synchronization task to ensure that the stock_basic_info collection has Tushare data")
+                logger.warning("   Suggestions: Run the Tushare data synchronization task to ensure that the stock_basic_info collection has Tushare data")
                 return None
             else:
                 logger.warning(f"⚠️ [Dynamic PE calculation] Use other data sources: {basic_info.get('source', 'unknown')}")
@@ -141,11 +141,11 @@ def calculate_realtime_pe_pb(
                 # If the update date is today and the update time is on 15:00 After that, it means that the data is the latest data after today's close.
                 if update_date == today and update_time >= dtime(15, 0):
                     need_recalculate = False
-                    logger.info(f"   💡 stock_basic_info Has been updated after today s close, directly using its data")
+                    logger.info("   💡 stock_basic_info Has been updated after today s close, directly using its data")
 
         if not need_recalculate:
             # Use stock_basic_info data directly, no need to recalculate
-            logger.info(f"   ✓ Use the latest data from stock_basic_info (no need to recalculate)")
+            logger.info("   ✓ Use the latest data from stock_basic_info (no need to recalculate)")
 
             result = {
                 "pe": round(pe_tushare, 2) if pe_tushare else None,
@@ -219,13 +219,13 @@ def calculate_realtime_pe_pb(
             # Use realtime_price to infer equity, assuming total_mv_yi is yesterday's market value
             total_shares_wan = (total_mv_yi * 10000) / realtime_price
             yesterday_mv_yi = total_mv_yi
-            logger.warning(f"   ⚠️ market_quotes There is no pre_close in it, assuming stock_basic_info.total_mv is yesterday s market value")
+            logger.warning("   ⚠️ market_quotes There is no pre_close in it, assuming stock_basic_info.total_mv is yesterday s market value")
             logger.info(f"   ✓ 用 realtime_price 反推总股本: {total_mv_yi:.2f}亿元 / {realtime_price:.2f}元 = {total_shares_wan:.2f}万股")
             logger.info(f"   ✓ 昨日市值（假设）: {yesterday_mv_yi:.2f}亿元")
 
         # Option 4: If there are none, it cannot be calculated
         else:
-            logger.warning(f"⚠️ [Dynamic PE calculation - failed] Unable to obtain total share capital data")
+            logger.warning("⚠️ [Dynamic PE calculation - failed] Unable to obtain total share capital data")
             logger.warning(f"   - total_share: {total_share}")
             logger.warning(f"   - pre_close: {pre_close}")
             logger.warning(f"   - total_mv: {total_mv_yi}")
@@ -235,7 +235,7 @@ def calculate_realtime_pe_pb(
 
         if not pe_ttm_tushare or pe_ttm_tushare <= 0 or not yesterday_mv_yi or yesterday_mv_yi <= 0:
             logger.warning(f"⚠️ [Dynamic PE calculation - failed] Unable to infer TTM net profit: pe_ttm={pe_ttm_tushare}, yesterday_mv={yesterday_mv_yi}")
-            logger.warning(f"   💡 Tips: May be a loss-making stock (PE is negative or empty)")
+            logger.warning("   💡 Tips: May be a loss-making stock (PE is negative or empty)")
             return None
 
         # Reverse TTM net profit (100 million yuan)= Yesterday's market value / PE_TTM
@@ -268,7 +268,7 @@ def calculate_realtime_pe_pb(
                     pb = pb_tushare
                     logger.info(f"   ✓ 降级使用 Tushare PB: {pb}倍")
         else:
-            logger.warning(f"   ⚠️ Financial data not found and cannot be calculated PB")
+            logger.warning("   ⚠️ Financial data not found and cannot be calculated PB")
 
         # 🔥 If PB remains None, use Tushare's PB as final downgrade
         if pb is None and pb_tushare:

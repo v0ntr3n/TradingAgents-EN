@@ -128,7 +128,7 @@ def create_sector_analyst(llm, toolkit):
         trade_date = state.get("trade_date", "")
 
         # 🔍 Debug log: print current status
-        logger.info(f"🔍 [sector_analyst] Node is called")
+        logger.info("🔍 [sector_analyst] Node is called")
         logger.info(f"🔍 [sector_analyst] ticker={ticker}, trade_date={trade_date}")
         logger.info(f"🔍 [sector_analyst] Current number of messages: {len(state.get('messages', []))}")
         logger.info(f"🔍 [sector_analyst] Current sector_report length: {len(state.get('sector_report', ''))}")
@@ -153,7 +153,7 @@ def create_sector_analyst(llm, toolkit):
 
         # ⚠️ Industry reports do not support caching: industry reports contain the codes and names of specific stocks, and caching will cause error messages to appear when analyzing other stocks in the same industry.
         # Therefore, each analysis must be regenerated and caching cannot be used
-        logger.info(f"🏭 Sector Analyst: Skip the cache check (industry reports do not support caching) and directly generate a new report")
+        logger.info("🏭 Sector Analyst: Skip the cache check (industry reports do not support caching) and directly generate a new report")
 
         logger.info(f"🏭 Sector analysts begin to analyze: {ticker} @ {trade_date}")
 
@@ -310,7 +310,7 @@ Please generate a professional sector analysis report based on the above data. T
 Please output in Chinese, the analysis must be well-founded, and the conclusion must be clear, but it must not form investment recommendations or operating instructions."""
 
         # Call LLM to generate analysis reports
-        logger.info(f"📤 [Sector Analyst] Call LLM to generate analysis reports...")
+        logger.info("📤 [Sector Analyst] Call LLM to generate analysis reports...")
         response = llm.invoke(analysis_request)
 
         # Extract response content

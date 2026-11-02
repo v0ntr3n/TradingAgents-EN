@@ -717,7 +717,7 @@ class StockDataPreparer:
                 running_loop = asyncio.get_running_loop()
                 # There is a running loop, indicating that it cannot be used in an asynchronous context. run_until_complete
                 # Create a new event loop to run in a new thread
-                logger.info(f"🔍 [Data synchronization] A running event loop is detected and a new event loop is created")
+                logger.info("🔍 [Data synchronization] A running event loop is detected and a new event loop is created")
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 try:
@@ -852,7 +852,7 @@ class StockDataPreparer:
 
                     # BaoStock Single stock synchronization is not supported and skipped
                     if data_source == "baostock":
-                        logger.warning(f"⚠️ [Data synchronization] BaoStock Single stock synchronization is not supported and skipped")
+                        logger.warning("⚠️ [Data synchronization] BaoStock Single stock synchronization is not supported and skipped")
                         last_error = f"{data_source}: Single stock synchronization is not supported"
                         continue
 
@@ -865,7 +865,7 @@ class StockDataPreparer:
                         realtime_synced = False
 
                         # 2.1 Synchronize historical data
-                        logger.info(f"📊 [Data synchronization] Synchronize historical data...")
+                        logger.info("📊 [Data synchronization] Synchronize historical data...")
                         hist_result = await service.sync_historical_data(
                             symbols=[stock_code],
                             start_date=start_date,
@@ -882,7 +882,7 @@ class StockDataPreparer:
                             logger.warning(f"⚠️ [Data synchronization] Historical data synchronization failed: {error_msg}")
 
                         # 2.2 Sync financial data
-                        logger.info(f"📊 [Data synchronization] Sync financial data...")
+                        logger.info("📊 [Data synchronization] Sync financial data...")
                         try:
                             fin_result = await service.sync_financial_data(
                                 symbols=[stock_code],
@@ -891,14 +891,14 @@ class StockDataPreparer:
 
                             if fin_result.get("success_count", 0) > 0:
                                 financial_synced = True
-                                logger.info(f"✅ [Data synchronization] Financial data synchronization successful")
+                                logger.info("✅ [Data synchronization] Financial data synchronization successful")
                             else:
-                                logger.warning(f"⚠️ [Data synchronization] Financial data synchronization failed")
+                                logger.warning("⚠️ [Data synchronization] Financial data synchronization failed")
                         except Exception as e:
                             logger.warning(f"⚠️ [Data synchronization] Financial data synchronization exception: {e}")
 
                         # 2.3 Synchronize real-time quotes
-                        logger.info(f"📊 [Data synchronization] Synchronize real-time quotes...")
+                        logger.info("📊 [Data synchronization] Synchronize real-time quotes...")
                         try:
                             # For individual stocks, AKShare is more suitable for obtaining real-time quotes
                             if data_source == "tushare":
@@ -912,9 +912,9 @@ class StockDataPreparer:
 
                                     if rt_result.get("success_count", 0) > 0:
                                         realtime_synced = True
-                                        logger.info(f"✅ [Data synchronization] Real-time market synchronization successful")
+                                        logger.info("✅ [Data synchronization] Real-time market synchronization successful")
                                     else:
-                                        logger.warning(f"⚠️ [Data synchronization] Real-time market synchronization failed")
+                                        logger.warning("⚠️ [Data synchronization] Real-time market synchronization failed")
                             else:
                                 rt_result = await service.sync_realtime_quotes(
                                     symbols=[stock_code],
@@ -923,9 +923,9 @@ class StockDataPreparer:
 
                                 if rt_result.get("success_count", 0) > 0:
                                     realtime_synced = True
-                                    logger.info(f"✅ [Data synchronization] Real-time market synchronization successful")
+                                    logger.info("✅ [Data synchronization] Real-time market synchronization successful")
                                 else:
-                                    logger.warning(f"⚠️ [Data synchronization] Real-time market synchronization failed")
+                                    logger.warning("⚠️ [Data synchronization] Real-time market synchronization failed")
                         except Exception as e:
                             logger.warning(f"⚠️ [Data synchronization] Real-time market synchronization abnormality: {e}")
 
@@ -1004,7 +1004,7 @@ class StockDataPreparer:
                 logger.info(f"✅ [Data source priority] Get from database: {priority_order}")
                 return priority_order
             else:
-                logger.warning(f"⚠️ [Data source priority] MongoDB Not enabled, uses default order")
+                logger.warning("⚠️ [Data source priority] MongoDB Not enabled, uses default order")
                 return ['tushare', 'akshare', 'baostock']
 
         except Exception as e:
@@ -1079,7 +1079,7 @@ class StockDataPreparer:
                         is_valid=False,
                         stock_code=formatted_code,
                         market_type="Hong Kong stocks",
-                        error_message=f"Access to Hong Kong stock data is affected by network restrictions",
+                        error_message="Access to Hong Kong stock data is affected by network restrictions",
                         suggestion=self._get_hk_network_limitation_suggestion()
                     )
                 else:
@@ -1144,7 +1144,7 @@ class StockDataPreparer:
                         market_type="Hong Kong stocks",
                         stock_name=stock_name,
                         has_basic_info=has_basic_info,
-                        error_message=f"Access to Hong Kong stock historical data is affected by network restrictions",
+                        error_message="Access to Hong Kong stock historical data is affected by network restrictions",
                         suggestion=self._get_hk_network_limitation_suggestion()
                     )
                 else:

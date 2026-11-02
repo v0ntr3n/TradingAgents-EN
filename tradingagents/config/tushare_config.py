@@ -39,7 +39,7 @@ class TushareConfig:
     
     def _debug_config(self):
         """Output debugging configuration information"""
-        print(f"🔍 Tushare Configure debugging information:")
+        print("🔍 Tushare Configure debugging information:")
         print(f"   TUSHARE_TOKEN: {'Already set' if self.token else 'not set'} ({len(self.token)}character)")
         print(f"   TUSHARE_ENABLED: {self.enabled} (original value: {os.getenv('TUSHARE_ENABLED', 'None')})")
         print(f"   DEFAULT_CHINA_DATA_SOURCE: {self.default_source}")
@@ -183,7 +183,7 @@ def diagnose_tushare_issues():
     compatibility = check_tushare_compatibility()
     
     # Show configuration status
-    print(f"\n📊 configuration status:")
+    print("\n📊 configuration status:")
     validation = compatibility['validation_result']
     print(f"   Configuration is valid: {'✅' if validation['valid'] else '❌'}")
     print(f"   Tushare enable: {'✅' if validation['enabled'] else '❌'}")
@@ -191,37 +191,37 @@ def diagnose_tushare_issues():
     
     # display problem
     if validation['issues']:
-        print(f"\n⚠️ Found problem:")
+        print("\n⚠️ Found problem:")
         for issue in validation['issues']:
             print(f"   - {issue}")
     
     # Show suggestions
     if validation['suggestions']:
-        print(f"\n💡 Repair suggestions:")
+        print("\n💡 Repair suggestions:")
         for suggestion in validation['suggestions']:
             print(f"   - {suggestion}")
     
     # Show environment variable details
-    print(f"\n🔍 Environment variable details:")
+    print("\n🔍 Environment variable details:")
     for var, info in compatibility['env_debug_info'].items():
         status = "✅" if info['exists'] and not info['empty'] else "❌"
         print(f"   {var}: {status} {info['value']}")
     
     # Show boolean parsing test
-    print(f"\n🧪 Boolean parsing test:")
+    print("\n🧪 Boolean parsing test:")
     bool_tests = compatibility['boolean_parsing_test']
     failed_tests = [k for k, v in bool_tests.items() if not v['correct']]
     
     if failed_tests:
         print(f"   ❌ failed test: {failed_tests}")
-        print(f"   ⚠️ There may be Python version compatibility issues")
+        print("   ⚠️ There may be Python version compatibility issues")
     else:
-        print(f"   ✅ All boolean parsing tests pass")
+        print("   ✅ All boolean parsing tests pass")
     
     # Show repair suggestions
     fixes = compatibility['common_fixes']
     if fixes:
-        print(f"\n🔧 Automatic repair suggestions:")
+        print("\n🔧 Automatic repair suggestions:")
         for var, fix in fixes.items():
             print(f"   {var}: {fix}")
 

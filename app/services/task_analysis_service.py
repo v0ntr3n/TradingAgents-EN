@@ -280,7 +280,7 @@ class TaskAnalysisService:
                 task.execution_time = (task.completed_at - task.started_at).total_seconds()
                 self.logger.info(f"📊 任务执行时间: {task.execution_time:.2f}s")
             else:
-                self.logger.warning(f"⚠️ The task does not have started_at and cannot be calculated execution_time")
+                self.logger.warning("⚠️ The task does not have started_at and cannot be calculated execution_time")
 
             # 🔥 Save to analysis_reports collection (compatible with legacy API)
             # Note: You must save before updating the task in order to get the correct analysis_id
@@ -627,14 +627,14 @@ class TaskAnalysisService:
 
         # Debugging: View all tasks sorted by created_at in reverse order
         all_sorted = await self.collection.find({}).sort("created_at", -1).limit(20).to_list(20)
-        self.logger.debug(f"📊 Top 20 tasks in reverse order by created_at:")
+        self.logger.debug("📊 Top 20 tasks in reverse order by created_at:")
         for i, task in enumerate(all_sorted):
             self.logger.debug(f"  {i+1}. task_id: {task.get('task_id')}, task_type: {task.get('task_type')}, user_id: {task.get('user_id')} (类型: {type(task.get('user_id'))}), created_at: {task.get('created_at')}")
 
         # Debugging: List user_id and task_type
         if all_tasks_count > 0:
             all_docs = await self.collection.find({}).limit(10).to_list(10)
-            self.logger.debug(f"📊 Top 10 tasks in database:")
+            self.logger.debug("📊 Top 10 tasks in database:")
             for doc in all_docs:
                 self.logger.debug(f"  - task_id: {doc.get('task_id')}, user_id: {doc.get('user_id')} (类型: {type(doc.get('user_id'))}), task_type: {doc.get('task_type')}, status: {doc.get('status')}")
 
@@ -788,7 +788,7 @@ class TaskAnalysisService:
         final_trade_decision = raw_result.get("final_trade_decision", "")
         final_decision = raw_result.get("final_decision", {})
         
-        self.logger.info(f"🔍 [TaskAnalysisService] ========== Extract decision information ==========")
+        self.logger.info("🔍 [TaskAnalysisService] ========== Extract decision information ==========")
         self.logger.info(f"🔍 [TaskAnalysisService] action_advice 类型: {type(action_advice)}, 长度: {len(str(action_advice)) if action_advice else 0}")
         self.logger.info(f"🔍 [TaskAnalysisService] final_trade_decision 类型: {type(final_trade_decision)}, 长度: {len(str(final_trade_decision)) if final_trade_decision else 0}")
         self.logger.info(f"🔍 [TaskAnalysisService] final_decision 类型: {type(final_decision)}, 字段: {list(final_decision.keys()) if isinstance(final_decision, dict) else 'N/A'}")
@@ -996,7 +996,7 @@ class TaskAnalysisService:
                 # If still not available, use default value
                 if risk_score is None:
                     risk_score = 0.5
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] risk_score not found, using default value 0.5")
+                    self.logger.warning("⚠️ [TaskAnalysisService] risk_score not found, using default value 0.5")
                 
                 decision_dict = {
                     "action": final_trade_decision.get("action") or final_trade_decision.get("analysis_view", "中性"),
@@ -1081,7 +1081,7 @@ class TaskAnalysisService:
                 "risk_score": 0.5,
                 "reasoning": "暂无分析推理"
             }
-            self.logger.warning(f"⚠️ [TaskAnalysisService] Decision information not found, use default decision")
+            self.logger.warning("⚠️ [TaskAnalysisService] Decision information not found, use default decision")
         
         self.logger.info(f"🔍 [TaskAnalysisService] 最终 decision_dict.reasoning 长度: {len(decision_dict.get('reasoning', ''))}, 内容: {decision_dict.get('reasoning', '')[:200]}")
 
@@ -1093,7 +1093,7 @@ class TaskAnalysisService:
         # 🔥 Critical fix: if decision_dict.reasoning is "No analytical reasoning yet", Try to extract from risk_assessment or investment_plan
         # ⚠️ NOTE: This must be done before fetching the report as fetching the report converts the JSON to Markdown
         if decision_dict and decision_dict.get('reasoning') == "暂无分析推理":
-            self.logger.info(f"🔍 [TaskAnalysisService] reasoning Empty, try to extract from risk_assessment or investment_plan")
+            self.logger.info("🔍 [TaskAnalysisService] reasoning Empty, try to extract from risk_assessment or investment_plan")
 
             # 1. Prioritize extraction from risk_assessment (comprehensive risk assessment reasoning)
             risk_assessment_raw = raw_result.get("risk_assessment", "")
@@ -1127,17 +1127,17 @@ class TaskAnalysisService:
                             decision_dict['reasoning'] = reasoning.strip()
                             self.logger.info(f"✅ [TaskAnalysisService] 从 risk_assessment 提取 reasoning: {len(reasoning.strip())}字符")
                         else:
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment reasoning in is empty or too short")
+                            self.logger.warning("⚠️ [TaskAnalysisService] risk_assessment reasoning in is empty or too short")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment It is not a dictionary or empty after parsing")
+                        self.logger.warning("⚠️ [TaskAnalysisService] risk_assessment It is not a dictionary or empty after parsing")
                 except Exception as e:
                     self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract reasoning from risk_assessment: {e}")
             else:
-                self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment_raw is empty")
+                self.logger.warning("⚠️ [TaskAnalysisService] risk_assessment_raw is empty")
 
             # 2. If risk_assessment does not have reasoning, it is extracted from investment_plan
             if decision_dict.get('reasoning') == "暂无分析推理":
-                self.logger.info(f"🔍 [TaskAnalysisService] risk_assessment Without reasoning, try to extract from investment_plan")
+                self.logger.info("🔍 [TaskAnalysisService] risk_assessment Without reasoning, try to extract from investment_plan")
                 investment_plan_raw = raw_result.get("investment_plan", "")
             self.logger.info(f"🔍 [TaskAnalysisService] investment_plan_raw 类型: {type(investment_plan_raw)}, 长度: {len(str(investment_plan_raw)) if investment_plan_raw else 0}")
             if investment_plan_raw:
@@ -1169,17 +1169,17 @@ class TaskAnalysisService:
                             decision_dict['reasoning'] = reasoning.strip()
                             self.logger.info(f"✅ [TaskAnalysisService] 从 investment_plan 提取 reasoning: {len(reasoning.strip())}字符")
                         else:
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan reasoning in is empty or too short")
+                            self.logger.warning("⚠️ [TaskAnalysisService] investment_plan reasoning in is empty or too short")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan It is not a dictionary or empty after parsing")
+                        self.logger.warning("⚠️ [TaskAnalysisService] investment_plan It is not a dictionary or empty after parsing")
                 except Exception as e:
                     self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract reasoning from investment_plan: {e}")
             else:
-                self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan_raw is empty")
+                self.logger.warning("⚠️ [TaskAnalysisService] investment_plan_raw is empty")
             
             # 🔥 If investment_plan has no reasoning, try to extract from final_trade_decision (as an alternative)
             if decision_dict.get('reasoning') == "暂无分析推理" and final_trade_decision:
-                self.logger.info(f"🔍 [TaskAnalysisService] investment_plan Without reasoning, try to extract from final_trade_decision")
+                self.logger.info("🔍 [TaskAnalysisService] investment_plan Without reasoning, try to extract from final_trade_decision")
                 try:
                     final_trade_str = str(final_trade_decision)
                     json_obj = None
@@ -1202,14 +1202,14 @@ class TaskAnalysisService:
                             decision_dict['reasoning'] = reasoning.strip()
                             self.logger.info(f"✅ [TaskAnalysisService] 从 final_trade_decision 提取 reasoning (备选): {len(reasoning.strip())}字符")
                         else:
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision reasoning in is empty or too short")
+                            self.logger.warning("⚠️ [TaskAnalysisService] final_trade_decision reasoning in is empty or too short")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision It is not a dictionary or empty after parsing")
+                        self.logger.warning("⚠️ [TaskAnalysisService] final_trade_decision It is not a dictionary or empty after parsing")
                 except Exception as e:
                     self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract reasoning from final_trade_decision: {e}")
             else:
                 if not final_trade_decision:
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision Empty and cannot be extracted reasoning")
+                    self.logger.warning("⚠️ [TaskAnalysisService] final_trade_decision Empty and cannot be extracted reasoning")
         
         # 🔥 Record the final reasoning again (after extraction)
         self.logger.info(f"🔍 [TaskAnalysisService] 提取后 decision_dict.reasoning 长度: {len(decision_dict.get('reasoning', ''))}, 内容: {decision_dict.get('reasoning', '')[:200]}")
@@ -1353,7 +1353,7 @@ class TaskAnalysisService:
         # recommendation (Analytical view): generated based on action, price_range and short inference summary
         # decision.reasoning (Analysis basis): extracted from decision_dict.reasoning (should not be extracted from final_trade_decision)
         
-        self.logger.info(f"🔍 [TaskAnalysisService] ========== Generate summary and recommendation ==========")
+        self.logger.info("🔍 [TaskAnalysisService] ========== Generate summary and recommendation ==========")
         
         # 1. Generate summary (analysis overview)- 🔥🔥🔥 Highest priority: Extract the complete investment_plan from the LLM return summary
         summary = ""
@@ -1421,7 +1421,7 @@ class TaskAnalysisService:
         # 1.5 Last resort
         if not summary:
             summary = f"对{task.task_params.get('symbol', '股票')}的分析已完成，请查看详细报告。"
-            self.logger.warning(f"⚠️ [TaskAnalysisService] Use backup summary")
+            self.logger.warning("⚠️ [TaskAnalysisService] Use backup summary")
         
         # 4. Generate recommendations (analysis opinions) - based on action, price_range and short reasoning summary
         # 🔥 Compliance modification: use new terms, format decision_dict first to ensure action is a compliant term
@@ -1449,7 +1449,7 @@ class TaskAnalysisService:
 
         if not recommendation or recommendation == "Analytical opinion: Neutral":
             recommendation = "Please refer to the detailed analysis report."
-            self.logger.warning(f"⚠️ [TaskAnalysisService] Use backup recommendation")
+            self.logger.warning("⚠️ [TaskAnalysisService] Use backup recommendation")
         
         self.logger.info(f"🔍 [TaskAnalysisService] summary 长度: {len(summary)}, 内容: {summary[:200]}")
         self.logger.info(f"🔍 [TaskAnalysisService] recommendation 长度: {len(recommendation)}, 内容: {recommendation[:200]}")
@@ -1621,7 +1621,7 @@ class TaskAnalysisService:
                 risk_score = risk_score / 100.0
         else:
             risk_score = 0.5  # Default value
-            self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] decision There is no risk_score in , the default value is used 0.5")
+            self.logger.warning("⚠️ [TaskAnalysisService._format_decision_dict] decision There is no risk_score in , the default value is used 0.5")
 
         # 🔥 Compliance modification: return price_analysis_range (price range) instead of target_price (specific price)
         # Extract price_analysis_range if present
@@ -1653,7 +1653,7 @@ class TaskAnalysisService:
                 price_analysis_range = None
         
         if not price_analysis_range:
-            self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] decision There is no valid price_analysis_range in the frontend will display '-'")
+            self.logger.warning("⚠️ [TaskAnalysisService._format_decision_dict] decision There is no valid price_analysis_range in the frontend will display '-'")
         
         # 🔥 Debug log: record returned fields
         self.logger.info(f"🔍 [TaskAnalysisService._format_decision_dict] 返回字段: action={chinese_action}, price_analysis_range={price_analysis_range} (类型: {type(price_analysis_range)}), risk_score={risk_score}, confidence={confidence}")
@@ -1735,7 +1735,7 @@ class TaskAnalysisService:
         # Only a brief summary of reasoning is extracted here
         
         # 🔍 Debugging: First print the original text content to see what is inside (complete content, not truncated)
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] ========== Original text content (complete) ==========")
+        self.logger.info("🔍 [TaskAnalysisService._extract_decision_from_text] ========== Original text content (complete) ==========")
         self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Text length: {len(text)}")
         self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] full text content:\n{text}")
         self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Does it contain ```json: {'```json' in text}")
@@ -1814,7 +1814,7 @@ class TaskAnalysisService:
                             reasoning = json_reasoning.strip()
                         self.logger.info(f"✅ [TaskAnalysisService._extract_decision_from_text] 从 JSON 提取 reasoning: {len(reasoning)}字符")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] JSON reasoning in is empty or not a string")
+                        self.logger.warning("⚠️ [TaskAnalysisService._extract_decision_from_text] JSON reasoning in is empty or not a string")
             except (json.JSONDecodeError, Exception) as e:
                 self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] JSON Parsing failed: {e}")
                 import traceback
@@ -1822,7 +1822,7 @@ class TaskAnalysisService:
         
         # 2. If not extracted from JSON, try to extract a short summary from the text
         if not reasoning:
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON Extraction failed, trying to extract from text")
+            self.logger.info("🔍 [TaskAnalysisService._extract_decision_from_text] JSON Extraction failed, trying to extract from text")
             # Remove Markdown tags and code block tags
             clean_text = re.sub(r'```json.*?```', '', text, flags=re.DOTALL)
             self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Remove ```json length after code block: {len(clean_text)}")
@@ -1844,9 +1844,9 @@ class TaskAnalysisService:
         # 3. If still not available, use default value
         if not reasoning or len(reasoning.strip()) < 10:
             reasoning = "Please refer to the detailed analysis report."
-            self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] reasoning Empty or too short, use default value")
+            self.logger.warning("⚠️ [TaskAnalysisService._extract_decision_from_text] reasoning Empty or too short, use default value")
         
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] ========== eventually reasoning ==========")
+        self.logger.info("🔍 [TaskAnalysisService._extract_decision_from_text] ========== eventually reasoning ==========")
         self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 最终 reasoning 长度: {len(reasoning)}字符")
         self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] final reasoning full content:\n{reasoning}")
 
@@ -2248,7 +2248,7 @@ class TaskAnalysisService:
             self.logger.warning(f"⚠️ 用户 {user_id} 没有任务")
             # Print some debugging information
             all_tasks = await self.collection.find().limit(5).to_list(5)
-            self.logger.info(f"📋 数据库中的任务示例:")
+            self.logger.info("📋 数据库中的任务示例:")
             for task in all_tasks:
                 self.logger.info(f"  - task_id: {task.get('task_id')}, user_id: {task.get('user_id')} (类型: {type(task.get('user_id'))})")
 

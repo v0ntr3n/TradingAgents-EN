@@ -131,7 +131,7 @@ class WorkflowValidator:
         for node in definition.nodes:
             # Check ID uniqueness
             if node.id in node_ids:
-                result.add_error("DUPLICATE_NODE_ID", f"Duplicate nodes ID", node.id)
+                result.add_error("DUPLICATE_NODE_ID", "Duplicate nodes ID", node.id)
             node_ids.add(node.id)
             
             # Check the agent node (Excludes the DEBATE node, which is not required for the coordinating node agent_id)

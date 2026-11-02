@@ -40,7 +40,7 @@ async def run_financial_data_sync(**kwargs):
             }
     else:
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         # Get a unified financial data synchronization service

@@ -190,12 +190,12 @@ async def update_gateway_config(
                     from core.gateway.adapters.feishu import FeishuAdapter
                     adapter = FeishuAdapter(config=config_value)
                     gateway_router.register_adapter(adapter)
-                    logger.info(f"✅ Gateway feishu Adapter has been hot reloaded")
+                    logger.info("✅ Gateway feishu Adapter has been hot reloaded")
                 elif platform == "dingtalk":
                     from core.gateway.adapters.dingtalk import DingTalkAdapter
                     adapter = DingTalkAdapter(config=config_value)
                     gateway_router.register_adapter(adapter)
-                    logger.info(f"✅ Gateway dingtalk Adapter has been hot reloaded")
+                    logger.info("✅ Gateway dingtalk Adapter has been hot reloaded")
             except Exception as reload_err:
                 logger.warning(f"⚠️ Gateway {platform} Adapter hot reload failed: {reload_err}")
         else:
@@ -990,7 +990,7 @@ async def add_llm_config(
     """Add or update large model configuration"""
     _check_jdyun_mode_protected()
     try:
-        logger.info(f"🔧 Add/Update Large Model Configuration Start")
+        logger.info("🔧 Add/Update Large Model Configuration Start")
         logger.info(f"📊 Request data: {request.model_dump()}")
         logger.info(f"🏷️ Manufacturer: {request.provider}, model: {request.model_name}")
 
@@ -1011,13 +1011,13 @@ async def add_llm_config(
 
         # Clear the API Key (regardless of whether it is passed in by the front end)
         llm_config_data['api_key'] = ""
-        logger.info(f"🔑 The api_key of the model configuration has been set to empty (will be obtained from the factory configuration or environment variables)")
+        logger.info("🔑 The api_key of the model configuration has been set to empty (will be obtained from the factory configuration or environment variables)")
 
 
         # Try to create LLMConfig object
         try:
             llm_config = LLMConfig(**llm_config_data)
-            logger.info(f"✅ LLMConfig Object created successfully")
+            logger.info("✅ LLMConfig Object created successfully")
         except Exception as e:
             logger.error(f"❌ LLMConfig Object creation failed: {e}")
             logger.error(f"📋 failed data: {llm_config_data}")
@@ -1036,7 +1036,7 @@ async def add_llm_config(
             try:
                 from app.core.config_bridge import sync_pricing_config_now
                 sync_pricing_config_now()
-                logger.info(f"✅ Pricing configuration has been synced to tradingagents")
+                logger.info("✅ Pricing configuration has been synced to tradingagents")
             except Exception as e:
                 logger.warning(f"⚠️  Synchronized pricing configuration failed: {e}")
 
@@ -1054,7 +1054,7 @@ async def add_llm_config(
                 logger.warning(f"[config] Operation failed: {e}")
             return {"message": "Large model configuration updated successfully", "model_name": llm_config.model_name}
         else:
-            logger.error(f"❌ Failed to save large model configuration")
+            logger.error("❌ Failed to save large model configuration")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Large model configuration update failed"
@@ -1453,7 +1453,7 @@ async def delete_llm_config(
             try:
                 from app.core.config_bridge import sync_pricing_config_now
                 sync_pricing_config_now()
-                logger.info(f"✅ Pricing configuration has been synced to tradingagents")
+                logger.info("✅ Pricing configuration has been synced to tradingagents")
             except Exception as e:
                 logger.warning(f"⚠️  Synchronized pricing configuration failed: {e}")
 
@@ -1613,11 +1613,11 @@ async def update_data_source_config(
 
                     # If it is None or an empty string, retain the original value (not update)
                     if api_key is None or api_key == '':
-                        logger.info(f"⏭️  [API Key Verify] None or empty string, retain the original value")
+                        logger.info("⏭️  [API Key Verify] None or empty string, retain the original value")
                         _req['api_key'] = ds_config.api_key or ""
                     # 🔥 if contains "..." (truncation mark), need to verify whether it is the unmodified original value
                     elif api_key and "..." in api_key:
-                        logger.info(f"🔍 [API Key Verify] The truncation mark is detected and verified to match the original value in the database.")
+                        logger.info("🔍 [API Key Verify] The truncation mark is detected and verified to match the original value in the database.")
 
                         # Do the same truncation for the full API Key in the database
                         if ds_config.api_key:
@@ -1628,25 +1628,25 @@ async def update_data_source_config(
                             # Compare truncated values
                             if api_key == truncated_db_key:
                                 # Same, indicating that the user has not modified it and retains the complete value in the database.
-                                logger.info(f"✅ [API Key Verify] Truncate value matching, retain the original value of the database")
+                                logger.info("✅ [API Key Verify] Truncate value matching, retain the original value of the database")
                                 _req['api_key'] = ds_config.api_key
                             else:
                                 # Different, indicating that the user has modified it but the modification is incomplete.
-                                logger.error(f"❌ [API Key Verify] Truncation value does not match, user may have modified an incomplete key")
+                                logger.error("❌ [API Key Verify] Truncation value does not match, user may have modified an incomplete key")
                                 raise HTTPException(
                                     status_code=status.HTTP_400_BAD_REQUEST,
-                                    detail=f"API Key Format error: Truncation token detected but does not match value in database, please enter complete API Key"
+                                    detail="API Key Format error: Truncation token detected but does not match value in database, please enter complete API Key"
                                 )
                         else:
                             # There is no original value in the database, but the front end sends a truncated value, which is unreasonable
-                            logger.error(f"❌ [API Key Verify] There is no original value in the database, but a truncated value was received")
+                            logger.error("❌ [API Key Verify] There is no original value in the database, but a truncated value was received")
                             raise HTTPException(
                                 status_code=status.HTTP_400_BAD_REQUEST,
-                                detail=f"API Key Format error: please enter the complete API Key"
+                                detail="API Key Format error: please enter the complete API Key"
                             )
                     # If it is a placeholder, it will not be updated (the original value will be retained)
                     elif should_skip_api_key_update(api_key):
-                        logger.info(f"⏭️  [API Key Verify] Skip update (placeholder), keep original value")
+                        logger.info("⏭️  [API Key Verify] Skip update (placeholder), keep original value")
                         _req['api_key'] = ds_config.api_key or ""
                     # If it is a newly entered key, the validity must be verified
                     elif not is_valid_api_key(api_key):
@@ -1669,11 +1669,11 @@ async def update_data_source_config(
 
                     # If it is None or an empty string, retain the original value (not update)
                     if api_secret is None or api_secret == '':
-                        logger.info(f"⏭️  [API Secret Verify] None or empty string, retain the original value")
+                        logger.info("⏭️  [API Secret Verify] None or empty string, retain the original value")
                         _req['api_secret'] = ds_config.api_secret or ""
                     # 🔥 if contains "..." (truncation mark), need to verify whether it is the unmodified original value
                     elif api_secret and "..." in api_secret:
-                        logger.info(f"🔍 [API Secret Verify] The truncation mark is detected and verified to match the original value in the database.")
+                        logger.info("🔍 [API Secret Verify] The truncation mark is detected and verified to match the original value in the database.")
 
                         # Do the same truncation for the full API Secret in the database
                         if ds_config.api_secret:
@@ -1684,25 +1684,25 @@ async def update_data_source_config(
                             # Compare truncated values
                             if api_secret == truncated_db_secret:
                                 # Same, indicating that the user has not modified it and retains the complete value in the database.
-                                logger.info(f"✅ [API Secret Verify] Truncate value matching, retain the original value of the database")
+                                logger.info("✅ [API Secret Verify] Truncate value matching, retain the original value of the database")
                                 _req['api_secret'] = ds_config.api_secret
                             else:
                                 # Different, indicating that the user has modified it but the modification is incomplete.
-                                logger.error(f"❌ [API Secret Verify] Truncation value does not match, user may have modified an incomplete key")
+                                logger.error("❌ [API Secret Verify] Truncation value does not match, user may have modified an incomplete key")
                                 raise HTTPException(
                                     status_code=status.HTTP_400_BAD_REQUEST,
-                                    detail=f"API Secret Format error: Truncation token detected but does not match value in database, please enter complete API Secret"
+                                    detail="API Secret Format error: Truncation token detected but does not match value in database, please enter complete API Secret"
                                 )
                         else:
                             # There is no original value in the database, but the front end sends a truncated value, which is unreasonable
-                            logger.error(f"❌ [API Secret Verify] There is no original value in the database, but a truncated value was received")
+                            logger.error("❌ [API Secret Verify] There is no original value in the database, but a truncated value was received")
                             raise HTTPException(
                                 status_code=status.HTTP_400_BAD_REQUEST,
-                                detail=f"API Secret Format error: please enter the complete API Secret"
+                                detail="API Secret Format error: please enter the complete API Secret"
                             )
                     # If it is a placeholder, it will not be updated (the original value will be retained)
                     elif should_skip_api_key_update(api_secret):
-                        logger.info(f"⏭️  [API Secret Verify] Skip update (placeholder), keep original value")
+                        logger.info("⏭️  [API Secret Verify] Skip update (placeholder), keep original value")
                         _req['api_secret'] = ds_config.api_secret or ""
                     # If it is a newly entered key, the validity must be verified
                     elif not is_valid_api_key(api_secret):
@@ -2285,11 +2285,11 @@ async def update_system_settings(
         if 'quick_analysis_model' in settings:
             logger.info(f"  ✓ quick_analysis_model: {settings['quick_analysis_model']}")
         else:
-            logger.warning(f"  ⚠️  Not included quick_analysis_model")
+            logger.warning("  ⚠️  Not included quick_analysis_model")
         if 'deep_analysis_model' in settings:
             logger.info(f"  ✓ deep_analysis_model: {settings['deep_analysis_model']}")
         else:
-            logger.warning(f"  ⚠️  Not included deep_analysis_model")
+            logger.warning("  ⚠️  Not included deep_analysis_model")
 
         success = await config_service.update_system_settings(settings)
         if success:
@@ -2580,7 +2580,7 @@ async def save_model_catalog(
             provider_name=request.provider_name,
             models=models
         )
-        logger.info(f"✅ ModelCatalog object created successfully")
+        logger.info("✅ ModelCatalog object created successfully")
 
         success = await config_service.save_model_catalog(catalog)
         logger.info(f"💾 Save results: {success}")
@@ -2769,7 +2769,7 @@ async def import_model_catalog(
                 models_data = catalog_data.get("models", [])
 
                 if not provider:
-                    errors.append(f"Missing provider field")
+                    errors.append("Missing provider field")
                     failed_count += 1
                     continue
 

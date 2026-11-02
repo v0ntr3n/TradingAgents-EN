@@ -89,7 +89,7 @@ class ChatDashScopeOpenAI(ChatOpenAI):
         """Initialize DashScope OpenAI compatible client"""
 
         # 🔍 [DEBUG] Log before reading environment variables
-        logger.info(f"🔍 [DashScope initialization] Start initialization ChatDashScopeOpenAI")
+        logger.info("🔍 [DashScope initialization] Start initialization ChatDashScopeOpenAI")
         logger.info(f"🔍 [DashScope initialization] kwargs Does it include api_key: {'api_key' in kwargs}")
 
         # 🔥 Prioritize using the API Key passed in kwargs (from database configuration)
@@ -123,13 +123,13 @@ class ChatDashScopeOpenAI(ChatOpenAI):
                 logger.info(f"✅ [DashScope initialization] The API Key in the environment variable is valid and the length is: {len(env_api_key)}, Top 10: {env_api_key[:100]}...")
                 api_key_from_kwargs = env_api_key
             elif env_api_key:
-                logger.warning(f"⚠️ [DashScope initialization] The API Key in the environment variable is invalid (possibly a placeholder) and will be ignored")
+                logger.warning("⚠️ [DashScope initialization] The API Key in the environment variable is invalid (possibly a placeholder) and will be ignored")
                 api_key_from_kwargs = None
             else:
-                logger.warning(f"⚠️ [DashScope initialization] DASHSCOPE_API_KEY environment variable is empty")
+                logger.warning("⚠️ [DashScope initialization] DASHSCOPE_API_KEY environment variable is empty")
                 api_key_from_kwargs = None
         else:
-            logger.info(f"✅ [DashScope initialization] Use the API Key passed in kwargs (from database configuration)")
+            logger.info("✅ [DashScope initialization] Use the API Key passed in kwargs (from database configuration)")
 
         # Set the default configuration of the DashScope OpenAI compatible interface
         # 🔥 Fix: If base_url is None or not set, use default value
@@ -158,7 +158,7 @@ class ChatDashScopeOpenAI(ChatOpenAI):
         # Call parent class initialization
         super().__init__(**kwargs)
 
-        logger.info(f"✅ Alibaba Bailian OpenAI compatible adapter initialized successfully")
+        logger.info("✅ Alibaba Bailian OpenAI compatible adapter initialized successfully")
         logger.info(f"   model: {kwargs.get('model', 'qwen-turbo')}")
 
         # Compatible with different versions of attribute names
@@ -305,7 +305,7 @@ def test_dashscope_openai_connection(
     """Test DashScope OpenAI Compatible Interface Connection"""
     
     try:
-        logger.info(f"🧪 Test DashScope OpenAI Compatible Interface Connection")
+        logger.info("🧪 Test DashScope OpenAI Compatible Interface Connection")
         logger.info(f"   model: {model}")
         
         # Create client
@@ -319,11 +319,11 @@ def test_dashscope_openai_connection(
         response = llm.invoke("Hello, please introduce yourself briefly.")
         
         if response and hasattr(response, 'content') and response.content:
-            logger.info(f"✅ DashScope OpenAI Compatible interface connected successfully")
+            logger.info("✅ DashScope OpenAI Compatible interface connected successfully")
             logger.info(f"   response: {response.content[:100]}...")
             return True
         else:
-            logger.error(f"❌ DashScope OpenAI Compatible interface response is empty")
+            logger.error("❌ DashScope OpenAI Compatible interface response is empty")
             return False
             
     except Exception as e:
@@ -338,7 +338,7 @@ def test_dashscope_openai_function_calling(
     """Testing the DashScope OpenAI compatible interface Function Calling"""
     
     try:
-        logger.info(f"🧪 test DashScope OpenAI Function Calling")
+        logger.info("🧪 test DashScope OpenAI Function Calling")
         logger.info(f"   model: {model}")
         
         # Create client
@@ -368,7 +368,7 @@ def test_dashscope_openai_function_calling(
         # Test tool call
         response = llm_with_tools.invoke("Please use test_tool query'hello world'")
         
-        logger.info(f"✅ DashScope OpenAI Function Calling Test completed")
+        logger.info("✅ DashScope OpenAI Function Calling Test completed")
         logger.info(f"   response type: {type(response)}")
         
         if hasattr(response, 'tool_calls') and response.tool_calls:
@@ -385,8 +385,8 @@ def test_dashscope_openai_function_calling(
 
 if __name__ == "__main__":
     """test script"""
-    logger.info(f"🧪 DashScope OpenAI Compatible adapter testing")
-    logger.info(f"=" * 50)
+    logger.info("🧪 DashScope OpenAI Compatible adapter testing")
+    logger.info("=" * 50)
     
     # test connection
     connection_ok = test_dashscope_openai_connection()
@@ -396,8 +396,8 @@ if __name__ == "__main__":
         function_calling_ok = test_dashscope_openai_function_calling()
         
         if function_calling_ok:
-            logger.info(f"\n🎉 All tests passed! DashScope OpenAI compatible adapter works fine")
+            logger.info("\n🎉 All tests passed! DashScope OpenAI compatible adapter works fine")
         else:
-            logger.error(f"\n⚠️ Function Calling test failed")
+            logger.error("\n⚠️ Function Calling test failed")
     else:
-        logger.error(f"\n❌ Connection test failed")
+        logger.error("\n❌ Connection test failed")

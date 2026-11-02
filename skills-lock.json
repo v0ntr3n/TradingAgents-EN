@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "skills": {
+    "py-code-health": {
+      "source": "l-mb/python-refactoring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/py-code-health/SKILL.md",
+      "computedHash": "e3fdb639ee2516aa13db3e0039b444196899f6ed36d4593e51e17daba60618d4"
+    },
+    "py-complexity": {
+      "source": "l-mb/python-refactoring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/py-complexity/SKILL.md",
+      "computedHash": "90afdfb1b8aad5c80b7b82589610551b8b1e5ba5ce68433f569f56de332f9f48"
+    },
+    "py-git-hooks": {
+      "source": "l-mb/python-refactoring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/py-git-hooks/SKILL.md",
+      "computedHash": "6063fef67fb8e18b4c64fd5a689c4fec467e7e247373758263d7ee54532d8202"
+    },
+    "py-modernize": {
+      "source": "l-mb/python-refactoring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/py-modernize/SKILL.md",
+      "computedHash": "a4b407e054c7f3c1532f9631f135c2e89582bc688743915b1e99f10395e5a7f3"
+    },
+    "py-quality-setup": {
+      "source": "l-mb/python-refactoring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/py-quality-setup/SKILL.md",
+      "computedHash": "f548972e5a47d5b109527f291962bad4161d5b7529c154f1af04c4f9ba1461ae"
+    },
+    "py-refactor": {
+      "source": "l-mb/python-refactoring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/py-refactor/SKILL.md",
+      "computedHash": "0ab644ed5e771bdbad4682b6d86cf5753c3cd54a99f1f09fac9325de3beb1404"
+    },
+    "py-security": {
+      "source": "l-mb/python-refactoring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/py-security/SKILL.md",
+      "computedHash": "98a9fb69e65c12ff93d2bcdde0d3d6a99285f55c1dc2dc2b13db8b984fa05899"
+    },
+    "py-test-quality": {
+      "source": "l-mb/python-refactoring-skills",
+      "sourceType": "github",
+      "skillPath": "skills/py-test-quality/SKILL.md",
+      "computedHash": "6184f9693792ccbdf830256cbf304ac00f82f66b1e78284e16fa4ef798654b10"
+    },
+    "python-clean-architecture": {
+      "source": "MKToronto/python-clean-architecture-codex",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/clean-architecture/SKILL.md",
+      "computedHash": "f89ce3f27ee562f0597d1ab3010bf221b8afe4b805490812f6948e97fb8af953"
+    },
+    "python-refactor": {
+      "source": "zaripych/skills-python-refactor",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "befcf0b8c1a0b1c69e5e9a8da730fa3d35568dec646cec72c81f56071b48cc5b"
+    },
+    "refactor": {
+      "source": "MuhiminOsim/code-refactoring-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "637d12507fdac766be32c8a26fab13ec7af2205a082d911753f5ab157dab3ef8"
+    }
+  }
+}

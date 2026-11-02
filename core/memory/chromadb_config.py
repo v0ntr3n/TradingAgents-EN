@@ -149,7 +149,7 @@ def get_optimal_chromadb_client():
                             logger.info(f"✅ Old database has been backed up to: {backup_dir}")
                         # Recreate directory
                         os.makedirs(persist_dir, exist_ok=True)
-                        logger.info(f"✅ The database directory has been cleaned and is ready for re-initialization")
+                        logger.info("✅ The database directory has been cleaned and is ready for re-initialization")
                         persistent_cleaned = True
                     except Exception as cleanup_error:
                         logger.warning(f"⚠️ Failed to clean database directory: {cleanup_error}")
@@ -158,7 +158,7 @@ def get_optimal_chromadb_client():
                             if os.path.exists(persist_dir):
                                 shutil.rmtree(persist_dir)
                             os.makedirs(persist_dir, exist_ok=True)
-                            logger.info(f"✅ Forced cleanup of database directory successful")
+                            logger.info("✅ Forced cleanup of database directory successful")
                             persistent_cleaned = True
                         except Exception as force_cleanup_error:
                             logger.error(f"❌ Forced cleanup also failed: {force_cleanup_error}")
@@ -172,7 +172,7 @@ def get_optimal_chromadb_client():
             except Exception as heartbeat_error:
                 # If it is in persistence mode and has not been cleaned yet, try cleaning it and try again.
                 if is_persistent and not persistent_cleaned:
-                    logger.warning(f"⚠️ ChromaDB Heartbeat test failed, try cleaning and trying again...")
+                    logger.warning("⚠️ ChromaDB Heartbeat test failed, try cleaning and trying again...")
                     try:
                         # Back up and clean
                         backup_dir = f"{persist_dir}.backup"
@@ -181,13 +181,13 @@ def get_optimal_chromadb_client():
                         if os.path.exists(persist_dir):
                             shutil.move(persist_dir, backup_dir)
                         os.makedirs(persist_dir, exist_ok=True)
-                        logger.info(f"✅ Database directory cleaned")
+                        logger.info("✅ Database directory cleaned")
                         persistent_cleaned = True
                         
                         # Recreate the client
                         client = chromadb.Client(config['settings'])
                         client.heartbeat()
-                        logger.info(f"✅ Reinitialization successful after cleaning")
+                        logger.info("✅ Reinitialization successful after cleaning")
                     except Exception as retry_error:
                         logger.warning(f"⚠️ Even retrying after cleaning failed.: {retry_error}")
                         raise heartbeat_error
@@ -197,11 +197,11 @@ def get_optimal_chromadb_client():
             # 🔥 Initialization successful, recording running mode
             if is_persistent:
                 logger.info(f"✅ ChromaDB Client initialization successful: {config_name}")
-                logger.info(f"   📁 operating mode: persistence mode")
+                logger.info("   📁 operating mode: persistence mode")
                 logger.info(f"   📂 data directory: {persist_dir}")
             else:
                 logger.info(f"✅ ChromaDB Client initialization successful: {config_name}")
-                logger.warning(f"   ⚠️ operating mode: Memory mode (data will not be persisted)")
+                logger.warning("   ⚠️ operating mode: Memory mode (data will not be persisted)")
             
             return client
             
@@ -212,9 +212,9 @@ def get_optimal_chromadb_client():
             
             # 🔥 If it's a Rust panic error, log details
             if "PanicException" in error_msg or "panicked" in error_msg:
-                logger.error(f"❌ ChromaDB Rust panic Error, possibly version incompatibility or database corruption")
+                logger.error("❌ ChromaDB Rust panic Error, possibly version incompatibility or database corruption")
                 if config['settings'].is_persistent and not persistent_cleaned:
-                    logger.info(f"   🔄 The database directory will be automatically cleaned the next time you try")
+                    logger.info("   🔄 The database directory will be automatically cleaned the next time you try")
             
             # Continue to try the next configuration
             continue

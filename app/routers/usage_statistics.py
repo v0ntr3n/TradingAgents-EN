@@ -215,7 +215,7 @@ async def delete_old_records(
 
         return {
             "success": True,
-            "message": f"Delete old records successfully",
+            "message": "Delete old records successfully",
             "data": {"deleted_count": deleted_count}
         }
     except Exception as e:

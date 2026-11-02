@@ -190,12 +190,12 @@ class EmailService:
 
         # 4. Check the do not disturb period
         if self._is_quiet_hours(email_settings):
-            logger.debug(f"Currently in do not disturb period, skip email sending")
+            logger.debug("Currently in do not disturb period, skip email sending")
             return None
 
         # 5. Frequency limit check
         if not await self._check_rate_limit(user_id, email_type, reference_id):
-            logger.debug(f"Trigger frequency limit, skip sending")
+            logger.debug("Trigger frequency limit, skip sending")
             return None
 
         # 6. Confirm recipient email

@@ -148,7 +148,7 @@ _DISPLAY_REPORT_RISK_PATTERNS = [
 _INFERENTIAL_EVIDENCE_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
-        r"inference|Speculate|Presumption|Estimate|Calculate|estimate|hypothesis|Assume|Guess|conjecture|suspected",
+        r"inference|inferred|infer|Speculate|Presumption|Estimate|Calculate|estimate|hypothesis|Assume|Guess|conjecture|suspected",
         r"possible|or will|hopefully|expected|tend to|High probability|maybe|Maybe",
         r"To be verified|Need to verify|yet to be verified|Still to be verified|Not verifiable|Difficult to verify",
     )

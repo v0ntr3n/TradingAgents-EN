@@ -122,7 +122,7 @@ class NewsRelevanceFilter:
         if (self.company_name not in title and self.stock_code not in title and 
             any(keyword in title_lower for keyword in self.exclude_keywords)):
             score -= 30
-            logger.debug(f"[filter] The title has no company information but contains exclusion words: -30 points")
+            logger.debug("[filter] The title has no company information but contains exclusion words: -30 points")
         
         # Make sure the rating is in the 0-100 range
         final_score = max(0, min(100, score))
@@ -174,7 +174,7 @@ class NewsRelevanceFilter:
             logger.info(f"[filter] Filtering completed, keep {len(filtered_df)}news")
         else:
             filtered_df = pd.DataFrame()
-            logger.warning(f"[filter] All news has been filtered and no news meets the criteria")
+            logger.warning("[filter] All news has been filtered and no news meets the criteria")
             
         return filtered_df
     

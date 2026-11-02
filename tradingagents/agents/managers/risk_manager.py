@@ -31,7 +31,7 @@ def create_risk_manager(llm, memory):
         if memory is not None:
             past_memories = memory.get_memories(curr_situation, n_matches=2)
         else:
-            logger.warning(f"⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
+            logger.warning("⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
             past_memories = []
 
         past_memory_str = ""
@@ -108,7 +108,7 @@ Analyst Debate History:
         # Rough estimate of the number of tokens (about 1.5-2 characters/token for Chinese, about 4 characters/token for English)
         estimated_tokens = int(prompt_length / 1.8)  # conservative estimate
 
-        logger.info(f"📊 [Risk Manager] Prompt statistics:")
+        logger.info("📊 [Risk Manager] Prompt statistics:")
         logger.info(f"   - Debate history length: {len(history)} character")
         logger.info(f"   - Trader plan length: {len(trader_plan)} character")
         logger.info(f"   - historical memory length: {len(past_memory_str)} character")
@@ -151,13 +151,13 @@ Analyst Debate History:
                     logger.info(f"📊 [Risk Manager] response statistics: {response_length} character, Estimate~{estimated_output_tokens} tokens{usage_info}")
 
                     if len(response_content) > 10:  # Make sure responses have substance
-                        logger.info(f"✅ [Risk Manager] LLM Call successful")
+                        logger.info("✅ [Risk Manager] LLM Call successful")
                         break
                     else:
                         logger.warning(f"⚠️ [Risk Manager] LLM Response content is too short: {len(response_content)} character")
                         response_content = ""
                 else:
-                    logger.warning(f"⚠️ [Risk Manager] LLM Response is empty or invalid")
+                    logger.warning("⚠️ [Risk Manager] LLM Response is empty or invalid")
                     response_content = ""
 
             except Exception as e:
@@ -168,12 +168,12 @@ Analyst Debate History:
             
             retry_count += 1
             if retry_count < max_retries and not response_content:
-                logger.info(f"🔄 [Risk Manager] Wait 2 seconds and try again...")
+                logger.info("🔄 [Risk Manager] Wait 2 seconds and try again...")
                 time.sleep(2)
         
         # If all retries fail, generate a default decision
         if not response_content:
-            logger.error(f"❌ [Risk Manager] All LLM call attempts fail, using default decision")
+            logger.error("❌ [Risk Manager] All LLM call attempts fail, using default decision")
             response_content = f"""**Risk summary**
 
 Detailed analysis cannot be generated for technical reasons and currently only the {company_name} risk observation.

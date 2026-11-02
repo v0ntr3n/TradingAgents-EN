@@ -444,7 +444,7 @@ class BaoStockSyncService:
 
             # Get stock list from database
             collection = self.db.stock_basic_info
-            logger.info(f"🔍 [BaoStock] Query the stock list in the database (source=baostock)...")
+            logger.info("🔍 [BaoStock] Query the stock list in the database (source=baostock)...")
             try:
                 cursor = collection.find({"source": "baostock"}, {"code": 1})
                 stock_codes = [doc["code"] async for doc in cursor]
@@ -599,7 +599,7 @@ class BaoStockSyncService:
                         if existing_progress_str:
                             try:
                                 progress_data = json.loads(existing_progress_str)
-                            except:
+                            except Exception:
                                 progress_data = {}
                         else:
                             progress_data = {}
@@ -1179,9 +1179,9 @@ async def run_baostock_basic_info_sync(**kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
@@ -1200,14 +1200,14 @@ async def run_baostock_basic_info_sync(**kwargs):
             logger.info(f"🎯 BaoStock Basic information synchronization completed: {stats.basic_info_count}records, {len(stats.errors)}errors")
             return stats
         elif sync_result.error and ("Cancel" in sync_result.error or "cancelled" in sync_result.error.lower()):
-            logger.info(f"ℹ️ BaoStock The basic information synchronization task has been canceled by the user")
+            logger.info("ℹ️ BaoStock The basic information synchronization task has been canceled by the user")
             return {"cancelled": True, "message": sync_result.error}
         else:
             raise RuntimeError(sync_result.error or "Sync failed")
     except Exception as e:
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ BaoStock The basic information synchronization task has been canceled by the user")
+            logger.info("ℹ️ BaoStock The basic information synchronization task has been canceled by the user")
             return {"cancelled": True, "message": str(e)}
         logger.error(f"❌ BaoStock Basic information synchronization task failed: {e}")
         raise
@@ -1236,9 +1236,9 @@ async def run_baostock_daily_quotes_sync(**kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
@@ -1257,14 +1257,14 @@ async def run_baostock_daily_quotes_sync(**kwargs):
             logger.info(f"🎯 BaoStock Daily K-line synchronization completed: {stats.quotes_count}records, {len(stats.errors)}errors")
             return stats
         elif sync_result.error and ("Cancel" in sync_result.error or "cancelled" in sync_result.error.lower()):
-            logger.info(f"ℹ️ BaoStock The daily K-line synchronization task has been canceled by the user")
+            logger.info("ℹ️ BaoStock The daily K-line synchronization task has been canceled by the user")
             return {"cancelled": True, "message": sync_result.error}
         else:
             raise RuntimeError(sync_result.error or "Sync failed")
     except Exception as e:
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ BaoStock The daily K-line synchronization task has been canceled by the user")
+            logger.info("ℹ️ BaoStock The daily K-line synchronization task has been canceled by the user")
             return {"cancelled": True, "message": str(e)}
         logger.error(f"❌ BaoStock Daily K-line synchronization task failed: {e}")
         raise
@@ -1295,9 +1295,9 @@ async def run_baostock_historical_sync(**kwargs):
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] BaoStock Manually trigger execution and allow execution (even if there is a running record)")
+            logger.info("🔧 [APScheduler] BaoStock Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] BaoStock Force execution, skip concurrency checks")
+            logger.info("🔧 [APScheduler] BaoStock Force execution, skip concurrency checks")
     
     try:
         # 🔥 Use unified thread pool synchronization service
@@ -1306,10 +1306,10 @@ async def run_baostock_historical_sync(**kwargs):
         unified_service = await get_unified_thread_pool_sync_service()
         
         # 🔥 Get BaoStock data source service instance
-        logger.info(f"🔄 [BaoStock] Initialize synchronization service...")
+        logger.info("🔄 [BaoStock] Initialize synchronization service...")
         service = BaoStockSyncService()
         await service.initialize()  # 🔥 Must be initialized first
-        logger.info(f"✅ [BaoStock] Synchronization service initialization completed")
+        logger.info("✅ [BaoStock] Synchronization service initialization completed")
         
         # 🔥 Set the correct job_id to ensure progress updates and status markers use the correct task ID
         service._current_job_id = job_id
@@ -1341,7 +1341,7 @@ async def run_baostock_historical_sync(**kwargs):
         else:
             # 🔥 Check if the task is canceled
             if "Cancel" in sync_result.error or "cancelled" in sync_result.error.lower():
-                logger.info(f"ℹ️ BaoStock The historical data synchronization task has been canceled by the user")
+                logger.info("ℹ️ BaoStock The historical data synchronization task has been canceled by the user")
                 return {"cancelled": True, "message": sync_result.error}
             else:
                 logger.error(f"❌ BaoStock Historical data synchronization failed: {sync_result.error}")
@@ -1351,7 +1351,7 @@ async def run_baostock_historical_sync(**kwargs):
         # Check whether it is a task cancellation exception (the user actively cancels and should not be recorded as an error)
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ BaoStock The historical data synchronization task has been canceled by the user")
+            logger.info("ℹ️ BaoStock The historical data synchronization task has been canceled by the user")
             return {"cancelled": True, "message": "The task has been canceled by the user"}
         # Other exceptions are recorded as errors
         logger.error(f"❌ BaoStock Historical data synchronization task failed: {e}", exc_info=True)
@@ -1397,7 +1397,7 @@ async def run_baostock_historical_sync(**kwargs):
                 else:
                     no_data_errors.append(error)
         
-        logger.info(f"🔄 Start retrying failed stocks...")
+        logger.info("🔄 Start retrying failed stocks...")
         logger.info(f"   Retryable errors: {len(retryable_errors)} a")
         logger.info(f"   No data error (skip): {len(no_data_errors)} a")
         

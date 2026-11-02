@@ -37,7 +37,7 @@ class HKStockProvider:
         # Build a session with proxy and UA, make sure yfinance uses proxy
         self.session = self._create_session()
 
-        logger.info(f"🇭🇰 Hong Kong stock data provider initialization completed")
+        logger.info("🇭🇰 Hong Kong stock data provider initialization completed")
 
     def _create_session(self) -> requests.Session:
         """Create requests.Session with proxy and UA for reuse by yfinance"""
@@ -138,7 +138,7 @@ class HKStockProvider:
                             logger.info(f"⏳ 检测到频率限制，等待{self.rate_limit_wait}秒...")
                             time.sleep(self.rate_limit_wait)
                         else:
-                            logger.error(f"❌ Frequency limit, skip retries")
+                            logger.error("❌ Frequency limit, skip retries")
                             break
                     else:
                         if attempt < self.max_retries - 1:
@@ -358,7 +358,7 @@ class HKStockProvider:
                 logger.info(f"   RSI: {row.get('rsi', 0):.2f}")
                 logger.info(f"   BOLL: 上={row.get('boll_upper', 0):.2f}, 中={row.get('boll_mid', 0):.2f}, 下={row.get('boll_lower', 0):.2f}")
 
-            logger.info(f"🔍 [Details of Hong Kong stock technical indicators] ===== end of data details =====")
+            logger.info("🔍 [Details of Hong Kong stock technical indicators] ===== end of data details =====")
 
             # Formatted output contains all technical indicators and interpretations
             result = f"📊 {stock_name}({symbol}) - 港股技术分析数据\n"
@@ -368,8 +368,8 @@ class HKStockProvider:
             result += "📈 基本信息\n"
             result += f"   代码: {symbol}\n"
             result += f"   名称: {stock_name}\n"
-            result += f"   货币: 港币 (HKD)\n"
-            result += f"   exchange: Hong Kong Exchange (HKG)\n"
+            result += "   货币: 港币 (HKD)\n"
+            result += "   exchange: Hong Kong Exchange (HKG)\n"
             result += f"   数据期间: {start_date} 至 {end_date}\n"
             result += f"   交易天数: {len(data)}天\n\n"
 

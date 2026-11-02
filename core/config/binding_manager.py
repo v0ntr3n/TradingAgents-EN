@@ -102,7 +102,7 @@ class BindingManager:
         # Load from database
         if self._db is not None:
             try:
-                logger.info(f"🔍 [BindingManager] Query the database tool_agent_bindings collection...")
+                logger.info("🔍 [BindingManager] Query the database tool_agent_bindings collection...")
                 bindings = list(self._db.tool_agent_bindings.find(
                     {"agent_id": agent_id, "is_active": {"$ne": False}},
                     sort=[("priority", -1)]
@@ -112,11 +112,11 @@ class BindingManager:
             except Exception as e:
                 logger.warning(f"Loading tool binding from database failed: {e}")
         else:
-            logger.warning(f"⚠️ [BindingManager] Database not connected")
+            logger.warning("⚠️ [BindingManager] Database not connected")
 
         # If the database does not exist, load it from the code configuration
         if not tool_ids:
-            logger.info(f"🔍 [BindingManager] No results in database, try loading from code configuration...")
+            logger.info("🔍 [BindingManager] No results in database, try loading from code configuration...")
             tool_ids = self._get_default_tools_for_agent(agent_id)
             logger.info(f"📦 [BindingManager] Code configuration results: {tool_ids}")
 

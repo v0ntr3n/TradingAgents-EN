@@ -303,7 +303,7 @@ The current analysis data source is QMT, please follow the following requirement
 
         # ⚠️ Industry reports do not support caching: industry reports contain the codes and names of specific stocks, and caching will cause error messages to appear when analyzing other stocks in the same industry.
         # Therefore, each analysis must be regenerated and caching cannot be used (caching is also skipped in debug mode)
-        logger.info(f"🏭 [Sector Analyst v2] Skip the cache check (industry reports do not support caching) and directly generate a new report")
+        logger.info("🏭 [Sector Analyst v2] Skip the cache check (industry reports do not support caching) and directly generate a new report")
 
         logger.info(f"🏭 [Sector Analyst v2] Start analysis {ticker} @ {analysis_date}, mode={analysis_mode}")
 

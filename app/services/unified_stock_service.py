@@ -102,7 +102,7 @@ class UnifiedStockService:
             if not doc:
                 doc = await collection.find_one({"code": code}, {"_id": 0})
                 if doc:
-                    logger.debug(f"✅ Use default data source (compatibility mode)")
+                    logger.debug("✅ Use default data source (compatibility mode)")
         
         return doc
 

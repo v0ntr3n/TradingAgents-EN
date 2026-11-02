@@ -121,7 +121,7 @@ def create_bear_researcher(llm, memory):
         if memory is not None:
             past_memories = memory.get_memories(curr_situation, n_matches=2)
         else:
-            logger.warning(f"⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
+            logger.warning("⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
             past_memories = []
 
         past_memory_str = ""

@@ -195,7 +195,7 @@ class ConfigManager:
             logger.info(f"🔍 [ConfigManager] MongoDB Connection string built (length: {len(connection_string)})")
             logger.info(f"🔍 [ConfigManager] MONGODB_DATABASE_NAME={database_name}")
 
-            logger.info(f"🔄 [ConfigManager] Creating MongoDBStorage instance...")
+            logger.info("🔄 [ConfigManager] Creating MongoDBStorage instance...")
             self.mongodb_storage = MongoDBStorage(
                 connection_string=connection_string,
                 database_name=database_name
@@ -430,14 +430,14 @@ class ConfigManager:
                 logger.info(f"✅ [Token record] MongoDB Saved successfully: {provider}/{model_name}")
                 return record
             else:
-                logger.error(f"⚠️ [Token record] MongoDB Failed to save, fallback to JSON file storage")
+                logger.error("⚠️ [Token record] MongoDB Failed to save, fallback to JSON file storage")
         else:
             # 🔍 Detailed log: why it is not used MongoDB
             if self.mongodb_storage is None:
-                logger.warning(f"⚠️ [Token record] MongoDB Storage is not initialized (mongodb_storage=None)")
+                logger.warning("⚠️ [Token record] MongoDB Storage is not initialized (mongodb_storage=None)")
                 logger.warning(f"   💡 Please check environment variables: USE_MONGODB_STORAGE={os.getenv('USE_MONGODB_STORAGE', 'not set')}")
             elif not self.mongodb_storage.is_connected():
-                logger.warning(f"⚠️ [Token record] MongoDB Not connected (is_connected=False)")
+                logger.warning("⚠️ [Token record] MongoDB Not connected (is_connected=False)")
 
             logger.info(f"📄 [Token record] Use JSON file storage: {self.usage_file}")
 
@@ -473,7 +473,7 @@ class ConfigManager:
 
         # Only output debugging information if the configuration cannot be found
         logger.warning(f"⚠️ [calculate_cost] No matching pricing configuration found: {provider}/{model_name}")
-        logger.debug(f"⚠️ [calculate_cost] Available configurations:")
+        logger.debug("⚠️ [calculate_cost] Available configurations:")
         for pricing in pricing_configs:
             logger.debug(f"⚠️ [calculate_cost]   - {pricing.provider}/{pricing.model_name}")
 
@@ -604,7 +604,7 @@ class ConfigManager:
                 record_date = datetime.fromisoformat(record.timestamp)
                 if record_date >= cutoff_date:
                     recent_records.append(record)
-            except:
+            except Exception:
                 continue
         
         # Statistics

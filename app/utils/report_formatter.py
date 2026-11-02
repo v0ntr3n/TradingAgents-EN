@@ -185,11 +185,11 @@ def extract_reports_from_state(state: Any) -> Dict[str, str]:
         if "index_report" in state:
             logger.info(f"🔍 [ReportFormatter] index_report existence, length: {len(str(state.get('index_report', '')))}")
         elif not has_nested_reports:
-            logger.warning(f"⚠️ [ReportFormatter] index_report Field does not exist in state")
+            logger.warning("⚠️ [ReportFormatter] index_report Field does not exist in state")
         if "sector_report" in state:
             logger.info(f"🔍 [ReportFormatter] sector_report existence, length: {len(str(state.get('sector_report', '')))}")
         elif not has_nested_reports:
-            logger.warning(f"⚠️ [ReportFormatter] sector_report Field does not exist in state")
+            logger.warning("⚠️ [ReportFormatter] sector_report Field does not exist in state")
 
     # 1. Extract report fields (first read from structured_reports output by the engine, automatically include new agent output)
     structured_reports = _get_field_value(state, 'structured_reports')
@@ -319,7 +319,7 @@ def _extract_alternative_reports(state: Any, reports: Dict[str, str]):
                     logger.info(f"📊 [ReportFormatter] alternative extraction: {report_key} <- {alt_field} (Converted JSON->Markdown)")
                 elif report_key == 'research_team_decision':
                     # Research team conclusions may also be in JSON format
-                    logger.info(f"🔍 [ReportFormatter] Alternative extraction detected research_team_decision, ready for conversion JSON")
+                    logger.info("🔍 [ReportFormatter] Alternative extraction detected research_team_decision, ready for conversion JSON")
                     logger.info(f"🔍 [ReportFormatter] First 500 characters of original content: {text_value[:500]}")
                     markdown_value = _convert_json_to_markdown(text_value, "final_decision")
                     reports[report_key] = markdown_value
@@ -360,13 +360,13 @@ def _convert_json_to_markdown(content: str, report_type: str = "investment") -> 
     Returns:
         Markdown Format report content
     """
-    logger.info(f"🔄 [JSON Convert] ========== Start converting ==========")
+    logger.info("🔄 [JSON Convert] ========== Start converting ==========")
     logger.info(f"🔄 [JSON Convert] report type: {report_type}")
     logger.info(f"🔄 [JSON Convert] content length: {len(content) if content else 0}")
     logger.info(f"🔄 [JSON Convert] Content type: {type(content)}")
 
     if not content or not isinstance(content, str):
-        logger.warning(f"⚠️ [JSON Convert] If the content is empty or not a string, it will be returned directly.")
+        logger.warning("⚠️ [JSON Convert] If the content is empty or not a string, it will be returned directly.")
         return content
 
     content = content.strip()
@@ -383,7 +383,7 @@ def _convert_json_to_markdown(content: str, report_type: str = "investment") -> 
 
     # 1. Try to extract JSON code block
     if "```json" in content:
-        logger.info(f"🔄 [JSON Convert] JSON code block detected")
+        logger.info("🔄 [JSON Convert] JSON code block detected")
         json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
         if json_match:
             json_str = json_match.group(1).strip()
@@ -408,7 +408,7 @@ def _convert_json_to_markdown(content: str, report_type: str = "investment") -> 
 
     # 2. Try to parse directly JSON
     if json_obj is None and content.startswith("{"):
-        logger.info(f"🔄 [JSON Convert] Detected with {{ At the beginning, try to parse directly JSON")
+        logger.info("🔄 [JSON Convert] Detected with { At the beginning, try to parse directly JSON")
         # 🔥 Fix common JSON format issues
         fixed_content = re.sub(
             r'"price_analysis_range"\s*:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)',
@@ -423,7 +423,7 @@ def _convert_json_to_markdown(content: str, report_type: str = "investment") -> 
 
     # If it is not JSON, return the original content directly.
     if json_obj is None:
-        logger.warning(f"⚠️ [JSON Convert] It is not in JSON format and returns the original content directly.")
+        logger.warning("⚠️ [JSON Convert] It is not in JSON format and returns the original content directly.")
         logger.warning(f"⚠️ [JSON Convert] The first 1000 characters of the original content: {content[:1000]}")
         return content
 
@@ -676,7 +676,7 @@ def _convert_final_decision_json_to_markdown(json_obj: Dict[str, Any]) -> str:
                     lines.append(f"{idx}. {item}\n")
                 lines.append("\n")
     else:
-        logger.warning(f"⚠️ [Conversion of final research conclusions] final_trade_decision Does not exist or is empty, falls back to risk assessment format")
+        logger.warning("⚠️ [Conversion of final research conclusions] final_trade_decision Does not exist or is empty, falls back to risk assessment format")
         # If there is no final_trade_decision, fall back to the risk assessment format
         return _convert_risk_json_to_markdown(json_obj)
 
@@ -725,7 +725,7 @@ def _extract_investment_debate_reports(debate_state: Any, reports: Dict[str, str
         reports['research_team_decision'] = markdown_content
         logger.info(f"📊 [ReportFormatter] Extract: research_team_decision - length: {len(markdown_content)}")
     else:
-        logger.warning(f"⚠️ [ReportFormatter] research_team_decision Empty or too short, skip")
+        logger.warning("⚠️ [ReportFormatter] research_team_decision Empty or too short, skip")
 
 
 def _extract_risk_debate_reports(risk_state: Any, reports: Dict[str, str]):
@@ -777,7 +777,7 @@ def _extract_risk_debate_reports(risk_state: Any, reports: Dict[str, str]):
         reports['risk_management_decision'] = markdown_content
         logger.info(f"📊 [ReportFormatter] Extract: risk_management_decision - length: {len(markdown_content)}")
     else:
-        logger.warning(f"⚠️ [ReportFormatter] risk_management_decision Empty or too short, skip")
+        logger.warning("⚠️ [ReportFormatter] risk_management_decision Empty or too short, skip")
 
 
 # 🔥 Compliance Modification: Research Conclusion Mapping (English -> Chinese Compliance Terminology)
@@ -914,7 +914,7 @@ def format_decision(
     # 🔥 Important: reasoning should be extracted from decision_raw, if decision_raw does not have reasoning, use the default value
     # Should not be extracted from fallback_text (usually final_trade_decision) as final_trade_decision will be used to generate summary
     # This is consistent with the way the old engine handles it: in the old engine, if the decision has no reasoning, the default value is used 'No analytical reasoning yet'
-    logger.info(f"🔍 [format_decision] ========== Extract reasoning ==========")
+    logger.info("🔍 [format_decision] ========== Extract reasoning ==========")
     logger.info(f"🔍 [format_decision] decision_raw Type: {type(decision_raw)}")
     if isinstance(decision_raw, dict):
         logger.info(f"🔍 [format_decision] decision_raw Field: {list(decision_raw.keys())}")
@@ -937,7 +937,7 @@ def format_decision(
         logger.info(f"🔍 [format_decision] fallback_text length: {len(fallback_text) if fallback_text else 0}")
         if fallback_text:
             logger.info(f"🔍 [format_decision] fallback_text first 200 characters: {fallback_text[:200]}")
-            logger.info(f"🔍 [format_decision] ⚠️ Note: reasoning will not be extracted from fallback_text to avoid duplication with summary")
+            logger.info("🔍 [format_decision] ⚠️ Note: reasoning will not be extracted from fallback_text to avoid duplication with summary")
 
     normalized_lists = normalize_research_brief_lists(
         decision_raw.get('core_evidence'),
@@ -1089,7 +1089,7 @@ def generate_summary_recommendation(
     summary = ""
     recommendation = ""
 
-    logger.info(f"🔍 [generate_summary_recommendation] ========== generate summary ==========")
+    logger.info("🔍 [generate_summary_recommendation] ========== generate summary ==========")
     logger.info(f"🔍 [generate_summary_recommendation] reports fields in: {list(reports.keys())}")
     for report_name in reports.keys():
         if isinstance(reports[report_name], str):
@@ -1114,7 +1114,7 @@ def generate_summary_recommendation(
 
     # 2. Without final_trade_decision, extract summary from other reports
     if not summary:
-        logger.info(f"🔍 [generate_summary_recommendation] final_trade_decision Does not exist or is empty, try to extract from other reports")
+        logger.info("🔍 [generate_summary_recommendation] final_trade_decision Does not exist or is empty, try to extract from other reports")
         for report_name in ['investment_plan', 'trader_investment_plan', 'research_team_decision', 'market_report']:
             logger.info(f"🔍 [generate_summary_recommendation] Check '{report_name}': {'exist' if report_name in reports else 'does not exist'}")
             if report_name in reports:
@@ -1132,10 +1132,10 @@ def generate_summary_recommendation(
     # 3. Last resort
     if not summary:
         summary = f"Yes{stock_code}The analysis has been completed, please view the detailed report."
-        logger.warning(f"⚠️ [Summary] Use alternate summaries")
+        logger.warning("⚠️ [Summary] Use alternate summaries")
 
     # 4. Generate recommendations (unified research auxiliary tips)
-    logger.info(f"🔍 [generate_summary_recommendation] ========== generate recommendation ==========")
+    logger.info("🔍 [generate_summary_recommendation] ========== generate recommendation ==========")
     logger.info(f"🔍 [generate_summary_recommendation] decision Field: {list(decision.keys())}")
     # 🔥 recommendation Should be based on the decision's action, target_price, and a short summary of the reasoning
     # Note: Complete reasoning is not used here to avoid confusion with"Research basis"Repeat
@@ -1152,7 +1152,7 @@ def generate_summary_recommendation(
 
     if not recommendation:
         recommendation = "Please refer to the detailed research report, focusing on fundamental changes, market environment and risk factors."
-        logger.warning(f"⚠️ [Recommendation] Use backup research tips")
+        logger.warning("⚠️ [Recommendation] Use backup research tips")
     
     logger.info(f"🔍 [generate_summary_recommendation] recommendation final content: {recommendation[:300]}")
 
@@ -1209,7 +1209,7 @@ def format_analysis_result(
         Complete analysis results after formatting
     """
     # 1. Extract report from raw_result
-    logger.info(f"🔍 [ReportFormatter] ========== Start formatting analysis results ==========")
+    logger.info("🔍 [ReportFormatter] ========== Start formatting analysis results ==========")
     logger.info(f"🔍 [ReportFormatter] stock_code={stock_code}, stock_name={stock_name}")
     
     reports = extract_reports_from_state(raw_result)
@@ -1228,7 +1228,7 @@ def format_analysis_result(
     final_trade_decision = raw_result.get("final_trade_decision", "")
 
     # 🔥 Detailed log: check the contents of each field
-    logger.info(f"🔍 [ReportFormatter] ========== Check raw data fields ==========")
+    logger.info("🔍 [ReportFormatter] ========== Check raw data fields ==========")
     logger.info(f"🔍 [ReportFormatter] final_decision Type: {type(final_decision)}")
     if isinstance(final_decision, dict):
         logger.info(f"🔍 [ReportFormatter] final_decision Field: {list(final_decision.keys())}")
@@ -1248,7 +1248,7 @@ def format_analysis_result(
         logger.info(f"🔍 [ReportFormatter] action_advice existence, length: {len(action_advice_content)}")
         logger.info(f"🔍 [ReportFormatter] action_advice first 300 characters: {action_advice_content[:300]}")
     else:
-        logger.info(f"🔍 [ReportFormatter] action_advice Does not exist or is empty")
+        logger.info("🔍 [ReportFormatter] action_advice Does not exist or is empty")
     
     logger.info(f"🔍 [ReportFormatter] final_trade_decision Type: {type(final_trade_decision)}")
     logger.info(f"🔍 [ReportFormatter] final_trade_decision length: {len(final_trade_decision) if final_trade_decision else 0}")
@@ -1363,10 +1363,10 @@ def format_analysis_result(
     }
 
     # 🔥 final result log
-    logger.info(f"🔍 [ReportFormatter] ========== Final formatting result ==========")
+    logger.info("🔍 [ReportFormatter] ========== Final formatting result ==========")
     logger.info(f"🔍 [ReportFormatter] result.decision.reasoning length: {len(formatted_decision.get('reasoning', ''))}, content: {formatted_decision.get('reasoning', '')[:300]}")
     logger.info(f"🔍 [ReportFormatter] result.summary length: {len(summary)}, content: {summary[:300]}")
     logger.info(f"🔍 [ReportFormatter] result.recommendation length: {len(recommendation)}, content: {recommendation[:300]}")
-    logger.info(f"🔍 [ReportFormatter] ========== Formatting completed ==========")
+    logger.info("🔍 [ReportFormatter] ========== Formatting completed ==========")
     logger.info(f"✅ [ReportFormatter] Formatting completed: decision.action={formatted_decision.get('action')}, reports={len(reports)}a")
     return result

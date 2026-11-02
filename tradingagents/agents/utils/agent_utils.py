@@ -168,31 +168,31 @@ class Toolkit:
             str: Complete stock analysis report including real-time market conditions, historical data, and technical indicators
         """
         try:
-            logger.debug(f"📊 [DEBUG] ===== agent_utils.get_china_stock_data Start calling =====")
+            logger.debug("📊 [DEBUG] ===== agent_utils.get_china_stock_data Start calling =====")
             logger.debug(f"📊 [DEBUG] parameters: stock_code={stock_code}, start_date={start_date}, end_date={end_date}")
 
             from tradingagents.dataflows.interface import get_china_stock_data_unified
-            logger.debug(f"📊 [DEBUG] Successfully imported unified data source interface")
+            logger.debug("📊 [DEBUG] Successfully imported unified data source interface")
 
-            logger.debug(f"📊 [DEBUG] Calling the unified data source interface...")
+            logger.debug("📊 [DEBUG] Calling the unified data source interface...")
             result = get_china_stock_data_unified(stock_code, start_date, end_date)
 
-            logger.debug(f"📊 [DEBUG] Unified data source interface call completed")
+            logger.debug("📊 [DEBUG] Unified data source interface call completed")
             logger.debug(f"📊 [DEBUG] Return result type: {type(result)}")
             logger.debug(f"📊 [DEBUG] Return result length: {len(result) if result else 0}")
             logger.debug(f"📊 [DEBUG] Return the first 200 characters of the result: {str(result)[:200]}...")
-            logger.debug(f"📊 [DEBUG] ===== agent_utils.get_china_stock_data end of call =====")
+            logger.debug("📊 [DEBUG] ===== agent_utils.get_china_stock_data end of call =====")
 
             return result
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            logger.error(f"❌ [DEBUG] ===== agent_utils.get_china_stock_data Abnormal =====")
+            logger.error("❌ [DEBUG] ===== agent_utils.get_china_stock_data Abnormal =====")
             logger.error(f"❌ [DEBUG] Error type: {type(e).__name__}")
             logger.error(f"❌ [DEBUG] error message: {str(e)}")
-            logger.error(f"❌ [DEBUG] Detailed stack:")
+            logger.error("❌ [DEBUG] Detailed stack:")
             print(error_details)
-            logger.error(f"❌ [DEBUG] ===== Exception handling ends =====")
+            logger.error("❌ [DEBUG] ===== Exception handling ends =====")
             return f"中国股票数据获取失败: {str(e)}。请检查网络连接或稍后重试。"
 
     @staticmethod
@@ -641,7 +641,7 @@ class Toolkit:
             # Generate true fundamental analysis reports
             fundamentals_report = analyzer._generate_fundamentals_report(ticker, stock_data)
 
-            logger.debug(f"📊 [DEBUG] China fundamental analysis report is generated")
+            logger.debug("📊 [DEBUG] China fundamental analysis report is generated")
             logger.debug(f"📊 [DEBUG] get_china_fundamentals Result length: {len(fundamentals_report)}")
 
             return fundamentals_report
@@ -649,7 +649,7 @@ class Toolkit:
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            logger.error(f"❌ [DEBUG] get_china_fundamentals failed:")
+            logger.error("❌ [DEBUG] get_china_fundamentals failed:")
             logger.error(f"❌ [DEBUG] Error: {str(e)}")
             logger.error(f"❌ [DEBUG] stack: {error_details}")
             return f"中国股票基本面分析失败: {str(e)}"
@@ -686,7 +686,7 @@ class Toolkit:
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            logger.error(f"❌ [DEBUG] get_hk_stock_data_unified failed:")
+            logger.error("❌ [DEBUG] get_hk_stock_data_unified failed:")
             logger.error(f"❌ [DEBUG] Error: {str(e)}")
             logger.error(f"❌ [DEBUG] stack: {error_details}")
             return f"港股数据获取失败: {str(e)}"
@@ -765,27 +765,27 @@ class Toolkit:
         if research_depth == "快速":
             # Quick analysis: obtain basic data and reduce data source calls
             data_depth = "basic"
-            logger.info(f"🔧 [level of analysis] Quick analysis mode: Obtain basic data")
+            logger.info("🔧 [level of analysis] Quick analysis mode: Obtain basic data")
         elif research_depth == "基础":
             # Basic Analysis: Obtaining Standard Data
             data_depth = "standard"
-            logger.info(f"🔧 [level of analysis] Basic analysis mode: obtaining standard data")
+            logger.info("🔧 [level of analysis] Basic analysis mode: obtaining standard data")
         elif research_depth == "标准":
             # Standard analysis: Get standard data (not full!)
             data_depth = "standard"
-            logger.info(f"🔧 [level of analysis] Standard Analysis Mode: Obtaining Standard Data")
+            logger.info("🔧 [level of analysis] Standard Analysis Mode: Obtaining Standard Data")
         elif research_depth == "深度":
             # In-depth analysis: Get complete data
             data_depth = "full"
-            logger.info(f"🔧 [level of analysis] Deep Analysis Mode: Get Complete Data")
+            logger.info("🔧 [level of analysis] Deep Analysis Mode: Get Complete Data")
         elif research_depth == "全面":
             # Comprehensive analysis: Get the most comprehensive data from all available data sources
             data_depth = "comprehensive"
-            logger.info(f"🔧 [level of analysis] Comprehensive analysis mode: obtain the most comprehensive data")
+            logger.info("🔧 [level of analysis] Comprehensive analysis mode: obtain the most comprehensive data")
         else:
             # Use standard analysis by default
             data_depth = "standard"
-            logger.info(f"🔧 [level of analysis] Unknown level, use standard analysis mode")
+            logger.info("🔧 [level of analysis] Unknown level, use standard analysis mode")
 
         # Add detailed ticker tracking logs
         logger.info(f"🔍 [股票代码追踪] 统一基本面工具接收到的原始股票代码: '{ticker}' (类型: {type(ticker)})")
@@ -822,19 +822,19 @@ class Toolkit:
             # 🔧 Correct mapping relationship: analysis_modules should be consistent with data_depth
             if data_depth == "basic":  # Quick Analysis: Basic Modules
                 analysis_modules = "basic"
-                logger.info(f"📊 [fundamental strategy] Quick analysis mode: Obtain basic financial indicators")
+                logger.info("📊 [fundamental strategy] Quick analysis mode: Obtain basic financial indicators")
             elif data_depth == "standard":  # Basic/Standard Analysis: Standard Modules
                 analysis_modules = "standard"
-                logger.info(f"📊 [fundamental strategy] Standard Analysis Mode: Get Standard Financial Analysis")
+                logger.info("📊 [fundamental strategy] Standard Analysis Mode: Get Standard Financial Analysis")
             elif data_depth == "full":  # In-Depth Analysis: Complete Module
                 analysis_modules = "full"
-                logger.info(f"📊 [fundamental strategy] In-Depth Analysis Mode: Get complete fundamental analysis")
+                logger.info("📊 [fundamental strategy] In-Depth Analysis Mode: Get complete fundamental analysis")
             elif data_depth == "comprehensive":  # Comprehensive Analysis: Comprehensive Module
                 analysis_modules = "comprehensive"
-                logger.info(f"📊 [fundamental strategy] Comprehensive Analysis Mode: Get comprehensive fundamental analysis")
+                logger.info("📊 [fundamental strategy] Comprehensive Analysis Mode: Get comprehensive fundamental analysis")
             else:
                 analysis_modules = "standard"  # Default standard analysis
-                logger.info(f"📊 [fundamental strategy] Default mode: Get standard fundamental analysis")
+                logger.info("📊 [fundamental strategy] Default mode: Get standard fundamental analysis")
             
             # Fundamental analysis strategy:
             # 1. Get 10 days of data (guaranteed to get data, handle weekends/holidays)
@@ -856,7 +856,7 @@ class Toolkit:
                 # China A-shares: Fundamental Analysis Optimization Strategy - Get only the necessary current price and fundamental data
                 logger.info(f"🇨🇳 [Unified fundamental tools] Processing A-share data, data depth: {data_depth}...")
                 logger.info(f"🔍 [Stock symbol tracking] Enter the A-share processing branch,ticker: '{ticker}'")
-                logger.info(f"💡 [Optimization strategy] Fundamental analysis only obtains current prices and financial data, but does not obtain historical daily data.")
+                logger.info("💡 [Optimization strategy] Fundamental analysis only obtains current prices and financial data, but does not obtain historical daily data.")
 
                 # Optimization strategy: Fundamental analysis does not require a large amount of historical daily data
                 # Only obtain current stock price information (last 1-2 days is sufficient) and fundamental financial data
@@ -906,7 +906,7 @@ class Toolkit:
 
                 # 🔥 Unified strategy: Get complete data at all levels
                 # Reason: The prompt words are unified. If the data is incomplete, it will cause LLM to analyze based on non-existent data (illusion)
-                logger.info(f"🔍 [Hong Kong stock fundamentals] Unified strategy: get complete data (ignore data_depth parameter)")
+                logger.info("🔍 [Hong Kong stock fundamentals] Unified strategy: get complete data (ignore data_depth parameter)")
 
                 # Main data sources:AKShare
                 try:
@@ -921,9 +921,9 @@ class Toolkit:
                     if hk_data and len(hk_data) > 100 and "❌" not in hk_data:
                         result_data.append(f"## 港股数据\n{hk_data}")
                         hk_data_success = True
-                        logger.info(f"✅ [Unified fundamental tools] The main data source of Hong Kong stocks is successful")
+                        logger.info("✅ [Unified fundamental tools] The main data source of Hong Kong stocks is successful")
                     else:
-                        logger.warning(f"⚠️ [Unified fundamental tools] The quality of Hong Kong stock market s main data sources is poor")
+                        logger.warning("⚠️ [Unified fundamental tools] The quality of Hong Kong stock market s main data sources is poor")
 
                 except Exception as e:
                     logger.error(f"❌ [Fundamental tool debugging] Failed to obtain Hong Kong stock data: {e}")
@@ -950,7 +950,7 @@ class Toolkit:
 - 考虑汇率因素对投资的影响
 """
                         result_data.append(basic_info)
-                        logger.info(f"✅ [Unified fundamental tools] Hong Kong stock backup information successful")
+                        logger.info("✅ [Unified fundamental tools] Hong Kong stock backup information successful")
 
                     except Exception as e2:
                         # final alternative
@@ -973,17 +973,17 @@ class Toolkit:
 
             else:
                 # US stocks: using OpenAI/Finnhub data sources
-                logger.info(f"🇺🇸 [Unified fundamental tools] Processing US stock data...")
+                logger.info("🇺🇸 [Unified fundamental tools] Processing US stock data...")
 
                 # 🔥 Unified strategy: Get complete data at all levels
                 # Reason: The prompt words are unified. If the data is incomplete, it will cause LLM to analyze based on non-existent data (illusion)
-                logger.info(f"🔍 [US stock fundamentals] Unified strategy: get complete data (ignore data_depth parameter)")
+                logger.info("🔍 [US stock fundamentals] Unified strategy: get complete data (ignore data_depth parameter)")
 
                 try:
                     from tradingagents.dataflows.interface import get_fundamentals_openai
                     us_data = get_fundamentals_openai(ticker, curr_date)
                     result_data.append(f"## 美股基本面数据\n{us_data}")
-                    logger.info(f"✅ [Unified fundamental tools] US stock data obtained successfully")
+                    logger.info("✅ [Unified fundamental tools] US stock data obtained successfully")
                 except Exception as e:
                     result_data.append(f"## U.S. stock fundamentals data\n Failed to obtain: {e}")
                     logger.error(f"❌ [Unified fundamental tools] Failed to obtain US stock data: {e}")
@@ -1003,7 +1003,7 @@ class Toolkit:
 """
 
             # Add detailed data acquisition log
-            logger.info(f"📊 [Unified fundamental tools] ===== Summary of data acquisition completion =====")
+            logger.info("📊 [Unified fundamental tools] ===== Summary of data acquisition completion =====")
             logger.info(f"📊 [Unified fundamental tools] Stock code: {ticker}")
             logger.info(f"📊 [Unified fundamental tools] Stock type: {market_info['market_name']}")
             logger.info(f"📊 [Unified fundamental tools] Data depth level: {data_depth}")
@@ -1025,13 +1025,13 @@ class Toolkit:
             
             # Record specific acquisition strategies based on data depth levels
             if data_depth in ["basic", "standard"]:
-                logger.info(f"📊 [Unified fundamental tools] Basic/Standard Level Strategies: Get only core price data and basic information")
+                logger.info("📊 [Unified fundamental tools] Basic/Standard Level Strategies: Get only core price data and basic information")
             elif data_depth in ["full", "detailed", "comprehensive"]:
-                logger.info(f"📊 [Unified fundamental tools] Complete/Detailed/Comprehensive level strategies: Get price data + fundamental data")
+                logger.info("📊 [Unified fundamental tools] Complete/Detailed/Comprehensive level strategies: Get price data + fundamental data")
             else:
-                logger.info(f"📊 [Unified fundamental tools] Default policy: Get complete data")
+                logger.info("📊 [Unified fundamental tools] Default policy: Get complete data")
             
-            logger.info(f"📊 [Unified fundamental tools] ===== End of data acquisition summary =====")
+            logger.info("📊 [Unified fundamental tools] ===== End of data acquisition summary =====")
             
             return combined_result
 
@@ -1096,7 +1096,7 @@ class Toolkit:
 
             if is_china:
                 # China A Shares: Using China Stock Data Sources
-                logger.info(f"🇨🇳 [unified market tools] Process A-share market data...")
+                logger.info("🇨🇳 [unified market tools] Process A-share market data...")
 
                 try:
                     from tradingagents.dataflows.interface import get_china_stock_data_unified
@@ -1113,7 +1113,7 @@ class Toolkit:
 
             elif is_hk:
                 # Hong Kong stocks: using AKShare data source
-                logger.info(f"🇭🇰 [unified market tools] Process Hong Kong stock market data...")
+                logger.info("🇭🇰 [unified market tools] Process Hong Kong stock market data...")
 
                 try:
                     from tradingagents.dataflows.interface import get_hk_stock_data_unified
@@ -1130,7 +1130,7 @@ class Toolkit:
 
             else:
                 # US stocks: Prioritize the use of FINNHUB API data sources
-                logger.info(f"🇺🇸 [unified market tools] Process U.S. stock market data...")
+                logger.info("🇺🇸 [unified market tools] Process U.S. stock market data...")
 
                 try:
                     from tradingagents.dataflows.providers.us.optimized import get_us_stock_data_cached
@@ -1201,7 +1201,7 @@ class Toolkit:
 
             if is_china or is_hk:
                 # China A-shares and Hong Kong stocks: Use AKShare Oriental Fortune News and Google News (Chinese search)
-                logger.info(f"🇨🇳🇭🇰 [unified news tool] Processing Chinese News...")
+                logger.info("🇨🇳🇭🇰 [unified news tool] Processing Chinese News...")
 
                 # 1. Try to get AKShare Oriental Wealth News
                 try:
@@ -1257,14 +1257,14 @@ class Toolkit:
                     from tradingagents.dataflows.interface import get_google_news
                     news_data = get_google_news(search_query, curr_date)
                     result_data.append(f"## Google新闻\n{news_data}")
-                    logger.info(f"🇨🇳🇭🇰 [unified news tool] Successfully obtained Google News")
+                    logger.info("🇨🇳🇭🇰 [unified news tool] Successfully obtained Google News")
                 except Exception as google_e:
                     logger.error(f"❌ [unified news tool] Google Failed to get news: {google_e}")
                     result_data.append(f"## Google News\n Failed to obtain: {google_e}")
 
             else:
                 # US Stocks: Use Finnhub News
-                logger.info(f"🇺🇸 [unified news tool] Handle US stock news...")
+                logger.info("🇺🇸 [unified news tool] Handle US stock news...")
 
                 try:
                     from tradingagents.dataflows.interface import get_finnhub_news
@@ -1377,7 +1377,7 @@ class Toolkit:
 
             if is_china or is_hk:
                 # China A-shares and Hong Kong stocks: using social media sentiment analysis
-                logger.info(f"🇨🇳🇭🇰 [Unifying Emotion Tools] Dealing with Chinese market sentiment...")
+                logger.info("🇨🇳🇭🇰 [Unifying Emotion Tools] Dealing with Chinese market sentiment...")
 
                 try:
                     # Can integrate Chinese social media sentiments such as Weibo, Snowball, Oriental Fortune, etc.
@@ -1406,7 +1406,7 @@ class Toolkit:
 
             else:
                 # US Stocks: Using Reddit Sentiment Analysis
-                logger.info(f"🇺🇸 [Unifying Emotion Tools] Dealing with U.S. stock market sentiment...")
+                logger.info("🇺🇸 [Unifying Emotion Tools] Dealing with U.S. stock market sentiment...")
 
                 try:
                     from tradingagents.dataflows.interface import get_reddit_sentiment

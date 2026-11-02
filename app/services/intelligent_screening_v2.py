@@ -968,7 +968,7 @@ User is in**Ask for current results**. Please use the appropriate tool to answer
 
     def _build_no_match_reply(self, message: str) -> str:
         """构建无匹配结果的回复"""
-        return f"No stocks matching the current filter criteria were found.\n\n There are currently no targets suitable for this screening requirement. If you still want to continue filtering, consider adjusting your criteria."
+        return "No stocks matching the current filter criteria were found.\n\n There are currently no targets suitable for this screening requirement. If you still want to continue filtering, consider adjusting your criteria."
 
     def _build_timeout_reply(self, timeout_seconds: int) -> str:
         """构建超时回复"""

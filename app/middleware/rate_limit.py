@@ -80,7 +80,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 detail={
                     "error": {
                         "code": "RATE_LIMIT_EXCEEDED",
-                        "message": f"The request is too frequent, please try again later.",
+                        "message": "The request is too frequent, please try again later.",
                         "rate_limit": rate_limit,
                         "current_count": current_count,
                         "reset_time": 60

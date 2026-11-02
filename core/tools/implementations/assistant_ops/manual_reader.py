@@ -427,7 +427,7 @@ async def search_user_manual(
 
             lines.append(f"━━━ #{i} {manual_label} | 相似度 {sim_pct} ━━━")
             lines.append(f"📌 标题: {r.title}{parent_hint}")
-            lines.append(f"📄 内容:")
+            lines.append("📄 内容:")
             lines.append(content_display)
             lines.append("")
 

@@ -446,7 +446,7 @@ def get_receivables_quality(symbol: Annotated[str, "A stock code, such as 600519
                 flags.append(f"应收增长({ar_growth*100:.1f}%)远超营收增长({rev_growth*100:.1f}%)，信用政策过度宽松")
             elif gap > 0.10:
                 score -= 5
-                flags.append(f"Receivables are growing faster than revenue, so you need to pay attention")
+                flags.append("Receivables are growing faster than revenue, so you need to pay attention")
         elif ar_growth is not None:
             flags.append(f"应收账款同比变动{ar_growth*100:.1f}%（无营收对比）")
 
@@ -646,10 +646,10 @@ def get_inventory_quality(symbol: Annotated[str, "A stock code, such as 600519,0
                 flags.append(f"存货增长({inv_growth*100:.1f}%)远超营收增长({rev_growth*100:.1f}%)，可能存在滞销")
             elif inv_growth > rev_growth + 0.10:
                 score -= 8
-                flags.append(f"存货增长快于营收增长")
+                flags.append("存货增长快于营收增长")
             elif inv_growth < rev_growth - 0.10:
                 score += 5
-                flags.append(f"Inventory growth is lower than revenue growth, well managed")
+                flags.append("Inventory growth is lower than revenue growth, well managed")
         elif inv_growth is not None:
             flags.append(f"存货同比变动{inv_growth*100:.1f}%（无营收对比）")
 

@@ -3472,7 +3472,7 @@ class PortfolioService:
 
             # Choose an analysis engine based on your configuration (USE_STOCK_ENGINE=true when using Workflow Engine v2.0)
             if _use_stock_engine():
-                logger.info(f"🚀 [Position analysis] Analysis using Workflow Engine v2.0")
+                logger.info("🚀 [Position analysis] Analysis using Workflow Engine v2.0")
                 ai_result = await self._call_position_ai_analysis_workflow(
                     snapshot=snapshot,
                     params=params,
@@ -3480,7 +3480,7 @@ class PortfolioService:
                     user_id=user_id
                 )
             else:
-                logger.info(f"🤖 [Position analysis] Using traditional LLM analysis")
+                logger.info("🤖 [Position analysis] Using traditional LLM analysis")
                 ai_result = await self._call_position_ai_analysis_v2(
                     snapshot=snapshot,
                     params=params,
@@ -3713,7 +3713,7 @@ class PortfolioService:
                                 logger.info(f"📊 [Format reports] Extract JSON from code block, length: {len(json_str)}")
                                 advice_json = json.loads(json_str)
                         elif action_reason_str.strip().startswith("{"):
-                            logger.info(f"📊 [Format reports] Directly parse JSON format")
+                            logger.info("📊 [Format reports] Directly parse JSON format")
                             advice_json = json.loads(action_reason_str)
                         
                         if advice_json:
@@ -3721,7 +3721,7 @@ class PortfolioService:
                             action_reason_formatted = self._convert_action_advice_json_to_markdown(advice_json)
                             logger.info(f"📊 [Format reports] JSON Conversion to Markdown successful, length: {len(action_reason_formatted)}")
                         else:
-                            logger.warning(f"⚠️ [Format reports] JSON Empty after parsing, use original value")
+                            logger.warning("⚠️ [Format reports] JSON Empty after parsing, use original value")
                     except Exception as e:
                         logger.warning(f"⚠️ [Format reports] JSON Parse failed, original value used: {e}", exc_info=True)
             elif isinstance(action_reason_raw, dict):
@@ -3924,7 +3924,7 @@ class PortfolioService:
 
             # Choose an analysis engine based on your configuration (USE_STOCK_ENGINE=true when using Workflow Engine v2.0)
             if _use_stock_engine():
-                logger.info(f"🚀 [Summary position analysis] Analysis using Workflow Engine v2.0")
+                logger.info("🚀 [Summary position analysis] Analysis using Workflow Engine v2.0")
                 ai_result = await self._call_position_ai_analysis_workflow(
                     snapshot=snapshot,
                     params=analysis_params,
@@ -3932,7 +3932,7 @@ class PortfolioService:
                     user_id=user_id
                 )
             else:
-                logger.info(f"🤖 [Summary position analysis] Using traditional LLM analysis")
+                logger.info("🤖 [Summary position analysis] Using traditional LLM analysis")
                 ai_result = await self._call_position_ai_analysis_v2(
                     snapshot=snapshot,
                     params=analysis_params,
@@ -4622,7 +4622,7 @@ class PortfolioService:
                 api_key=api_key
             )
 
-            logger.info(f"📤 [Position AI analysis] Start calling LLM...")
+            logger.info("📤 [Position AI analysis] Start calling LLM...")
             response = await llm.ainvoke(prompt)
 
             # Record token usage
@@ -5481,9 +5481,9 @@ class PortfolioService:
                         legacy_config["quick_think_llm"] = quick_analysis_model
                         legacy_config["deep_think_llm"] = deep_analysis_model
                         legacy_config["llm_provider"] = "dashscope"
-                        logger.warning(f"⚠️ [Workflow position analysis] Unable to get full model configuration, only set model name")
+                        logger.warning("⚠️ [Workflow position analysis] Unable to get full model configuration, only set model name")
                 else:
-                    logger.warning(f"⚠️ [Workflow position analysis] system_settings quick_analysis_model or deep_analysis_model not found, use default configuration")
+                    logger.warning("⚠️ [Workflow position analysis] system_settings quick_analysis_model or deep_analysis_model not found, use default configuration")
                     # If not configured, use default value
                     legacy_config["quick_think_llm"] = quick_analysis_model or "qwen-turbo"
                     legacy_config["deep_think_llm"] = deep_analysis_model or "qwen-plus"
@@ -5567,7 +5567,7 @@ class PortfolioService:
                             logger.info(f"📊 [Workflow position analysis] Extract JSON from code block, length: {len(json_str)}")
                             advice_json = json.loads(json_str)
                     elif action_advice.strip().startswith("{"):
-                        logger.info(f"📊 [Workflow position analysis] Directly parse JSON format")
+                        logger.info("📊 [Workflow position analysis] Directly parse JSON format")
                         advice_json = json.loads(action_advice)
                 except Exception as e:
                     logger.warning(f"⚠️ [Workflow position analysis] JSON Parsing failed: {e}")
@@ -5602,11 +5602,11 @@ class PortfolioService:
                         confidence = max(0.0, min(100.0, confidence))
                     except (ValueError, TypeError):
                         confidence = 50.0  # Default value
-                        logger.warning(f"⚠️ [Workflow position analysis] confidence Conversion failed, using default value 50")
+                        logger.warning("⚠️ [Workflow position analysis] confidence Conversion failed, using default value 50")
                 else:
                     # If AI does not generate confidence, set a reasonable default based on analysis quality
                     confidence = 50.0  # Default medium confidence
-                    logger.info(f"📊 [Workflow position analysis] JSON There is no confidence field in, use the default value 50")
+                    logger.info("📊 [Workflow position analysis] JSON There is no confidence field in, use the default value 50")
                 
                 logger.info(f"📊 [Workflow position analysis] extracted confidence: {confidence}")
                 price_targets = self._extract_price_targets_from_json(advice_json, snapshot, params)
@@ -5616,7 +5616,7 @@ class PortfolioService:
                 opportunity_assessment_text = advice_json.get("opportunity_assessment", "")
                 logger.info(f"📊 [Workflow position analysis] Extracted opportunity_assessment length: {len(opportunity_assessment_text)}")
             else:
-                logger.warning(f"⚠️ [Workflow position analysis] advice_json If empty, use text parsing")
+                logger.warning("⚠️ [Workflow position analysis] advice_json If empty, use text parsing")
                 action, action_reason = self._parse_workflow_action_advice(action_advice if isinstance(action_advice, str) else str(action_advice))
 
             # Build complete analysis results
@@ -5655,7 +5655,7 @@ class PortfolioService:
             
             # Make sure detailed_analysis is not empty
             if not detailed_analysis:
-                logger.warning(f"⚠️ [Workflow position analysis] detailed_analysis Empty, use default content")
+                logger.warning("⚠️ [Workflow position analysis] detailed_analysis Empty, use default content")
                 detailed_analysis = f"【技术面分析】\n{technical_analysis}\n\n【基本面分析】\n{fundamental_analysis}\n\n【风险评估】\n{risk_analysis}".strip()
 
             logger.info(f"📊 [Workflow position analysis] Build analysis results: action={action}, risk_assessment length={len(risk_assessment_text)}, detailed_analysis length={len(detailed_analysis)}")
@@ -6009,7 +6009,7 @@ class PortfolioService:
                     scenario = if_price_rises.get("scenario", "")
                     suggestion = if_price_rises.get("suggestion", "")
                     if scenario or suggestion:
-                        lines.append(f"### 📈 如果股价上涨\n\n")
+                        lines.append("### 📈 如果股价上涨\n\n")
                         if scenario:
                             lines.append(f"**情景**: {scenario}\n\n")
                         if suggestion:
@@ -6020,7 +6020,7 @@ class PortfolioService:
                     scenario = if_price_falls.get("scenario", "")
                     suggestion = if_price_falls.get("suggestion", "")
                     if scenario or suggestion:
-                        lines.append(f"### 📉 如果股价下跌\n\n")
+                        lines.append("### 📉 如果股价下跌\n\n")
                         if scenario:
                             lines.append(f"**情景**: {scenario}\n\n")
                         if suggestion:
@@ -6031,7 +6031,7 @@ class PortfolioService:
                     scenario = if_price_consolidates.get("scenario", "")
                     suggestion = if_price_consolidates.get("suggestion", "")
                     if scenario or suggestion:
-                        lines.append(f"### ➡️ If the stock price consolidates\n\n")
+                        lines.append("### ➡️ If the stock price consolidates\n\n")
                         if scenario:
                             lines.append(f"**情景**: {scenario}\n\n")
                         if suggestion:
@@ -6120,7 +6120,7 @@ class PortfolioService:
             except (ValueError, TypeError) as e:
                 logger.warning(f"⚠️ [Extract price target] Risk focus price conversion failed: {e}")
         else:
-            logger.info(f"📊 [Extract price target] JSON The stop_loss_price field was not found in")
+            logger.info("📊 [Extract price target] JSON The stop_loss_price field was not found in")
         
         # Extract the profit and focus on the price (may be in multiple positions, compatible with the old version of the take profit price field)
         take_profit_price = None
@@ -6174,7 +6174,7 @@ class PortfolioService:
             except (ValueError, TypeError) as e:
                 logger.warning(f"⚠️ [Extract price target] Yield focus price conversion failed: {e}")
         else:
-            logger.info(f"📊 [Extract price target] JSON The take_profit_price field was not found in")
+            logger.info("📊 [Extract price target] JSON The take_profit_price field was not found in")
         
         # The return price is the cost price
         if snapshot.cost_price and snapshot.cost_price > 0:

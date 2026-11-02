@@ -54,7 +54,7 @@ class ChromaDBManager:
                     if is_windows_11():
                         logger.info(f"📚 [ChromaDB] Windows 11 Optimization configuration initialization completed (Build number: {platform.version()})")
                     else:
-                        logger.info(f"📚 [ChromaDB] Windows 10 Compatible configuration initialization completed")
+                        logger.info("📚 [ChromaDB] Windows 10 Compatible configuration initialization completed")
                 else:
                     logger.info(f"📚 [ChromaDB] {system}标准配置初始化完成")
 
@@ -69,7 +69,7 @@ class ChromaDBManager:
                         is_persistent=False
                     )
                     self._client = chromadb.Client(settings)
-                    logger.info(f"📚 [ChromaDB] Initialization complete with alternate configuration")
+                    logger.info("📚 [ChromaDB] Initialization complete with alternate configuration")
                 except Exception as backup_error:
                     # Last resort
                     self._client = chromadb.Client()
@@ -141,7 +141,7 @@ class FinancialSituationMemory:
                     from dashscope import TextEmbedding
 
                     dashscope.api_key = dashscope_key
-                    logger.info(f"✅ DashScope API Key configured, memory function enabled")
+                    logger.info("✅ DashScope API Key configured, memory function enabled")
 
                     # Optional: Test API connection (simple verification)
                     # No actual calls are made here, only the import and key settings are verified
@@ -150,18 +150,18 @@ class FinancialSituationMemory:
                     # DashScope Package not installed
                     logger.error(f"❌ DashScope Package not installed: {e}")
                     self.client = "DISABLED"
-                    logger.warning(f"⚠️ 记忆功能已禁用")
+                    logger.warning("⚠️ 记忆功能已禁用")
 
                 except Exception as e:
                     # Other initialization errors
                     logger.error(f"❌ DashScope Initialization failed: {e}")
                     self.client = "DISABLED"
-                    logger.warning(f"⚠️ 记忆功能已禁用")
+                    logger.warning("⚠️ 记忆功能已禁用")
             else:
                 # Without DashScope key, memory function is disabled
                 self.client = "DISABLED"
-                logger.warning(f"⚠️ DASHSCOPE_API_KEY not found, memory function disabled")
-                logger.info(f"💡 The system will continue to operate but historical memory will not be saved or retrieved")
+                logger.warning("⚠️ DASHSCOPE_API_KEY not found, memory function disabled")
+                logger.info("💡 The system will continue to operate but historical memory will not be saved or retrieved")
         elif self.llm_provider == "qianfan":
             # Qianfan (Wen Xinyiyan) embedding configuration
             # Qianfan currently does not have an independent embedding API and uses Alibaba Bailian as a downgrade option.
@@ -175,20 +175,20 @@ class FinancialSituationMemory:
                     dashscope.api_key = dashscope_key
                     self.embedding = "text-embedding-v3"
                     self.client = None
-                    logger.info(f"💡 Qianfan uses Alibaba Bailian embedded service")
+                    logger.info("💡 Qianfan uses Alibaba Bailian embedded service")
                 except ImportError as e:
                     logger.error(f"❌ DashScope Package not installed: {e}")
                     self.client = "DISABLED"
-                    logger.warning(f"⚠️ 千帆记忆功能已禁用")
+                    logger.warning("⚠️ 千帆记忆功能已禁用")
                 except Exception as e:
                     logger.error(f"❌ 千帆嵌入初始化失败: {e}")
                     self.client = "DISABLED"
-                    logger.warning(f"⚠️ 千帆记忆功能已禁用")
+                    logger.warning("⚠️ 千帆记忆功能已禁用")
             else:
                 # Without DashScope key, memory function is disabled
                 self.client = "DISABLED"
-                logger.warning(f"⚠️ Qianfan did not find DASHSCOPE_API_KEY, the memory function is disabled")
-                logger.info(f"💡 The system will continue to operate but historical memory will not be saved or retrieved")
+                logger.warning("⚠️ Qianfan did not find DASHSCOPE_API_KEY, the memory function is disabled")
+                logger.info("💡 The system will continue to operate but historical memory will not be saved or retrieved")
         elif self.llm_provider == "deepseek":
             # Check if OpenAI embedding is forced
             force_openai = os.getenv('FORCE_OPENAI_EMBEDDING', 'false').lower() == 'true'
@@ -206,7 +206,7 @@ class FinancialSituationMemory:
                         # Verify TextEmbedding availability (no actual call required)
                         self.embedding = "text-embedding-v3"
                         self.client = None
-                        logger.info(f"💡 DeepSeek Use Alibaba Bailian embedded service")
+                        logger.info("💡 DeepSeek Use Alibaba Bailian embedded service")
                     except ImportError as e:
                         logger.error(f"⚠️ DashScope Package not installed: {e}")
                         dashscope_key = None  # forced downgrade
@@ -225,7 +225,7 @@ class FinancialSituationMemory:
                         api_key=openai_key,
                         base_url=config.get("backend_url", "https://api.openai.com/v1")
                     )
-                    logger.warning(f"⚠️ DeepSeek Fallback to OpenAI embedding service")
+                    logger.warning("⚠️ DeepSeek Fallback to OpenAI embedding service")
                 else:
                     # Finally try DeepSeek's own embedding
                     deepseek_key = os.getenv('DEEPSEEK_API_KEY')
@@ -235,16 +235,16 @@ class FinancialSituationMemory:
                                 api_key=deepseek_key,
                                 base_url="https://api.deepseek.com"
                             )
-                            logger.info(f"💡 DeepSeek Use your own embed service")
+                            logger.info("💡 DeepSeek Use your own embed service")
                         except Exception as e:
                             logger.error(f"❌ DeepSeek Embed service is not available: {e}")
                             # Disable memory function
                             self.client = "DISABLED"
-                            logger.info(f"🚨 The memory function is disabled, the system will continue to operate without saving historical memory")
+                            logger.info("🚨 The memory function is disabled, the system will continue to operate without saving historical memory")
                     else:
                         # Disable memory features instead of throwing exceptions
                         self.client = "DISABLED"
-                        logger.info(f"🚨 No available embedding service found, memory functionality disabled")
+                        logger.info("🚨 No available embedding service found, memory functionality disabled")
         elif self.llm_provider == "google":
             # Google AI Use Ali Bailian embedding if available, otherwise disable memory function
             dashscope_key = os.getenv('DASHSCOPE_API_KEY')
@@ -262,28 +262,28 @@ class FinancialSituationMemory:
                     
                     # Check if OpenAI key is available as downgrade option
                     if openai_key:
-                        logger.info(f"💡 Google AI Use Alibaba Bailian embedding service (OpenAI as downgrade option)")
+                        logger.info("💡 Google AI Use Alibaba Bailian embedding service (OpenAI as downgrade option)")
                         self.fallback_available = True
                         self.fallback_client = OpenAI(api_key=openai_key, base_url=config["backend_url"])
                         self.fallback_embedding = "text-embedding-3-small"
                     else:
-                        logger.info(f"💡 Google AI Use Alibaba Bailian embedded service (no downgrade option)")
+                        logger.info("💡 Google AI Use Alibaba Bailian embedded service (no downgrade option)")
                         self.fallback_available = False
                         
                 except ImportError as e:
                     logger.error(f"❌ DashScope Package not installed: {e}")
                     self.client = "DISABLED"
-                    logger.warning(f"⚠️ Google AI Memory function disabled")
+                    logger.warning("⚠️ Google AI Memory function disabled")
                 except Exception as e:
                     logger.error(f"❌ DashScope Initialization failed: {e}")
                     self.client = "DISABLED"
-                    logger.warning(f"⚠️ Google AI Memory function disabled")
+                    logger.warning("⚠️ Google AI Memory function disabled")
             else:
                 # Without DashScope key, memory function is disabled
                 self.client = "DISABLED"
                 self.fallback_available = False
-                logger.warning(f"⚠️ Google AI DASHSCOPE_API_KEY not found, memory function disabled")
-                logger.info(f"💡 The system will continue to operate but historical memory will not be saved or retrieved")
+                logger.warning("⚠️ Google AI DASHSCOPE_API_KEY not found, memory function disabled")
+                logger.info("💡 The system will continue to operate but historical memory will not be saved or retrieved")
         elif self.llm_provider in {"openrouter", "aihubmix"}:
             # OpenAI Compatible with aggregation channel support: priority is given to using Alibaba Bailian embedding, otherwise the memory function is disabled
             provider_label = "AIHubMix" if self.llm_provider == "aihubmix" else "OpenRouter"
@@ -310,7 +310,7 @@ class FinancialSituationMemory:
                 # Without DashScope key, memory function is disabled
                 self.client = "DISABLED"
                 logger.warning(f"⚠️ {provider_label}DASHSCOPE_API_KEY not found, memory function disabled")
-                logger.info(f"💡 The system will continue to operate but historical memory will not be saved or retrieved")
+                logger.info("💡 The system will continue to operate but historical memory will not be saved or retrieved")
         elif config["backend_url"] == "http://localhost:11434/v1":
             self.embedding = "nomic-embed-text"
             self.client = OpenAI(base_url=config["backend_url"])
@@ -324,7 +324,7 @@ class FinancialSituationMemory:
                 )
             else:
                 self.client = "DISABLED"
-                logger.warning(f"⚠️ OPENAI_API_KEY not found, memory function disabled")
+                logger.warning("⚠️ OPENAI_API_KEY not found, memory function disabled")
 
         # Using the singleton ChromaDB manager
         self.chroma_manager = ChromaDBManager()
@@ -444,17 +444,17 @@ class FinancialSituationMemory:
         # Check if the memory function is disabled
         if self.client == "DISABLED":
             # Memory feature disabled, returns empty vector
-            logger.debug(f"⚠️ Memorization is disabled, returning an empty vector")
+            logger.debug("⚠️ Memorization is disabled, returning an empty vector")
             return [0.0] * 1024  # Returns a 1024-dimensional zero vector
 
         # Validate input text
         if not text or not isinstance(text, str):
-            logger.warning(f"⚠️ If the input text is empty or invalid, an empty vector is returned.")
+            logger.warning("⚠️ If the input text is empty or invalid, an empty vector is returned.")
             return [0.0] * 1024
 
         text_length = len(text)
         if text_length == 0:
-            logger.warning(f"⚠️ The input text length is 0 and an empty vector is returned.")
+            logger.warning("⚠️ The input text length is 0 and an empty vector is returned.")
             return [0.0] * 1024
         
         # Check if length limit is enabled
@@ -514,7 +514,7 @@ class FinancialSituationMemory:
 
                 # Check if DashScope API key is available
                 if not hasattr(dashscope, 'api_key') or not dashscope.api_key:
-                    logger.warning(f"⚠️ DashScope API The key is not set and the memory function is degraded")
+                    logger.warning("⚠️ DashScope API The key is not set and the memory function is degraded")
                     return [0.0] * 1024  # Returns an empty vector
 
                 # Try calling DashScope API
@@ -539,7 +539,7 @@ class FinancialSituationMemory:
                         
                         # Check if there is a downgrade option
                         if hasattr(self, 'fallback_available') and self.fallback_available:
-                            logger.info(f"💡 Try using OpenAI downgrade to handle long text")
+                            logger.info("💡 Try using OpenAI downgrade to handle long text")
                             try:
                                 response = self.fallback_client.embeddings.create(
                                     model=self.fallback_embedding,
@@ -550,10 +550,10 @@ class FinancialSituationMemory:
                                 return embedding
                             except Exception as fallback_error:
                                 logger.error(f"❌ OpenAI Downgrade failed: {str(fallback_error)}")
-                                logger.info(f"💡 All downgrade options failed, memory function downgraded")
+                                logger.info("💡 All downgrade options failed, memory function downgraded")
                                 return [0.0] * 1024
                         else:
-                            logger.info(f"💡 No downgrade option available, memory function downgraded")
+                            logger.info("💡 No downgrade option available, memory function downgraded")
                             return [0.0] * 1024
                     else:
                         logger.error(f"❌ DashScope API Error: {error_msg}")
@@ -568,7 +568,7 @@ class FinancialSituationMemory:
                     
                     # Check if there is a downgrade option
                     if hasattr(self, 'fallback_available') and self.fallback_available:
-                        logger.info(f"💡 Try using OpenAI downgrade to handle long text")
+                        logger.info("💡 Try using OpenAI downgrade to handle long text")
                         try:
                             response = self.fallback_client.embeddings.create(
                                 model=self.fallback_embedding,
@@ -579,10 +579,10 @@ class FinancialSituationMemory:
                             return embedding
                         except Exception as fallback_error:
                             logger.error(f"❌ OpenAI Downgrade failed: {str(fallback_error)}")
-                            logger.info(f"💡 All downgrade options failed, memory function downgraded")
+                            logger.info("💡 All downgrade options failed, memory function downgraded")
                             return [0.0] * 1024
                     else:
-                        logger.info(f"💡 No downgrade option available, memory function downgraded")
+                        logger.info("💡 No downgrade option available, memory function downgraded")
                         return [0.0] * 1024
                 elif 'import' in error_str:
                     logger.error(f"❌ DashScope Package not installed: {str(e)}")
@@ -614,16 +614,16 @@ class FinancialSituationMemory:
                     else:
                         logger.error(f"❌ DashScope embedding Abnormal: {str(e)}")
 
-                logger.warning(f"⚠️ The memory function is degraded and an empty vector is returned.")
+                logger.warning("⚠️ The memory function is degraded and an empty vector is returned.")
                 return [0.0] * 1024
         else:
             # Use OpenAI compatible embedding models
             if self.client is None:
-                logger.warning(f"⚠️ Embed client is not initialized, returns empty vector")
+                logger.warning("⚠️ Embed client is not initialized, returns empty vector")
                 return [0.0] * 1024  # Returns an empty vector
             elif self.client == "DISABLED":
                 # Memory feature disabled, returns empty vector
-                logger.debug(f"⚠️ Memory feature disabled, returns empty vector")
+                logger.debug("⚠️ Memory feature disabled, returns empty vector")
                 return [0.0] * 1024  # Returns a 1024-dimensional zero vector
 
             # Try calling OpenAI compatible embedding API
@@ -662,7 +662,7 @@ class FinancialSituationMemory:
                 if is_length_error:
                     # Length limit error: downgrade directly, try again without truncation
                     logger.warning(f"⚠️ {self.llm_provider}长度限制: {str(e)}")
-                    logger.info(f"💡 In order to ensure the accuracy of analysis, the text is not truncated and the memory function is downgraded.")
+                    logger.info("💡 In order to ensure the accuracy of analysis, the text is not truncated and the memory function is downgraded.")
                 else:
                     # Other types of errors
                     if 'attributeerror' in error_str:
@@ -676,7 +676,7 @@ class FinancialSituationMemory:
                     else:
                         logger.error(f"❌ {self.llm_provider} embedding异常: {str(e)}")
 
-                logger.warning(f"⚠️ The memory function is degraded and an empty vector is returned.")
+                logger.warning("⚠️ The memory function is degraded and an empty vector is returned.")
                 return [0.0] * 1024
 
     def _try_dashscope_fallback(self, text):
@@ -790,12 +790,12 @@ class FinancialSituationMemory:
         extra_meta = dict(metadata or {})
 
         # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
-        logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - add_memories count (v1.x)")
+        logger.debug("🔒 [ChromaDB] Prepare to acquire lock - add_memories count (v1.x)")
         with ChromaDBManager._chroma_operation_lock:
-            logger.debug(f"🔓 [ChromaDB] Lock acquired - add_memories count (v1.x)")
+            logger.debug("🔓 [ChromaDB] Lock acquired - add_memories count (v1.x)")
             offset = self.situation_collection.count()
             logger.debug(f"✅ [ChromaDB] count Operation completed (v1.x, offset={offset})")
-        logger.debug(f"🔓 [ChromaDB] Lock released - add_memories count (v1.x)")
+        logger.debug("🔓 [ChromaDB] Lock released - add_memories count (v1.x)")
 
         for i, (situation, recommendation) in enumerate(situations_and_advice):
             situations.append(situation)
@@ -806,7 +806,7 @@ class FinancialSituationMemory:
         # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
         logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - add_memories add (v1.x, count={len(situations)})")
         with ChromaDBManager._chroma_operation_lock:
-            logger.debug(f"🔓 [ChromaDB] Lock acquired - add_memories add (v1.x)")
+            logger.debug("🔓 [ChromaDB] Lock acquired - add_memories add (v1.x)")
             self.situation_collection.add(
                 documents=situations,
                 metadatas=[{**extra_meta, "recommendation": rec} for rec in advice],
@@ -814,7 +814,7 @@ class FinancialSituationMemory:
                 ids=ids,
             )
             logger.debug(f"✅ [ChromaDB] add Operation completed (v1.x, count={len(situations)})")
-        logger.debug(f"🔓 [ChromaDB] Lock released - add_memories add (v1.x)")
+        logger.debug("🔓 [ChromaDB] Lock released - add_memories add (v1.x)")
 
     def get_memories(self, current_situation, n_matches=1):
         """Find matching recommendations using embeddings with smart truncation handling"""
@@ -824,37 +824,37 @@ class FinancialSituationMemory:
         
         # Check for empty vector (memory disabled or error)
         if all(x == 0.0 for x in query_embedding):
-            logger.debug(f"⚠️ Query embedding as an empty vector and return empty results")
+            logger.debug("⚠️ Query embedding as an empty vector and return empty results")
             return []
 
         # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
-        logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - get_memories count (v1.x)")
+        logger.debug("🔒 [ChromaDB] Prepare to acquire lock - get_memories count (v1.x)")
         with ChromaDBManager._chroma_operation_lock:
-            logger.debug(f"🔓 [ChromaDB] Lock acquired - get_memories count (v1.x)")
+            logger.debug("🔓 [ChromaDB] Lock acquired - get_memories count (v1.x)")
             # Check if there is enough data for query
             collection_count = self.situation_collection.count()
             logger.debug(f"✅ [ChromaDB] count Operation completed (v1.x, count={collection_count})")
             if collection_count == 0:
-                logger.debug(f"📭 The memory bank is empty and returns empty results.")
-                logger.debug(f"🔓 [ChromaDB] Lock released - get_memories count (v1.x)")
+                logger.debug("📭 The memory bank is empty and returns empty results.")
+                logger.debug("🔓 [ChromaDB] Lock released - get_memories count (v1.x)")
                 return []
 
             # Adjust the number of queries to not exceed the number of documents in the collection
             actual_n_matches = min(n_matches, collection_count)
-        logger.debug(f"🔓 [ChromaDB] Lock released - get_memories count (v1.x)")
+        logger.debug("🔓 [ChromaDB] Lock released - get_memories count (v1.x)")
 
         try:
             # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
             logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - get_memories query (v1.x, n_results={actual_n_matches})")
             with ChromaDBManager._chroma_operation_lock:
-                logger.debug(f"🔓 [ChromaDB] Lock acquired - get_memories query (v1.x)")
+                logger.debug("🔓 [ChromaDB] Lock acquired - get_memories query (v1.x)")
                 # Perform similarity query
                 results = self.situation_collection.query(
                     query_embeddings=[query_embedding],
                     n_results=actual_n_matches
                 )
-                logger.debug(f"✅ [ChromaDB] query Operation completed (v1.x)")
-            logger.debug(f"🔓 [ChromaDB] Lock released - get_memories query (v1.x)")
+                logger.debug("✅ [ChromaDB] query Operation completed (v1.x)")
+            logger.debug("🔓 [ChromaDB] Lock released - get_memories query (v1.x)")
             
             # Process query results
             memories = []
@@ -892,12 +892,12 @@ class FinancialSituationMemory:
     def get_cache_info(self):
         """Obtain cache-related information for debugging and monitoring"""
         # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
-        logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - get_cache_info (v1.x)")
+        logger.debug("🔒 [ChromaDB] Prepare to acquire lock - get_cache_info (v1.x)")
         with ChromaDBManager._chroma_operation_lock:
-            logger.debug(f"🔓 [ChromaDB] Lock acquired - get_cache_info (v1.x)")
+            logger.debug("🔓 [ChromaDB] Lock acquired - get_cache_info (v1.x)")
             collection_count = self.situation_collection.count()
             logger.debug(f"✅ [ChromaDB] count Operation completed (v1.x, count={collection_count})")
-        logger.debug(f"🔓 [ChromaDB] Lock released - get_cache_info (v1.x)")
+        logger.debug("🔓 [ChromaDB] Lock released - get_cache_info (v1.x)")
 
         info = {
             'collection_count': collection_count,

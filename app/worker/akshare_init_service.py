@@ -188,7 +188,7 @@ class AKShareInitService:
         basic_count = await self.db.stock_basic_info.count_documents({})
         quotes_count = await self.db.market_quotes.count_documents({})
         
-        logger.info(f"  Current data status:")
+        logger.info("  Current data status:")
         logger.info(f"    Basic stock information: {basic_count}Article")
         logger.info(f"    Market data: {quotes_count}Article")
         
@@ -389,7 +389,7 @@ class AKShareInitService:
             "market_info": {"$exists": True}
         })
         
-        logger.info(f"  Data integrity verification:")
+        logger.info("  Data integrity verification:")
         logger.info(f"    Basic stock information: {basic_count}Article")
         logger.info(f"    Extended field coverage: {extended_count}Article ({extended_count/basic_count*100:.1f}%)")
         logger.info(f"    Market data: {quotes_count}Article")

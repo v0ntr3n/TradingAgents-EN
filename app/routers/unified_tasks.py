@@ -67,7 +67,7 @@ async def get_task_list(
     Note: If limit is not specified, all records will be returned and paging will be handled by the front end.
     """
     try:
-        logger.info(f"🎯 [unified mission center] Get task list request")
+        logger.info("🎯 [unified mission center] Get task list request")
         logger.info(f"👤 User information: {user}")
         logger.info(f"📊 query parameters: task_type={task_type}, status={status}, limit={limit}, skip={skip}")
 
@@ -133,7 +133,7 @@ async def get_task_statistics(
 ):
     """Get user s task statistics"""
     try:
-        logger.info(f"🎯 [unified mission center] Get task statistics request")
+        logger.info("🎯 [unified mission center] Get task statistics request")
         logger.info(f"👤 User information: {user}")
 
         user_id = PyObjectId(user["id"])

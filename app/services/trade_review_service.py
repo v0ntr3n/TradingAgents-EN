@@ -388,7 +388,7 @@ class TradeReviewService:
 
         # 🆕 2.5. If the transaction is a holding position, calculate the floating profit and loss
         if trade_info.is_holding:
-            logger.info(f"📊 [Create review] Detect transactions in positions and calculate floating profit and loss...")
+            logger.info("📊 [Create review] Detect transactions in positions and calculate floating profit and loss...")
             trade_info = await self._calculate_unrealized_pnl(trade_info)
 
         # 3. Get trading plan information (if a trading plan is associated)
@@ -556,7 +556,7 @@ class TradeReviewService:
 
         # 2.5. If the transaction is a holding position, calculate the floating profit and loss
         if trade_info.is_holding:
-            logger.info(f"📊 [Review v2.0] Detect transactions in positions and calculate floating profit and loss...")
+            logger.info("📊 [Review v2.0] Detect transactions in positions and calculate floating profit and loss...")
             trade_info = await self._calculate_unrealized_pnl(trade_info)
 
         # 3. Get trading plan information
@@ -888,7 +888,7 @@ class TradeReviewService:
         # Calculate profit and loss percentage
         pnl_pct = (total_pnl / total_buy_amount * 100) if total_buy_amount > 0 else 0.0
 
-        logger.info(f"📊 [_build_trade_info] Statistical results:")
+        logger.info("📊 [_build_trade_info] Statistical results:")
         logger.info(f"  - total_buy_amount: {total_buy_amount}")
         logger.info(f"  - total_sell_amount: {total_sell_amount}")
         logger.info(f"  - total_pnl: {total_pnl}")
@@ -948,7 +948,7 @@ class TradeReviewService:
             logger.info(f"📊 [_build_trade_info] 检测到持仓中: 剩余 {remaining_quantity} 股")
             # Get the current price (asynchronous method, obtained when calling _calculate_unrealized_pnl in create_trade_review)
 
-        logger.info(f"📊 [_build_trade_info] Position status:")
+        logger.info("📊 [_build_trade_info] Position status:")
         logger.info(f"  - is_holding: {is_holding}")
         logger.info(f"  - remaining_quantity: {remaining_quantity}")
         logger.info(f"  - realized_pnl: {total_pnl}")
@@ -1011,7 +1011,7 @@ class TradeReviewService:
             if account_result.get("success"):
                 account_info = account_result.get("data", {})
                 trade_info_data["account_info"] = account_info
-                logger.info(f"✅ Account information has been added to transaction information")
+                logger.info("✅ Account information has been added to transaction information")
             else:
                 logger.warning(f"⚠️ 获取账户信息失败: {account_result.get('error')}")
 
@@ -1248,7 +1248,7 @@ class TradeReviewService:
 
         if should_use_workflow:
             try:
-                logger.info(f"🔄 [Transaction review] Use workflow engines for multi-dimensional analysis (v2.0)")
+                logger.info("🔄 [Transaction review] Use workflow engines for multi-dimensional analysis (v2.0)")
                 return await self._call_workflow_trade_review(
                     trade_info, market_snapshot, user_id, trading_system,
                     progress_callback=progress_callback  # 🔥 Pass progress callback
@@ -1259,7 +1259,7 @@ class TradeReviewService:
                 logger.warning(f"⚠️ [Transaction review] Full stack trace:\n{traceback.format_exc()}")
                 # Downgrade to a single LLM call
 
-        logger.info(f"📝 [Transaction review] Use traditional analysis methods (v1.0)")
+        logger.info("📝 [Transaction review] Use traditional analysis methods (v1.0)")
 
         try:
             # If the template system is enabled, first obtain market and industry benchmark data
@@ -1272,7 +1272,7 @@ class TradeReviewService:
                         start_date=trade_info.first_buy_date[:10] if trade_info.first_buy_date else "",
                         end_date=trade_info.last_sell_date[:10] if trade_info.last_sell_date else ""
                     )
-                    logger.info(f"📊 [Transaction review] Obtaining benchmark data is completed")
+                    logger.info("📊 [Transaction review] Obtaining benchmark data is completed")
                 except Exception as e:
                     logger.warning(f"⚠️ [Transaction review] Failed to obtain benchmark data: {e}")
 
@@ -1294,7 +1294,7 @@ class TradeReviewService:
             logger.info(f"📝 [AI Review] Prompt first 500 characters:\n{prompt[:500]}")
 
             # Create an instance using the unified LLM adapter
-            logger.info(f"🔧 [AI Review] Start creating an LLM instance...")
+            logger.info("🔧 [AI Review] Start creating an LLM instance...")
             llm = create_llm_by_provider(
                 provider=provider_info.get("provider", "dashscope"),
                 model=model_name,
@@ -1307,7 +1307,7 @@ class TradeReviewService:
             logger.info(f"✅ [AI Review] LLM Instance created successfully: {type(llm).__name__}")
 
             # asynchronous call LLM
-            logger.info(f"🚀 [AI Review] Start calling LLM API...")
+            logger.info("🚀 [AI Review] Start calling LLM API...")
             response = await llm.ainvoke(prompt)
 
             # Record token usage
@@ -1322,7 +1322,7 @@ class TradeReviewService:
             except Exception as e:
                 logger.warning(f"Record token usage failure: {e}")
 
-            logger.info(f"✅ [AI Review] LLM API Call successful")
+            logger.info("✅ [AI Review] LLM API Call successful")
             logger.info(f"📦 [AI Review] Response Type: {type(response).__name__}")
             logger.info(f"📦 [AI Review] Response Properties: {dir(response)}")
 
@@ -1331,7 +1331,7 @@ class TradeReviewService:
             logger.info(f"📄 [AI Review] Return the first 500 characters of the content:\n{content[:500]}")
             logger.info(f"📄 [AI Review] Return 500 characters after content:\n{content[-500:]}")
 
-            logger.info(f"🔍 [AI Review] Start parsing AI responses...")
+            logger.info("🔍 [AI Review] Start parsing AI responses...")
             result = self._parse_ai_trade_review(content, trade_info, market_snapshot)
             logger.info(f"✅ [AI复盘] 解析完成 - 总分: {result.overall_score}, 摘要长度: {len(result.summary)}")
 
@@ -1629,18 +1629,18 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
         result = AITradeReview(actual_pnl=trade_info.realized_pnl)
 
         # Try to extract JSON
-        logger.info(f"🔍 [Parse AI responses] Try to extract JSON code block...")
+        logger.info("🔍 [Parse AI responses] Try to extract JSON code block...")
         json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
 
         if json_match:
-            logger.info(f"✅ [Parse AI responses] Find the JSON code block")
+            logger.info("✅ [Parse AI responses] Find the JSON code block")
             json_str = json_match.group(1)
             logger.info(f"📄 [Parse AI responses] JSON content length: {len(json_str)}")
             logger.info(f"📄 [Parse AI responses] JSON The first 500 characters of the content:\n{json_str[:500]}")
 
             try:
                 data = json.loads(json_str)
-                logger.info(f"✅ [Parse AI responses] JSON Parsed successfully")
+                logger.info("✅ [Parse AI responses] JSON Parsed successfully")
                 logger.info(f"📊 [Parse AI responses] JSON key: {list(data.keys())}")
 
                 # Analytical scoring - compatible with both 0-100 and 1-10 scoring systems
@@ -1714,7 +1714,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
                 logger.warning(f"❌ [Parse AI responses] JSON Parsing failed: {e}")
                 logger.warning(f"📄 [Parse AI responses] Failed JSON content:\n{json_str}")
         else:
-            logger.warning(f"⚠️ [Parse AI responses] JSON code block not found")
+            logger.warning("⚠️ [Parse AI responses] JSON code block not found")
             logger.warning(f"📄 [Parse AI responses] full content:\n{content}")
 
         result.summary = content[:200] if content else "AI分析完成"
@@ -3020,7 +3020,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
                 }
                 logger.info(f"✅ [Review] Obtaining market data from tushare successfully: {market_change_pct:.2f}%")
             else:
-                logger.warning(f"⚠️ [Review] No market data was obtained")
+                logger.warning("⚠️ [Review] No market data was obtained")
 
             # 2. Obtain industry benchmark data (using unified tool functions)
             sector_info = await get_stock_sector_info(stock_code)
@@ -3206,7 +3206,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
         from core.workflow.engine import WorkflowEngine
         from core.workflow.default_workflow_provider import get_default_workflow_provider
 
-        logger.info(f"🚀 [Workflow review] Start execution of transaction review workflow")
+        logger.info("🚀 [Workflow review] Start execution of transaction review workflow")
 
         # 🔍 Debugging: Print raw input data
         logger.info(f"🔍 [Workflow review] raw data - trade_info.code: {trade_info.code}")
@@ -3232,7 +3232,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
                 start_date=trade_info.first_buy_date[:10] if trade_info.first_buy_date else "",
                 end_date=trade_info.last_sell_date[:10] if trade_info.last_sell_date else ""
             )
-            logger.info(f"📊 [Workflow review] Obtaining benchmark data is completed")
+            logger.info("📊 [Workflow review] Obtaining benchmark data is completed")
         except Exception as e:
             logger.warning(f"⚠️ [Workflow review] Failed to obtain benchmark data: {e}")
 
@@ -3305,13 +3305,13 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
             logger.info(f"📋 [Workflow review] Related party transaction plan: {trading_system.get('name', 'N/A')}")
             formatted_plan = self._format_trading_plan_for_workflow(trading_system)
             inputs["trading_plan"] = formatted_plan
-            logger.info(f"✅ [Workflow review] trading_plan added to inputs")
+            logger.info("✅ [Workflow review] trading_plan added to inputs")
             logger.info(f"   - plan_name: {formatted_plan.get('plan_name', 'N/A')}")
             logger.info(f"   - rules_text length: {len(formatted_plan.get('rules_text', ''))}")
         else:
-            logger.info(f"📋 [Workflow review] Unlinked transaction plan")
+            logger.info("📋 [Workflow review] Unlinked transaction plan")
 
-        logger.info(f"📝 [Workflow review] Workflow input is ready")
+        logger.info("📝 [Workflow review] Workflow input is ready")
         logger.info(f"📋 [工作流复盘] 股票: {trade_info.code}, 持仓周期: {trade_info.holding_days}天")
         logger.info(f"📋 [工作流复盘] 收益率: {trade_info.realized_pnl_pct:.2f}%, 盈亏: {trade_info.realized_pnl:.2f}元")
         logger.info(f"📋 [Workflow review] Number of transaction records: {len(trade_info.trades) if trade_info.trades else 0}")
@@ -3352,9 +3352,9 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
                     legacy_config["quick_think_llm"] = quick_analysis_model
                     legacy_config["deep_think_llm"] = deep_analysis_model
                     legacy_config["llm_provider"] = "dashscope"
-                    logger.warning(f"⚠️ [Workflow review] Unable to get full model configuration, only set model name")
+                    logger.warning("⚠️ [Workflow review] Unable to get full model configuration, only set model name")
             else:
-                logger.warning(f"⚠️ [Workflow review] system_settings quick_analysis_model or deep_analysis_model not found, use default configuration")
+                logger.warning("⚠️ [Workflow review] system_settings quick_analysis_model or deep_analysis_model not found, use default configuration")
                 # If not configured, use default value
                 legacy_config["quick_think_llm"] = quick_analysis_model or "qwen-turbo"
                 legacy_config["deep_think_llm"] = deep_analysis_model or "qwen-plus"
@@ -3414,13 +3414,13 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
                 except Exception as e:
                     logger.warning(f"⚠️ 进度回调调用失败: {e}")
 
-        logger.info(f"🚀 [Workflow review] Start executing workflow...")
+        logger.info("🚀 [Workflow review] Start executing workflow...")
         logger.error(f"🔍 [Workflow review] inputs keys: {list(inputs.keys())}, ticker={inputs.get('ticker')}, trade_info exist={('trade_info' in inputs)}, trade_info_code={inputs.get('trade_info', {}).get('code') if isinstance(inputs.get('trade_info'), dict) else 'N/A'}")
         # 🔥 Key fix: Use asyncio.to_thread to execute synchronous workflows in separate threads
         # Avoid blocking the uvicorn event loop (this is also done for single stock analysis)
         result = await asyncio.to_thread(engine.execute, inputs=inputs, progress_callback=workflow_progress_callback)
 
-        logger.info(f"✅ [Workflow review] Workflow execution completed")
+        logger.info("✅ [Workflow review] Workflow execution completed")
         logger.info(f"📋 [Workflow review] output fields: {list(result.keys())}")
 
         # Print summary of analysis results for each dimension
@@ -3452,7 +3452,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
         import re
         import json
 
-        logger.info(f"🔍 [Workflow review] Parse workflow results")
+        logger.info("🔍 [Workflow review] Parse workflow results")
         logger.info(f"📋 [Workflow review] result key: {list(workflow_result.keys())}")
 
         # 🔍 Print specific output for each analyst
@@ -3476,7 +3476,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
         # 🔧 Process the dictionary format returned by Agent (extract content field)
         if isinstance(review_summary_raw, dict):
             review_summary = review_summary_raw.get("content", "") or review_summary_raw.get("text", "") or str(review_summary_raw)
-            logger.info(f"📄 [AI Review] review_summary is a dictionary, extract the content field")
+            logger.info("📄 [AI Review] review_summary is a dictionary, extract the content field")
         else:
             review_summary = review_summary_raw if isinstance(review_summary_raw, str) else str(review_summary_raw)
 
@@ -3502,7 +3502,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
                 json_match = re.search(r'(\{[^{]*?"overall_score".*?\})', review_summary, re.DOTALL)
 
             if json_match:
-                logger.info(f"✅ [AI Review] JSON match found")
+                logger.info("✅ [AI Review] JSON match found")
                 try:
                     json_str = json_match.group(1)
                     logger.info(f"📄 [AI Review] JSON The first 500 characters of the string: {json_str[:500]}")
@@ -3512,7 +3512,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
 
                     # 🔧 Handle nested JSON structures (such as {"Review report": {...}}) 
                     if len(data) == 1 and isinstance(list(data.values())[0], dict):
-                        logger.info(f"📄 [AI Review] Detect nested structures and extract inner data")
+                        logger.info("📄 [AI Review] Detect nested structures and extract inner data")
                         data = list(data.values())[0]
                         logger.info(f"📄 [AI Review] inner key: {list(data.keys())}")
 
@@ -3558,7 +3558,7 @@ This transaction is associated with a trading plan:**{trading_system.get('name',
                     logger.warning(f"⚠️ [Workflow review] full stack:\n{traceback.format_exc()}")
                     logger.warning(f"⚠️ [Workflow review] JSON content: {json_match.group(1)[:500]}")
             else:
-                logger.warning(f"⚠️ [AI Review] No JSON match found")
+                logger.warning("⚠️ [AI Review] No JSON match found")
 
             # If no summary is extracted, use summary text
             if not result.summary:

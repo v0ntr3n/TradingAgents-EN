@@ -1,0 +1,35 @@
+/**
+ * Semantic design tokens and typographic utilities (`frontend/src/styles/tokens.css`).
+ */
+
+:root {
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: #f8fafc;
+  --color-surface-elevated: #f1f5f9;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-border-subtle: #e2e8f0;
+  --color-accent-primary: #2563eb;
+  --color-up: #16a34a;
+  --color-down: #dc2626;
+  --color-neutral: #64748b;
+}
+
+html.dark {
+  --color-surface-primary: #0f172a;
+  --color-surface-secondary: #1e293b;
+  --color-surface-elevated: #334155;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #64748b;
+  --color-border-subtle: #334155;
+  --color-accent-primary: #3b82f6;
+  --color-up: #22c55e;
+  --color-down: #ef4444;
+  --color-neutral: #94a3b8;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

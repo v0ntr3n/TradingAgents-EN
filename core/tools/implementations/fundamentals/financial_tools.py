@@ -304,7 +304,7 @@ def get_balance_sheet_analysis(
         if goodwill is not None and goodwill > 0:
             lines.append(f"- **商誉**: {_wan_yi(goodwill)} | 商誉/净资产: {_safe_pct(goodwill / data.get('total_equity') * 100 if data.get('total_equity') else None)}")
         else:
-            lines.append(f"- **goodwill**: Insufficient data (quarterly reports usually do not disclose goodwill details, it is recommended to check annual report data)")
+            lines.append("- **goodwill**: Insufficient data (quarterly reports usually do not disclose goodwill details, it is recommended to check annual report data)")
         lines.append("")
 
         # Solvency
@@ -429,12 +429,12 @@ def get_cashflow_analysis(
         if ocf is not None and icf is not None:
             try:
                 free_cf = float(ocf) + float(icf)
-                lines.append(f"## 💡 Free cash flow (simple estimate)")
+                lines.append("## 💡 Free cash flow (simple estimate)")
                 lines.append(f"- **free cash flow ≈ operating cash flow + investment cash flow**: {_wan_yi(free_cf)}")
                 if free_cf > 0:
-                    lines.append(f"- **judge**: ✅ Free cash flow is positive, and the company s hematopoietic ability is good.")
+                    lines.append("- **judge**: ✅ Free cash flow is positive, and the company s hematopoietic ability is good.")
                 else:
-                    lines.append(f"- **judge**: ⚠️ Free cash flow is negative, need to pay attention to financial pressure")
+                    lines.append("- **judge**: ⚠️ Free cash flow is negative, need to pay attention to financial pressure")
                 lines.append("")
             except (ValueError, TypeError):
                 pass
@@ -576,11 +576,11 @@ def get_goodwill_analysis(
             if latest_assets:
                 lines.append(f"- **Goodwill/Total Assets**: {latest_gw / latest_assets * 100:.1f}%")
         elif latest_gw is not None and latest_gw == 0:
-            lines.append(f"- **Carrying amount of goodwill**: 0 (The company has no goodwill)")
-            lines.append(f"- **risk signal**: 🟢 No goodwill impairment risk")
+            lines.append("- **Carrying amount of goodwill**: 0 (The company has no goodwill)")
+            lines.append("- **risk signal**: 🟢 No goodwill impairment risk")
         else:
-            lines.append(f"- **Carrying amount of goodwill**: Missing data (the annual report does not disclose the goodwill field)")
-            lines.append(f"- **risk signal**: ⬜ Insufficient data to judge")
+            lines.append("- **Carrying amount of goodwill**: Missing data (the annual report does not disclose the goodwill field)")
+            lines.append("- **risk signal**: ⬜ Insufficient data to judge")
         lines.append("")
 
         # Multi-year trend
@@ -611,12 +611,12 @@ def get_goodwill_analysis(
             ratio = latest_gw / latest_equity * 100
             lines.append(f"- 商誉/净资产比率 = {ratio:.1f}%")
             if ratio > 20:
-                lines.append(f"- ⚠️ Exceeding the 20% warning line, impairment has a significant impact on net assets")
-                lines.append(f"- It is recommended to pay attention to: the completion of the target company s performance commitments and changes in industry prosperity")
+                lines.append("- ⚠️ Exceeding the 20% warning line, impairment has a significant impact on net assets")
+                lines.append("- It is recommended to pay attention to: the completion of the target company s performance commitments and changes in industry prosperity")
             elif ratio > 10:
-                lines.append(f"- It is in the 10%-20% attention range and needs to be tracked continuously.")
+                lines.append("- It is in the 10%-20% attention range and needs to be tracked continuously.")
             else:
-                lines.append(f"- Less than 10%, goodwill impairment has limited impact on net assets")
+                lines.append("- Less than 10%, goodwill impairment has limited impact on net assets")
         lines.append("")
 
         lines.append("---")
@@ -693,7 +693,7 @@ def get_dupont_analysis(
             roe_direct = net_profit / total_equity * 100
 
             lines.append("## Three-factor breakdown (standard DuPont)\n")
-            lines.append(f"**ROE = net profit margin × asset turnover rate × equity multiplier**\n")
+            lines.append("**ROE = net profit margin × asset turnover rate × equity multiplier**\n")
             lines.append("| factor | meaning | numerical value |")
             lines.append("|------|------|------|")
             lines.append(f"| net profit margin | net profit(TTM) / operating income(TTM) | {npm*100:.2f}% |")
@@ -741,7 +741,7 @@ def get_dupont_analysis(
             roe_5f = tb * ib * om * at * em * 100
 
             lines.append("## Five Factor Breakdown (Extended Dupont)\n")
-            lines.append(f"**ROE = tax burden factor × interest burden × operating profit margin × asset turnover rate × equity multiplier**\n")
+            lines.append("**ROE = tax burden factor × interest burden × operating profit margin × asset turnover rate × equity multiplier**\n")
             lines.append("| factor | meaning | numerical value |")
             lines.append("|------|------|------|")
             lines.append(f"| tax burden factor | Net profit / total profit | {tb:.3f} ({'income tax rate ' + str(int((1-tb)*100)) + '%' if 0 < tb <= 1 else 'Abnormal'}) |")
@@ -826,7 +826,7 @@ def get_dupont_analysis(
 
         lines.append("---")
         lines.append("*DuPont Analysis — ROE = net profit margin × asset turnover rate × equity multiplier*")
-        lines.append(f"*Data source:Tushare | Calculated based on TTM data*")
+        lines.append("*Data source:Tushare | Calculated based on TTM data*")
         return "\n".join(lines)
 
     except Exception as e:
@@ -1260,7 +1260,7 @@ def get_accounts_receivable_risk_analyzer(
                     elif atd_change > 0.05 and ratio_change > 0.1:
                         return ("stable", f"正常响应: 周转恶化({atd_change * 100:+.0f}%)→计提同步上升({ratio_change * 100:+.0f}%)")
                     elif atd_change < -0.05 and ratio_change < -0.1:
-                        return ("stable", f"reasonable: Turnover improvement→Decline in provision")
+                        return ("stable", "reasonable: Turnover improvement→Decline in provision")
                     else:
                         return ("stable", "基本稳定")
             return ("unknown", "缺少对比数据")

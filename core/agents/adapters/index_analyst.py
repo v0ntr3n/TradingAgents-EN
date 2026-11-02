@@ -115,7 +115,7 @@ Your analytical responsibilities include:
             if self._llm is not None:
                 index_report = self._enhance_with_llm(index_report)
             
-            logger.info(f"✅ Market analysis completed")
+            logger.info("✅ Market analysis completed")
             
             # update status
             messages = state.get("messages", [])

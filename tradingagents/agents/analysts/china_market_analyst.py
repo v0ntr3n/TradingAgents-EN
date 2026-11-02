@@ -175,7 +175,7 @@ Make sure to attach a Markdown table at the end of the report summarizing key fi
 
     # Call handlers using unified Google tools
     if GoogleToolCallHandler.is_google_model(llm):
-        logger.info(f"📊 [China market analyst] Google model detected, processor invoked using unified tools")
+        logger.info("📊 [China market analyst] Google model detected, processor invoked using unified tools")
 
         # Create analysis prompt words
         analysis_prompt_template = GoogleToolCallHandler.create_analysis_prompt(

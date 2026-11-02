@@ -1,0 +1,10 @@
+version: "2.1.0"
+standard: "ASD-STE100"
+
+financial_fact_extraction_prompt: |
+  Extract explicit financial facts from the conversation for episodic memory storage.
+  Include user risk preferences, symbol views, fundamental metrics, and discipline lessons.
+  Keep each fact under 20 words in a single active sentence.
+  Include exact entity identifiers such as symbol, date, and metric value.
+  Reject speculation, greetings, and duplicate statements.
+  Return an empty list if no verifiable financial facts exist.

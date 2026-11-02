@@ -39,7 +39,7 @@ class ActionAdvisorAgent(BaseAgent):
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Perform position research and observation analysis"""
-        logger.info(f"💡 [Position Research Observer] Start comprehensive analysis...")
+        logger.info("💡 [Position Research Observer] Start comprehensive analysis...")
 
         position_info = state.get("position_info", {})
         technical_analysis = state.get("technical_analysis", "")
@@ -59,7 +59,7 @@ class ActionAdvisorAgent(BaseAgent):
 
         if self._llm:
             try:
-                logger.info(f"   🤖 Call LLM analysis...")
+                logger.info("   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
                 logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
@@ -67,10 +67,10 @@ class ActionAdvisorAgent(BaseAgent):
                 logger.error(f"   ❌ LLM call failed: {e}")
                 analysis = f"Research observation generation failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM Not configured")
+            logger.warning("   ⚠️ LLM Not configured")
             analysis = "LLM Not configured, cannot generate research observations"
 
-        logger.info(f"💡 [Position Research Observer] ✅ Analysis completed")
+        logger.info("💡 [Position Research Observer] ✅ Analysis completed")
         return {"action_advice": analysis}
     
     def _build_prompt(self, position_info: Dict, technical: str, fundamental: str,
@@ -145,8 +145,8 @@ Make investment decisions independently with the advice of professional investme
             fallback_prompt=fallback_prompt
         )
         if prompt:
-            logger.info(f"✅ [Position Research Observer] Successfully obtained the prompt word from the template system")
+            logger.info("✅ [Position Research Observer] Successfully obtained the prompt word from the template system")
             return prompt
-        logger.warning(f"⚠️ [Position Research Observer] The template system did not return the prompt word, use the downgrade prompt word")
+        logger.warning("⚠️ [Position Research Observer] The template system did not return the prompt word, use the downgrade prompt word")
         return fallback_prompt
 

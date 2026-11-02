@@ -760,7 +760,7 @@ class AKShareProvider(BaseStockDataProvider):
                         # Call again, but this time we need to intercept the pandas read_excel call
                         # Due to the internal call of AKShare, we cannot directly specify the engine
                         # So the warning is recorded here first, without affecting the main process.
-                        logger.warning(f"⚠️ Excel format problems cannot be automatically repaired and stock list acquisition fails, but other functions are not affected.")
+                        logger.warning("⚠️ Excel format problems cannot be automatically repaired and stock list acquisition fails, but other functions are not affected.")
                         return None
                     except Exception as e2:
                         logger.error(f"❌ Attempt to repair Excel format failed: {e2}")
@@ -777,7 +777,7 @@ class AKShareProvider(BaseStockDataProvider):
                 logger.info(f"✅ 股票列表缓存更新: {len(stock_list)} 只股票")
                 return stock_list
             else:
-                logger.warning(f"⚠️ The stock list is empty, it may be a problem with the interface return format.")
+                logger.warning("⚠️ The stock list is empty, it may be a problem with the interface return format.")
         except Exception as e:
             logger.error(f"❌ 获取股票列表失败: {e}")
             # 🔥 Even if the acquisition of the stock list fails, other functions will not be affected, and it will just return None
@@ -1439,7 +1439,7 @@ class AKShareProvider(BaseStockDataProvider):
             if pd.isna(value) or value is None:
                 return ""
             return str(value)
-        except:
+        except Exception:
             return ""
 
     def _safe_optional_float(self, value: Any) -> Optional[float]:
@@ -2116,7 +2116,7 @@ class AKShareProvider(BaseStockDataProvider):
                 if is_docker:
                     try:
                         from curl_cffi import requests as curl_requests
-                        self.logger.debug(f"🐳 Detect Docker environment, use curl_cffi to call directly API")
+                        self.logger.debug("🐳 Detect Docker environment, use curl_cffi to call directly API")
                         news_df = await asyncio.to_thread(
                             self._get_stock_news_direct,
                             symbol=symbol_6,
@@ -2128,7 +2128,7 @@ class AKShareProvider(BaseStockDataProvider):
                             self.logger.warning(f"⚠️ {symbol} Docker The environment fails to directly call the API and falls back to AKShare")
                             news_df = None  # Fallback to AKShare
                     except ImportError:
-                        self.logger.warning(f"⚠️ curl_cffi Not installed, fallback to AKShare")
+                        self.logger.warning("⚠️ curl_cffi Not installed, fallback to AKShare")
                         news_df = None
                     except Exception as e:
                         self.logger.warning(f"⚠️ {symbol} Docker The environment directly calls the API exception.: {e}, Fallback to AKShare")
@@ -2155,8 +2155,8 @@ class AKShareProvider(BaseStockDataProvider):
                             # Oriental Fortune Network interface changes or anti-crawler interception, the returned field structure changes
                             if str(e) == "'cmsArticleWebOld'":
                                 self.logger.error(f"❌ {symbol} AKShare News interface returns data structure exception: missing 'cmsArticleWebOld' Field")
-                                self.logger.error(f"   This is usually because:1) Anti-crawler interception 2) Interface changes 3) network problems")
-                                self.logger.error(f"   Suggestion: Check if the AKShare version is up to date (Current requirements >=1.17.86)")
+                                self.logger.error("   This is usually because:1) Anti-crawler interception 2) Interface changes 3) network problems")
+                                self.logger.error("   Suggestion: Check if the AKShare version is up to date (Current requirements >=1.17.86)")
                                 # Return an empty list to avoid program crashes
                                 return []
                             else:

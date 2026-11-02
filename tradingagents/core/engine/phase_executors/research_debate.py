@@ -225,7 +225,7 @@ class ResearchDebatePhase(PhaseExecutor):
                 # Merge results into state
                 if "investment_debate_state" in result:
                     state["investment_debate_state"] = result["investment_debate_state"]
-                logger.info(f"🐂 [multi-investigator] Speech completed")
+                logger.info("🐂 [multi-investigator] Speech completed")
             except Exception as e:
                 logger.error(f"❌ [multi-investigator] Execution failed: {e}")
         else:
@@ -243,7 +243,7 @@ class ResearchDebatePhase(PhaseExecutor):
                 result = agent(state)
                 if "investment_debate_state" in result:
                     state["investment_debate_state"] = result["investment_debate_state"]
-                logger.info(f"🐻 [short researcher] Speech completed")
+                logger.info("🐻 [short researcher] Speech completed")
             except Exception as e:
                 logger.error(f"❌ [short researcher] Execution failed: {e}")
         else:
@@ -262,7 +262,7 @@ class ResearchDebatePhase(PhaseExecutor):
                     state["investment_debate_state"] = result["investment_debate_state"]
                 if "investment_plan" in result:
                     state["investment_plan"] = result["investment_plan"]
-                logger.info(f"👔 [research manager] Investment advice generation completed")
+                logger.info("👔 [research manager] Investment advice generation completed")
             except Exception as e:
                 logger.error(f"❌ [research manager] Execution failed: {e}")
                 state["investment_plan"] = "[Error] Investment advice generation failed"

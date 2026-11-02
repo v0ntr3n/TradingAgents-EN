@@ -886,7 +886,7 @@ class WorkflowAPI:
                     logger.info(f"🔍 [Price inquiry] Start checking stocks {stock_code} price...")
 
                     # Prioritize getting prices no later than the stable date from market_quotes to avoid pulling the summary back to the analysis day.
-                    logger.info(f"🔍 [Price inquiry] steps 1: Query stable date prices from market_quotes...")
+                    logger.info("🔍 [Price inquiry] steps 1: Query stable date prices from market_quotes...")
                     quote = None
                     date_candidates = [effective_data_date]
                     compact_effective_date = effective_data_date.replace('-', '')
@@ -966,9 +966,9 @@ class WorkflowAPI:
             logger.info(f"   - effective_data_date: {effective_data_date}")
             logger.info(f"   - market_name: {market_name}")
             if system_vars.get("industry_dimensions"):
-                logger.info(f"   - 🏭 Infused with industry analysis dimensions")
+                logger.info("   - 🏭 Infused with industry analysis dimensions")
             if system_vars.get("stock_dimensions"):
-                logger.info(f"   - 📊 Injected into individual stock analysis dimension")
+                logger.info("   - 📊 Injected into individual stock analysis dimension")
 
         except Exception as e:
             logger.error(f"❌ Failed to prepare system variables: {e}")

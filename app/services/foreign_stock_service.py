@@ -61,7 +61,8 @@ class ForeignStockService:
     def _create_requests_session(self):
         """Create requests.Session with proxy and UA (for third-party requests such as yfinance)"""
         try:
-            import requests, os
+            import requests
+            import os
             session = requests.Session()
             http_proxy = os.environ.get('HTTP_PROXY', '')
             https_proxy = os.environ.get('HTTPS_PROXY', '')
@@ -225,7 +226,7 @@ class ForeignStockService:
                     valid_priority.append(source_name)
 
             if not valid_priority:
-                logger.warning(f"⚠️ There is no valid Hong Kong stock data source configured in the database, and the default order is used.")
+                logger.warning("⚠️ There is no valid Hong Kong stock data source configured in the database, and the default order is used.")
                 valid_priority = ['yahoo_finance', 'akshare']
 
             logger.info(f"📊 [HK有效数据源] {valid_priority} (股票: {code})")
@@ -1880,7 +1881,7 @@ class ForeignStockService:
                 # Alpha Vantage time format: 20240101T120000
                 pub_time = datetime.strptime(time_published, '%Y%m%dT%H%M%S')
                 pub_time_str = pub_time.strftime('%Y-%m-%d %H:%M:%S')
-            except:
+            except Exception:
                 pub_time_str = time_published
 
             # Extract sentiment scores for related stocks

@@ -88,7 +88,7 @@ class UnifiedNewsAnalyzer:
         
         # Log a warning if the result is empty or too short
         if not result or len(result.strip()) < 50:
-            logger.warning(f"[unified news tool] ⚠️ The return result is abnormally short or empty!")
+            logger.warning("[unified news tool] ⚠️ The return result is abnormally short or empty!")
             logger.warning(f"[unified news tool] 📝 Full result content: '{result}'")
         
         return result
@@ -139,7 +139,7 @@ class UnifiedNewsAnalyzer:
 
             client = get_mongodb_client()
             if not client:
-                logger.warning(f"[unified news tool] Unable to connect to MongoDB")
+                logger.warning("[unified news tool] Unable to connect to MongoDB")
                 return ""
 
             db = client.get_database('tradingagents')
@@ -278,7 +278,7 @@ class UnifiedNewsAnalyzer:
                     news_data = new_loop.run_until_complete(get_news_task())
 
                     if not news_data:
-                        logger.warning(f"[unified news tool] ⚠️ News data not obtained")
+                        logger.warning("[unified news tool] ⚠️ News data not obtained")
                         return False
 
                     logger.info(f"[统一新闻工具] 📥 获取到 {len(news_data)} 条新闻")
@@ -301,14 +301,14 @@ class UnifiedNewsAnalyzer:
                     new_loop.close()
 
             # Execute in thread pool
-            logger.info(f"[unified news tool] Run synchronized tasks in a new thread to avoid event loop conflicts")
+            logger.info("[unified news tool] Run synchronized tasks in a new thread to avoid event loop conflicts")
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(run_sync_in_new_thread)
                 result = future.result(timeout=30)  # 30 seconds timeout
                 return result
 
         except concurrent.futures.TimeoutError:
-            logger.error(f"[unified news tool] ❌ Sync news timeout (30 seconds)")
+            logger.error("[unified news tool] ❌ Sync news timeout (30 seconds)")
             return False
         except Exception as e:
             logger.error(f"[unified news tool] ❌ News synchronization failed: {e}")
@@ -339,26 +339,26 @@ class UnifiedNewsAnalyzer:
                     synced_news = self._sync_news_from_akshare(stock_code, max_news)
 
                     if synced_news:
-                        logger.info(f"[unified news tool] ✅ Synchronization successful, re-obtain from database...")
+                        logger.info("[unified news tool] ✅ Synchronization successful, re-obtain from database...")
                         # Get again from database
                         db_news = self._get_news_from_database(stock_code, max_news)
                         if db_news:
                             logger.info(f"[统一新闻工具] ✅ 同步后数据库新闻获取成功: {len(db_news)} 字符")
                             return self._format_news_result(db_news, "数据库缓存(新同步)", model_info)
                     else:
-                        logger.warning(f"[unified news tool] ⚠️ Sync service did not return news data")
+                        logger.warning("[unified news tool] ⚠️ Sync service did not return news data")
 
                 except Exception as sync_error:
                     logger.warning(f"[unified news tool] ⚠️ Synchronization service call failed: {sync_error}")
 
-                logger.info(f"[unified news tool] ⚠️ There is still no data after synchronization, try other data sources....")
+                logger.info("[unified news tool] ⚠️ There is still no data after synchronization, try other data sources....")
         except Exception as e:
             logger.warning(f"[unified news tool] Failed to obtain database news: {e}")
 
         # priority 1: Oriental Fortune real-time news
         try:
             if hasattr(self.toolkit, 'get_realtime_stock_news'):
-                logger.info(f"[unified news tool] Try Oriental Fortune Live News...")
+                logger.info("[unified news tool] Try Oriental Fortune Live News...")
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_realtime_stock_news.invoke({"ticker": stock_code, "curr_date": curr_date})
                 
@@ -370,14 +370,14 @@ class UnifiedNewsAnalyzer:
                     logger.info(f"[统一新闻工具] ✅ 东方财富新闻获取成功: {len(result)} 字符")
                     return self._format_news_result(result, "东方财富实时新闻", model_info)
                 else:
-                    logger.warning(f"[unified news tool] ⚠️ Oriental Fortune news content is too short or empty")
+                    logger.warning("[unified news tool] ⚠️ Oriental Fortune news content is too short or empty")
         except Exception as e:
             logger.warning(f"[unified news tool] Failed to obtain Oriental Fortune News: {e}")
         
         # priority 2: Google News (Chinese search)
         try:
             if hasattr(self.toolkit, 'get_google_news'):
-                logger.info(f"[unified news tool] Try Google News...")
+                logger.info("[unified news tool] Try Google News...")
                 query = f"{stock_code} 股票 新闻 财报 业绩"
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_google_news.invoke({"query": query, "curr_date": curr_date})
@@ -390,7 +390,7 @@ class UnifiedNewsAnalyzer:
         # priority 3: OpenAI global news
         try:
             if hasattr(self.toolkit, 'get_global_news_openai'):
-                logger.info(f"[unified news tool] Try OpenAI Global News...")
+                logger.info("[unified news tool] Try OpenAI Global News...")
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_global_news_openai.invoke({"curr_date": curr_date})
                 if result and len(result.strip()) > 50:
@@ -411,7 +411,7 @@ class UnifiedNewsAnalyzer:
         # priority 1: Google News (Hong Kong stock search)
         try:
             if hasattr(self.toolkit, 'get_google_news'):
-                logger.info(f"[unified news tool] Try Google Hong Kong stock news...")
+                logger.info("[unified news tool] Try Google Hong Kong stock news...")
                 query = f"{stock_code} 港股 香港股票 新闻"
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_google_news.invoke({"query": query, "curr_date": curr_date})
@@ -424,7 +424,7 @@ class UnifiedNewsAnalyzer:
         # priority 2: OpenAI global news
         try:
             if hasattr(self.toolkit, 'get_global_news_openai'):
-                logger.info(f"[unified news tool] Try OpenAI Hong Kong Stock News...")
+                logger.info("[unified news tool] Try OpenAI Hong Kong Stock News...")
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_global_news_openai.invoke({"curr_date": curr_date})
                 if result and len(result.strip()) > 50:
@@ -436,7 +436,7 @@ class UnifiedNewsAnalyzer:
         # priority 3: Real-time news (if Hong Kong stocks are supported)
         try:
             if hasattr(self.toolkit, 'get_realtime_stock_news'):
-                logger.info(f"[unified news tool] Try real-time Hong Kong stock news...")
+                logger.info("[unified news tool] Try real-time Hong Kong stock news...")
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_realtime_stock_news.invoke({"ticker": stock_code, "curr_date": curr_date})
                 if result and len(result.strip()) > 100:
@@ -457,7 +457,7 @@ class UnifiedNewsAnalyzer:
         # priority 1: OpenAI global news
         try:
             if hasattr(self.toolkit, 'get_global_news_openai'):
-                logger.info(f"[unified news tool] Try OpenAI US Stock News...")
+                logger.info("[unified news tool] Try OpenAI US Stock News...")
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_global_news_openai.invoke({"curr_date": curr_date})
                 if result and len(result.strip()) > 50:
@@ -469,7 +469,7 @@ class UnifiedNewsAnalyzer:
         # priority 2: Google News (search in English)
         try:
             if hasattr(self.toolkit, 'get_google_news'):
-                logger.info(f"[unified news tool] Try Google US stock news...")
+                logger.info("[unified news tool] Try Google US stock news...")
                 query = f"{stock_code} stock news earnings financial"
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_google_news.invoke({"query": query, "curr_date": curr_date})
@@ -482,7 +482,7 @@ class UnifiedNewsAnalyzer:
         # priority 3: FinnHub News (if available)
         try:
             if hasattr(self.toolkit, 'get_finnhub_news'):
-                logger.info(f"[unified news tool] Try FinnHub US Stock News...")
+                logger.info("[unified news tool] Try FinnHub US Stock News...")
                 # The correct way to call the LangChain tool:.invoke()Methods and dictionary parameters
                 result = self.toolkit.get_finnhub_news.invoke({"symbol": stock_code, "max_results": min(max_news, 50)})
                 if result and len(result.strip()) > 50:
@@ -508,7 +508,7 @@ class UnifiedNewsAnalyzer:
         
         # 🔍 Add Google model detection log
         if is_google_model:
-            logger.info(f"[unified news tool] 🤖 Google model detected, special handling enabled")
+            logger.info("[unified news tool] 🤖 Google model detected, special handling enabled")
         
         # Special length control for Google models
         if is_google_model and len(news_content) > 5000:  # Lower the threshold to 5000 characters

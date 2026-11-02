@@ -286,7 +286,7 @@ Start writing your report now:"""
             # 🔥 Verification: Check whether the content of SystemMessage sent to LLM is consistent with system_prompt
             actual_system_content = messages[0].content if messages and hasattr(messages[0], 'content') else None
             if actual_system_content != system_prompt:
-                logger.error(f"❌ Warning: SystemMessage content is inconsistent with system_prompt!")
+                logger.error("❌ Warning: SystemMessage content is inconsistent with system_prompt!")
                 logger.error(f"   system_prompt length: {len(system_prompt)}")
                 logger.error(f"   SystemMessage.content length: {len(actual_system_content) if actual_system_content else 0}")
                 logger.error(f"   system_prompt first 500 characters: {system_prompt[:500]}")

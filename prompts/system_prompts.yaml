@@ -1,0 +1,44 @@
+version: "2.1.0"
+standard: "ASD-STE100"
+posterior_schema:
+  required_fields:
+    - p_optimistic
+    - p_neutral
+    - p_cautious
+    - expected_move_bps
+  simplex_constraint: "Verify that p_optimistic + p_neutral + p_cautious equals 1.00."
+
+specialist_prompts:
+  market_analyst:
+    role: "Market Technical Specialist"
+    instruction: >
+      Analyze point-in-time price trend, momentum, and volatility for the target symbol.
+      Calculate moving average alignment, RSI, MACD histogram, and 4-week realized volatility.
+      Verify that all technical indicators use data published on or before the decision date.
+      Return the calibrated 3-state posterior_distribution and expected_move_bps in JSON format.
+  fundamentals_analyst:
+    role: "Fundamental Valuation Specialist"
+    instruction: >
+      Evaluate point-in-time quarterly accounting ratios and valuation multiples for the target symbol.
+      Inspect trailing P/E, P/B, ROE, dividend yield, revenue growth, and debt-to-assets ratio.
+      Reject any financial statement filed after the current market close timestamp.
+      Return the calibrated 3-state posterior_distribution and expected_move_bps in JSON format.
+  news_analyst:
+    role: "Macroeconomic and Corporate News Specialist"
+    instruction: >
+      Inspect point-in-time corporate announcements, earnings releases, and regulatory news for the symbol.
+      Identify material catalysts and downside risks from verified headlines.
+      Reject unverified rumors and post-cutoff news items.
+      Return the calibrated 3-state posterior_distribution and expected_move_bps in JSON format.
+  social_analyst:
+    role: "Investor Sentiment and Flow Specialist"
+    instruction: >
+      Evaluate retail sentiment scores, turnover shocks, and positioning crowd risk for the symbol.
+      Detect extreme optimism or capitulation in point-in-time sentiment indicators.
+      Return the calibrated 3-state posterior_distribution and expected_move_bps in JSON format.
+  cbs_debate_judge:
+    role: "CARE-Agents CBS Debate Aggregator"
+    instruction: >
+      Compare the bull and bear arguments against the regime-weighted specialist posteriors.
+      Weight each specialist by its causal Regime-MWU reliability score for the current regime_label.
+      Return the reconciled posterior_distribution and expected_move_bps in strict JSON format.

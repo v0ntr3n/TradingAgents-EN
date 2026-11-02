@@ -204,19 +204,19 @@ class UnifiedConfigManager:
     def save_system_settings(self, settings: Dict[str, Any]) -> bool:
         """Save system settings (keep existing fields, add new field mappings)"""
         try:
-            print(f"📝 [unified_config] save_system_settings called")
+            print("📝 [unified_config] save_system_settings called")
             print(f"📝 [unified_config] The settings received contain {len(settings)} item")
 
             # Check key fields
             if "quick_analysis_model" in settings:
                 print(f"  ✓ [unified_config] contains quick_analysis_model: {settings['quick_analysis_model']}")
             else:
-                print(f"  ⚠️  [unified_config] Not included quick_analysis_model")
+                print("  ⚠️  [unified_config] Not included quick_analysis_model")
 
             if "deep_analysis_model" in settings:
                 print(f"  ✓ [unified_config] contains deep_analysis_model: {settings['deep_analysis_model']}")
             else:
-                print(f"  ⚠️  [unified_config] Not included deep_analysis_model")
+                print("  ⚠️  [unified_config] Not included deep_analysis_model")
 
             # Read existing configuration
             print(f"📖 [unified_config] Read existing configuration file: {self.paths.settings_json}")
@@ -238,7 +238,7 @@ class UnifiedConfigManager:
                 print(f"  ✓ [unified_config] mapping deep_analysis_model -> deep_think_llm: {settings['deep_analysis_model']}")
 
             # Print the final configuration to be saved
-            print(f"💾 [unified_config] About to save to file:")
+            print("💾 [unified_config] About to save to file:")
             if "quick_think_llm" in merged_settings:
                 print(f"  ✓ quick_think_llm: {merged_settings['quick_think_llm']}")
             if "deep_think_llm" in merged_settings:
@@ -251,7 +251,7 @@ class UnifiedConfigManager:
             # Save the merged configuration
             print(f"💾 [unified_config] save to file: {self.paths.settings_json}")
             self._save_json_file(self.paths.settings_json, merged_settings, "settings")
-            print(f"✅ [unified_config] Configuration saved successfully")
+            print("✅ [unified_config] Configuration saved successfully")
 
             return True
         except Exception as e:

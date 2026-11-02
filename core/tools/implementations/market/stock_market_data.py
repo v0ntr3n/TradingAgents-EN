@@ -326,7 +326,7 @@ def get_stock_market_data_unified(
 
         if is_china:
             # China A Shares: Using China Stock Data Sources
-            logger.info(f"🇨🇳 [unified market tools] Process A-share market data...")
+            logger.info("🇨🇳 [unified market tools] Process A-share market data...")
 
             requested_start_date = _normalize_trade_date(start_date) or start_date
             requested_end_date = _normalize_trade_date(end_date) or end_date
@@ -384,7 +384,7 @@ def get_stock_market_data_unified(
 
         elif is_hk:
             # Hong Kong stocks: using AKShare data source
-            logger.info(f"🇭🇰 [unified market tools] Process Hong Kong stock market data...")
+            logger.info("🇭🇰 [unified market tools] Process Hong Kong stock market data...")
 
             try:
                 from tradingagents.dataflows.interface import get_hk_stock_data_unified
@@ -401,7 +401,7 @@ def get_stock_market_data_unified(
 
         else:
             # US stocks: Prioritize the use of FINNHUB API data sources
-            logger.info(f"🇺🇸 [unified market tools] Process U.S. stock market data...")
+            logger.info("🇺🇸 [unified market tools] Process U.S. stock market data...")
 
             try:
                 from tradingagents.dataflows.providers.us.optimized import get_us_stock_data_cached

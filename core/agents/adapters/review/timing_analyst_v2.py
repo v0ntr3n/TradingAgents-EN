@@ -296,7 +296,7 @@ Please write a detailed timing analysis report, including:
 It is prohibited to output the optimal buying and selling point, target price, key price, stop loss and profit or future operation plan."""
 
         # Print template variables (for debugging)
-        logger.info(f"📊 [timing analyst] Template variables:")
+        logger.info("📊 [timing analyst] Template variables:")
         for key, value in template_variables.items():
             logger.info(f"  - {key}: {value}")
 

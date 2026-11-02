@@ -316,7 +316,7 @@ async def run_single_stock_sync(request: SingleStockSyncRequest) -> dict:
             # 🔥 Single stock real-time quotation synchronization: use AKShare first (to avoid Tushare interface restrictions)
             actual_data_source = request.data_source
             if request.data_source == "tushare":
-                logger.info(f"💡 Synchronize real-time quotes of individual stocks and automatically switch to AKShare data source (avoiding Tushare interface limitations)")
+                logger.info("💡 Synchronize real-time quotes of individual stocks and automatically switch to AKShare data source (avoiding Tushare interface limitations)")
                 actual_data_source = "akshare"
 
             if actual_data_source == "tushare":
@@ -641,7 +641,7 @@ async def run_single_stock_sync(request: SingleStockSyncRequest) -> dict:
                 result["basic_sync"] = {
                     "success": success_count > 0,
                     "message": f"Basic data synchronization{'success' if success_count > 0 else 'failed'}" + (
-                        f" (QMT Requires trading terminal to run)" if success_count == 0 else ""
+                        " (QMT Requires trading terminal to run)" if success_count == 0 else ""
                     ),
                 }
                 logger.info(f"✅ {request.symbol} Basic data synchronization completed (QMT): {success_count}")

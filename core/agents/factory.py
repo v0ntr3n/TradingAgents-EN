@@ -108,7 +108,7 @@ class AgentFactory:
                 sig = inspect.signature(agent_class.__init__)
                 supports_llm = "llm" in sig.parameters
                 supports_memory = "memory" in sig.parameters
-                logger.info(f"[AgentFactory] 🔍 Check Agent constructor signature:")
+                logger.info("[AgentFactory] 🔍 Check Agent constructor signature:")
                 logger.info(f"   - Agent class: {agent_class.__name__}")
                 logger.info(f"   - Support llm parameter: {supports_llm}")
                 logger.info(f"   - Support memory parameter: {supports_memory}")
@@ -175,7 +175,7 @@ class AgentFactory:
 
         # Initialization (if needed)
         if hasattr(agent, 'initialize'):
-            logger.info(f"[AgentFactory] 🔧 call Agent.initialize()")
+            logger.info("[AgentFactory] 🔧 call Agent.initialize()")
             agent.initialize()
 
         # 🔍 Print the final status of the Agent

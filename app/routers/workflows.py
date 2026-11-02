@@ -339,7 +339,7 @@ async def execute_workflow(
         # 🆕 Mark the general type workflow with task_category to facilitate subsequent queries.
         if workflow_type == "general":
             task_params["task_category"] = "general"
-            logger.info(f"🏷️ [Workflow execution] Marked as a general research task: workflow_type=general")
+            logger.info("🏷️ [Workflow execution] Marked as a general research task: workflow_type=general")
 
         logger.info(f"🚀 [Workflow execution] Create task: workflow_id={workflow_id}, ticker={data.ticker}, user={user_id}")
 
@@ -406,11 +406,11 @@ async def _save_analysis_report(
         if "index_report" in workflow_result:
             logger.info(f"[report save] ✅ index_report exist, length: {len(str(workflow_result.get('index_report', '')))}")
         else:
-            logger.warning(f"[report save] ❌ index_report does not exist in workflow_result")
+            logger.warning("[report save] ❌ index_report does not exist in workflow_result")
         if "sector_report" in workflow_result:
             logger.info(f"[report save] ✅ sector_report exist, length: {len(str(workflow_result.get('sector_report', '')))}")
         else:
-            logger.warning(f"[report save] ❌ sector_report does not exist in workflow_result")
+            logger.warning("[report save] ❌ sector_report does not exist in workflow_result")
 
         # Extract reports from workflow results (String type)
         reports = {}

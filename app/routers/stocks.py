@@ -525,7 +525,7 @@ async def get_quote(
             amplitude_date = (q or {}).get("trade_date")  # from real-time data
             logger.debug(f"  ✅ Amplitude calculation successful: {amplitude}%")
         else:
-            logger.debug(f"  ⚠️ Incomplete data, unable to calculate amplitude")
+            logger.debug("  ⚠️ Incomplete data, unable to calculate amplitude")
     except Exception as e:
         logger.warning(f"  ❌ Failed to calculate amplitude: {e}")
         amplitude = None
@@ -1045,7 +1045,7 @@ async def get_kline(
         preferred_source = await get_preferred_data_source_async(market_category="a_shares")
 
         if preferred_source == 'local':
-            logger.info(f"🔍 The preferred data source is local, try to obtain K-line data from stock_daily_quotes")
+            logger.info("🔍 The preferred data source is local, try to obtain K-line data from stock_daily_quotes")
             db = get_mongo_db()
             collection = db.stock_daily_quotes
 
@@ -1109,7 +1109,7 @@ async def get_kline(
 
     # 3. If there is no data locally or cached, fall back to external API (with timeout protection)
     if not items:
-        logger.info(f"📡 There is no data locally or in the cache, so it is downgraded to the outside. API")
+        logger.info("📡 There is no data locally or in the cache, so it is downgraded to the outside. API")
         try:
             import asyncio
             from app.services.data_sources.manager import DataSourceManager
@@ -1121,7 +1121,7 @@ async def get_kline(
                 timeout=10.0
             )
         except asyncio.TimeoutError:
-            logger.error(f"❌ External API acquisition K line timeout (10 seconds)")
+            logger.error("❌ External API acquisition K line timeout (10 seconds)")
             raise HTTPException(status_code=504, detail="Retrieval of K-line data timed out, please try again later.")
         except Exception as e:
             logger.error(f"❌ External API failed to obtain K-line: {e}")
@@ -1223,7 +1223,7 @@ async def get_news(code: str, days: int = 30, limit: int = 50, include_announcem
     else:
         # A Share: Directly call the query method of the synchronization service (including intelligent fallback logic)
         try:
-            logger.info(f"=" * 80)
+            logger.info("=" * 80)
             logger.info(f"📰 Start getting news: code={code}, normalized_code={normalized_code}, days={days}, limit={limit}")
 
             # Directly use the query logic of news_data routing
@@ -1249,7 +1249,7 @@ async def get_news(code: str, days: int = 30, limit: int = 50, include_announcem
             logger.info(f"🔍 query parameters: symbol={params.symbol}, limit={params.limit} (No time limit)")
 
             # 1. First query from the database
-            logger.info(f"📊 steps 1: Query news from database...")
+            logger.info("📊 steps 1: Query news from database...")
             news_list = await service.query_news(params)
             logger.info(f"📊 Database query results: Return {len(news_list)} news")
 
@@ -1260,7 +1260,7 @@ async def get_news(code: str, days: int = 30, limit: int = 50, include_announcem
                 logger.info(f"⚠️ There is no news data in the database. Call the synchronization service to obtain it.: {normalized_code}")
                 try:
                     # 🔥 Call the synchronization service, passing in a single stock symbol list
-                    logger.info(f"📡 steps 2: Call synchronization service...")
+                    logger.info("📡 steps 2: Call synchronization service...")
                     await sync_service.sync_news_data(
                         symbols=[normalized_code],
                         max_news_per_stock=limit,
@@ -1269,7 +1269,7 @@ async def get_news(code: str, days: int = 30, limit: int = 50, include_announcem
                     )
 
                     # Query again
-                    logger.info(f"🔄 steps 3: Query again from database...")
+                    logger.info("🔄 steps 3: Query again from database...")
                     news_list = await service.query_news(params)
                     logger.info(f"📊 Query results again: Return {len(news_list)} news")
                     data_source = "realtime"
@@ -1278,7 +1278,7 @@ async def get_news(code: str, days: int = 30, limit: int = 50, include_announcem
                     logger.error(f"❌ Synchronization service exception: {e}", exc_info=True)
 
             # Convert to old format (frontend compatible)
-            logger.info(f"🔄 steps 4: Convert data format...")
+            logger.info("🔄 steps 4: Convert data format...")
             items = []
             for news in news_list:
                 # 🔥 Convert datetime object to ISO string
@@ -1308,7 +1308,7 @@ async def get_news(code: str, days: int = 30, limit: int = 50, include_announcem
             }
 
             logger.info(f"📤 eventually return: source={data_source}, items_count={len(items)}")
-            logger.info(f"=" * 80)
+            logger.info("=" * 80)
             return ok(data)
 
         except Exception as e:

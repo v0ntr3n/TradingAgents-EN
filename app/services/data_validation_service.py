@@ -570,12 +570,12 @@ class DataValidationService:
                 # 🔥 If analysis_date_data is True, it means that the data exists and no warning is needed.
                 if analysis_date_data:
                     warning_flag = False
-                    logger.info(f"✅ [Data verification] Analyze date data exists, set warning_flag=False")
+                    logger.info("✅ [Data verification] Analyze date data exists, set warning_flag=False")
                 
                 # 🔥 If within trading hours, no warning is forced (to prevent being overwritten by other logic)
                 if is_in_trading_hours:
                     warning_flag = False
-                    logger.info(f"✅ [Data verification] During trading hours, mandatory setting warning_flag=False")
+                    logger.info("✅ [Data verification] During trading hours, mandatory setting warning_flag=False")
                 
                 # 🔥 Final log: records the final value of the warning flag
                 logger.info(f"📊 [Data verification] eventually warning_flag={warning_flag}, analysis_date_data={analysis_date_data}, is_in_trading_hours={is_in_trading_hours}")
@@ -635,7 +635,7 @@ class DataValidationService:
                     "report_type": doc.get("report_type")
                 }
             else:
-                return False, f"财务数据不存在", {
+                return False, "财务数据不存在", {
                     "exists": False,
                     "collection": collection_name
                 }
@@ -671,13 +671,13 @@ class DataValidationService:
             )
             
             if doc:
-                return True, f"实时行情存在", {
+                return True, "实时行情存在", {
                     "exists": True,
                     "current_price": doc.get("close"),
                     "update_time": doc.get("update_time")
                 }
             else:
-                return False, f"实时行情不存在", {
+                return False, "实时行情不存在", {
                     "exists": False,
                     "collection": collection_name
                 }

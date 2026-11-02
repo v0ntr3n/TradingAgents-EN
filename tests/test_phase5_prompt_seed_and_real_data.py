@@ -12,7 +12,7 @@ from pathlib import Path
 import tests  # registers offline stubs
 from core.agents.analyst import extract_structured_posterior
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
 
 
 class TestPhase5RealMarketAndPromptSeed(unittest.TestCase):

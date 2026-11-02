@@ -495,7 +495,7 @@ class AgentMemory:
             # get embedding
             embedding, provider = self.embedding_manager.get_embedding(content)
             if embedding is None:
-                logger.warning(f"⚠️ Unable to obtain embedding, skipping memory storage")
+                logger.warning("⚠️ Unable to obtain embedding, skipping memory storage")
                 return False
 
             # generate ID
@@ -552,7 +552,7 @@ class AgentMemory:
             # Get the query embedding
             query_embedding, provider = self.embedding_manager.get_embedding(query)
             if query_embedding is None:
-                logger.warning(f"⚠️ Unable to get query embedding")
+                logger.warning("⚠️ Unable to get query embedding")
                 return []
 
             # 🔥 Important: Make sure to use the same Embedding model when querying as when storing

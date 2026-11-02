@@ -472,7 +472,7 @@ class ResearchManagerV2(ManagerAgent):
             else:
                 logger.warning("⚠️ The system prompt words do not contain [Research Briefing Structure] guidance (old version of the prompt words may be used)")
 
-            logger.debug(f"✅ Obtain research integrator system prompt words from the template system")
+            logger.debug("✅ Obtain research integrator system prompt words from the template system")
             return prompt
         else:
             logger.warning("⚠️ Failed to obtain the system prompt word from the template system, use the default prompt word")
@@ -656,7 +656,7 @@ class ResearchManagerV2(ManagerAgent):
             if key not in ["bull_report", "bear_report"]:
                 prompt += f"- Supplementary material {key}: {value}\n"
 
-        prompt += f"""
+        prompt += """
 
 Mission focus:
 - Use the strongest version to summarize the reasons for the optimistic scenario first, and then use the strongest version to summarize the reasons for the cautious scenario. Don t write either side out as a straw man.
@@ -678,7 +678,7 @@ Strictly prohibited:
 Output format:
 Please use JSON output with the following fields:
 ```json
-{{
+{
     "analysis_view": "optimistic|Prudence|Neutral",
     "confidence": 0.0-1.0,
     "risk_score": 0.0-1.0,
@@ -689,7 +689,7 @@ Please use JSON output with the following fields:
     "invalidation_conditions": ["Judgment of downward revision or failure premise 1", "Judgment of downward revision or failure premise 2"],
     "watch_items": ["Follow-up observations 1", "Follow-up observations 2", "Follow-up observations 3"],
     "risk_warning": "100 Key risk warnings or major counter-evidence within 1 word"
-}}
+}
 ```
 
 Field requirements:

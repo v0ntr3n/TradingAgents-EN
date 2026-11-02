@@ -52,7 +52,7 @@ class PositionAnalystAgent(BaseAgent):
         """
         trade_info = state.get("trade_info", {})
 
-        logger.info(f"📊 [Position Analyst] Start analyzing position management...")
+        logger.info("📊 [Position Analyst] Start analyzing position management...")
         logger.info(f"   📋 stocks: {trade_info.get('code', 'N/A')}, Number of transactions: {len(trade_info.get('trades', []))}")
 
         # Build prompt words (support user preferences)
@@ -63,7 +63,7 @@ class PositionAnalystAgent(BaseAgent):
 
         if self._llm:
             try:
-                logger.info(f"   🤖 Call LLM analysis...")
+                logger.info("   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
                 logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
@@ -72,10 +72,10 @@ class PositionAnalystAgent(BaseAgent):
                 logger.error(f"   ❌ [Position Analyst] LLM call failed: {e}")
                 analysis = f"Position analysis failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM Not configured")
+            logger.warning("   ⚠️ LLM Not configured")
             analysis = "LLM Not configured, position analysis cannot be performed"
 
-        logger.info(f"📊 [Position Analyst] ✅ Analysis completed")
+        logger.info("📊 [Position Analyst] ✅ Analysis completed")
 
         # Only the newly added fields are returned, not the entire state (to avoid concurrent update conflicts)
         return {
@@ -143,6 +143,6 @@ Please answer in concise and professional language."""
         if prompt:
             logger.info(f"✅ [Position Analyst] Successfully obtained the prompt word from the template system (length: {len(prompt)})")
             return prompt
-        logger.warning(f"⚠️ [Position Analyst] The template system did not return the prompt word, use the downgrade prompt word")
+        logger.warning("⚠️ [Position Analyst] The template system did not return the prompt word, use the downgrade prompt word")
         return fallback_prompt
 

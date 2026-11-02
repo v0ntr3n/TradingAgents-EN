@@ -125,7 +125,7 @@ class ConditionalLogic:
         # Check if there is already a market analysis report
         market_report = state.get("market_report", "")
 
-        logger.info(f"🔀 [Conditional judgment] should_continue_market")
+        logger.info("🔀 [Conditional judgment] should_continue_market")
         logger.info(f"🔀 [Conditional judgment] - Number of messages: {len(messages)}")
         logger.info(f"🔀 [Conditional judgment] - Report length: {len(market_report)}")
         logger.info(f"🔧 [Infinite loop repair] - Number of tool calls: {tool_call_count}/{max_tool_calls}")
@@ -139,20 +139,20 @@ class ConditionalLogic:
 
         # Infinite loop repair: If the maximum number of tool calls is reached, force the end
         if tool_call_count >= max_tool_calls:
-            logger.warning(f"🔧 [Infinite loop repair] The maximum number of tool calls is reached and it is forced to end.: Msg Clear Market")
+            logger.warning("🔧 [Infinite loop repair] The maximum number of tool calls is reached and it is forced to end.: Msg Clear Market")
             return "Msg Clear Market"
 
         # If there is already report content, it means that the analysis has been completed and there will be no more loops.
         if market_report and len(market_report) > 100:
-            logger.info(f"🔀 [Conditional judgment] ✅ Report completed, return: Msg Clear Market")
+            logger.info("🔀 [Conditional judgment] ✅ Report completed, return: Msg Clear Market")
             return "Msg Clear Market"
 
         # Only AIMessage has tool_calls attribute
         if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
-            logger.info(f"🔀 [Conditional judgment] 🔧 tool_calls detected, return: tools_market")
+            logger.info("🔀 [Conditional judgment] 🔧 tool_calls detected, return: tools_market")
             return "tools_market"
 
-        logger.info(f"🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Market")
+        logger.info("🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Market")
         return "Msg Clear Market"
 
     def should_continue_social(self, state: AgentState):
@@ -170,27 +170,27 @@ class ConditionalLogic:
         # Check if there is already a sentiment analysis report
         sentiment_report = state.get("sentiment_report", "")
 
-        logger.info(f"🔀 [Conditional judgment] should_continue_social")
+        logger.info("🔀 [Conditional judgment] should_continue_social")
         logger.info(f"🔀 [Conditional judgment] - Number of messages: {len(messages)}")
         logger.info(f"🔀 [Conditional judgment] - Report length: {len(sentiment_report)}")
         logger.info(f"🔧 [Infinite loop repair] - Number of tool calls: {tool_call_count}/{max_tool_calls}")
 
         # Infinite loop repair: If the maximum number of tool calls is reached, force the end
         if tool_call_count >= max_tool_calls:
-            logger.warning(f"🔧 [Infinite loop repair] The maximum number of tool calls is reached and it is forced to end.: Msg Clear Social")
+            logger.warning("🔧 [Infinite loop repair] The maximum number of tool calls is reached and it is forced to end.: Msg Clear Social")
             return "Msg Clear Social"
 
         # If there is already report content, it means that the analysis has been completed and there will be no more loops.
         if sentiment_report and len(sentiment_report) > 100:
-            logger.info(f"🔀 [Conditional judgment] ✅ Report completed, return: Msg Clear Social")
+            logger.info("🔀 [Conditional judgment] ✅ Report completed, return: Msg Clear Social")
             return "Msg Clear Social"
 
         # Only AIMessage has tool_calls attribute
         if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
-            logger.info(f"🔀 [Conditional judgment] 🔧 tool_calls detected, return: tools_social")
+            logger.info("🔀 [Conditional judgment] 🔧 tool_calls detected, return: tools_social")
             return "tools_social"
 
-        logger.info(f"🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Social")
+        logger.info("🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Social")
         return "Msg Clear Social"
 
     def should_continue_news(self, state: AgentState):
@@ -208,27 +208,27 @@ class ConditionalLogic:
         # Check if there is already a news analysis report
         news_report = state.get("news_report", "")
 
-        logger.info(f"🔀 [Conditional judgment] should_continue_news")
+        logger.info("🔀 [Conditional judgment] should_continue_news")
         logger.info(f"🔀 [Conditional judgment] - Number of messages: {len(messages)}")
         logger.info(f"🔀 [Conditional judgment] - Report length: {len(news_report)}")
         logger.info(f"🔧 [Infinite loop repair] - Number of tool calls: {tool_call_count}/{max_tool_calls}")
 
         # Infinite loop repair: If the maximum number of tool calls is reached, force the end
         if tool_call_count >= max_tool_calls:
-            logger.warning(f"🔧 [Infinite loop repair] The maximum number of tool calls is reached and it is forced to end.: Msg Clear News")
+            logger.warning("🔧 [Infinite loop repair] The maximum number of tool calls is reached and it is forced to end.: Msg Clear News")
             return "Msg Clear News"
 
         # If there is already report content, it means that the analysis has been completed and there will be no more loops.
         if news_report and len(news_report) > 100:
-            logger.info(f"🔀 [Conditional judgment] ✅ Report completed, return: Msg Clear News")
+            logger.info("🔀 [Conditional judgment] ✅ Report completed, return: Msg Clear News")
             return "Msg Clear News"
 
         # Only AIMessage has tool_calls attribute
         if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
-            logger.info(f"🔀 [Conditional judgment] 🔧 tool_calls detected, return: tools_news")
+            logger.info("🔀 [Conditional judgment] 🔧 tool_calls detected, return: tools_news")
             return "tools_news"
 
-        logger.info(f"🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear News")
+        logger.info("🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear News")
         return "Msg Clear News"
 
     def should_continue_fundamentals(self, state: AgentState):
@@ -246,14 +246,14 @@ class ConditionalLogic:
         # Check if there is already a fundamental report
         fundamentals_report = state.get("fundamentals_report", "")
 
-        logger.info(f"🔀 [Conditional judgment] should_continue_fundamentals")
+        logger.info("🔀 [Conditional judgment] should_continue_fundamentals")
         logger.info(f"🔀 [Conditional judgment] - Number of messages: {len(messages)}")
         logger.info(f"🔀 [Conditional judgment] - Report length: {len(fundamentals_report)}")
         logger.info(f"🔧 [Infinite loop repair] - Number of tool calls: {tool_call_count}/{max_tool_calls}")
         logger.info(f"🔀 [Conditional judgment] - last message type: {type(last_message).__name__}")
         
         # 🔍 [debug log] Print the details of the last message
-        logger.info(f"🤖 [Conditional judgment] Details of the last message:")
+        logger.info("🤖 [Conditional judgment] Details of the last message:")
         logger.info(f"🤖 [Conditional judgment] - Message type: {type(last_message).__name__}")
         if hasattr(last_message, 'content'):
             content_preview = last_message.content[:300] + "..." if len(last_message.content) > 300 else last_message.content
@@ -270,13 +270,13 @@ class ConditionalLogic:
                     if 'args' in tc:
                         logger.info(f"🔧 [Conditional judgment] - parameters: {tc['args']}")
             else:
-                logger.info(f"🔧 [Conditional judgment] tool_calls Is an empty list")
+                logger.info("🔧 [Conditional judgment] tool_calls Is an empty list")
         else:
-            logger.info(f"🔧 [Conditional judgment] No tool_calls attribute")
+            logger.info("🔧 [Conditional judgment] No tool_calls attribute")
 
         # ✅ priority 1: If there is already report content, it means that the analysis has been completed and there will be no more loops.
         if fundamentals_report and len(fundamentals_report) > 100:
-            logger.info(f"🔀 [Conditional judgment] ✅ Report completed, return: Msg Clear Fundamentals")
+            logger.info("🔀 [Conditional judgment] ✅ Report completed, return: Msg Clear Fundamentals")
             return "Msg Clear Fundamentals"
 
         # ✅ priority 2: If there are tool_calls, execute the tool
@@ -286,11 +286,11 @@ class ConditionalLogic:
                 logger.warning(f"🔧 [Infinite loop repair] The number of tool calls has reached the upper limit({tool_call_count}/{max_tool_calls}), But there are still tool_calls, forced to end")
                 return "Msg Clear Fundamentals"
 
-            logger.info(f"🔀 [Conditional judgment] 🔧 tool_calls detected, return: tools_fundamentals")
+            logger.info("🔀 [Conditional judgment] 🔧 tool_calls detected, return: tools_fundamentals")
             return "tools_fundamentals"
 
         # ✅ priority 3: No tool_calls, ends normally
-        logger.info(f"🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Fundamentals")
+        logger.info("🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Fundamentals")
         return "Msg Clear Fundamentals"
 
     def should_continue_index_analyst(self, state: AgentState):
@@ -300,7 +300,7 @@ class ConditionalLogic:
 
         messages = state["messages"]
         if not messages:
-            logger.info(f"🔀 [Conditional judgment] should_continue_index_analyst - No message, return: tools_index_analyst")
+            logger.info("🔀 [Conditional judgment] should_continue_index_analyst - No message, return: tools_index_analyst")
             return "tools_index_analyst"
 
         last_message = messages[-1]
@@ -310,7 +310,7 @@ class ConditionalLogic:
         # Check whether there is already a market analysis report
         index_report = state.get("index_report", "")
 
-        logger.info(f"🔀 [Conditional judgment] should_continue_index_analyst")
+        logger.info("🔀 [Conditional judgment] should_continue_index_analyst")
         logger.info(f"🔀 [Conditional judgment] - Number of messages: {len(messages)}")
         logger.info(f"🔀 [Conditional judgment] - Report length: {len(index_report)}")
         logger.info(f"🔧 [Infinite loop repair] - Number of tool calls: {tool_call_count}/{max_tool_calls}")
@@ -323,10 +323,10 @@ class ConditionalLogic:
 
         # Check if there is a tool call
         if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
-            logger.info(f"🔀 [Conditional judgment] There are tool_calls, return: tools_index_analyst")
+            logger.info("🔀 [Conditional judgment] There are tool_calls, return: tools_index_analyst")
             return "tools_index_analyst"
 
-        logger.info(f"🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Index Analyst")
+        logger.info("🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Index Analyst")
         return "Msg Clear Index Analyst"
 
     def should_continue_sector_analyst(self, state: AgentState):
@@ -336,7 +336,7 @@ class ConditionalLogic:
 
         messages = state["messages"]
         if not messages:
-            logger.info(f"🔀 [Conditional judgment] should_continue_sector_analyst - No message, return: tools_sector_analyst")
+            logger.info("🔀 [Conditional judgment] should_continue_sector_analyst - No message, return: tools_sector_analyst")
             return "tools_sector_analyst"
 
         last_message = messages[-1]
@@ -346,7 +346,7 @@ class ConditionalLogic:
         # Check whether there is already a sector analysis report
         sector_report = state.get("sector_report", "")
 
-        logger.info(f"🔀 [Conditional judgment] should_continue_sector_analyst")
+        logger.info("🔀 [Conditional judgment] should_continue_sector_analyst")
         logger.info(f"🔀 [Conditional judgment] - Number of messages: {len(messages)}")
         logger.info(f"🔀 [Conditional judgment] - Report length: {len(sector_report)}")
         logger.info(f"🔧 [Infinite loop repair] - Number of tool calls: {tool_call_count}/{max_tool_calls}")
@@ -359,10 +359,10 @@ class ConditionalLogic:
 
         # Check if there is a tool call
         if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
-            logger.info(f"🔀 [Conditional judgment] There are tool_calls, return: tools_sector_analyst")
+            logger.info("🔀 [Conditional judgment] There are tool_calls, return: tools_sector_analyst")
             return "tools_sector_analyst"
 
-        logger.info(f"🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Sector Analyst")
+        logger.info("🔀 [Conditional judgment] ✅ No tool_calls, return: Msg Clear Sector Analyst")
         return "Msg Clear Sector Analyst"
 
     def should_continue_debate(self, state: AgentState) -> str:
@@ -379,7 +379,7 @@ class ConditionalLogic:
         logger.info(f"🔍 [investment debate control] current speaker: {current_speaker}")
 
         if current_count >= max_count:
-            logger.info(f"✅ [investment debate control] Reach the maximum number of times and end the debate -> Research Manager")
+            logger.info("✅ [investment debate control] Reach the maximum number of times and end the debate -> Research Manager")
             return "Research Manager"
 
         next_speaker = "Bear Researcher" if current_speaker.startswith("Bull") else "Bull Researcher"
@@ -397,7 +397,7 @@ class ConditionalLogic:
         logger.info(f"🔍 [risk discussion control] last speaker: {latest_speaker}")
 
         if current_count >= max_count:
-            logger.info(f"✅ [risk discussion control] Reached the maximum number of times and ended the discussion -> Risk Judge")
+            logger.info("✅ [risk discussion control] Reached the maximum number of times and ended the discussion -> Risk Judge")
             return "Risk Judge"
 
         # Determine next speaker

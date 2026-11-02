@@ -45,7 +45,7 @@ from core.finben.finben_adapter import (
 )
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
 
 
 def _sample_ama_payload(symbol: str, date_str: str = "2025-08-15") -> dict:

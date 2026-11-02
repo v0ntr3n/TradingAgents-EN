@@ -412,7 +412,7 @@ class HistoricalDataService:
                 try:
                     parsed_date = pd.to_datetime(date_value)
                     return parsed_date.strftime('%Y-%m-%d')
-                except:
+                except Exception:
                     return date_value
         elif isinstance(date_value, (date, datetime)):
             return date_value.strftime('%Y-%m-%d')

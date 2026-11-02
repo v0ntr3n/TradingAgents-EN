@@ -39,7 +39,7 @@ from core.llm.multi_model_client import MissingAPIKeyError, MultiModelRegistryCl
 from tradingagents.graph.conditional_logic import compute_cbs_bps, compute_jensen_shannon_divergence
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
 
 
 def test_point_in_time_zero_leakage():

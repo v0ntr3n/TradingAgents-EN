@@ -105,7 +105,7 @@ def build_trade_info(
         avg_sell_price = total_sell_amount / total_sell_qty if total_sell_qty > 0 else 0.0
         pnl_pct = (total_pnl / total_buy_amount * 100) if total_buy_amount > 0 else 0.0
 
-        logger.info(f"📊 [build_trade_info] Statistical results:")
+        logger.info("📊 [build_trade_info] Statistical results:")
         logger.info(f"  - total_buy_amount: {total_buy_amount}")
         logger.info(f"  - total_sell_amount: {total_sell_amount}")
         logger.info(f"  - total_pnl: {total_pnl}")

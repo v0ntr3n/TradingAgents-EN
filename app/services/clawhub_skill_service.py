@@ -191,7 +191,7 @@ class ClawHubSkillService:
         if skill_root is None:
             return {
                 "success": False,
-                "message": f"Skill SKILL.md file not found in package",
+                "message": "Skill SKILL.md file not found in package",
                 "skill_dir": str(skill_dir),
             }
 

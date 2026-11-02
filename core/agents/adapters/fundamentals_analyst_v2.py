@@ -277,7 +277,7 @@ class FundamentalsAnalystAgentV2(BaseAgent):
         logger.info(f"📝 System prompt word length: {len(prompt)} character")
         if prompt:
             logger.info(f"📝 The first 500 characters of the system prompt word:\n{prompt[:500]}...")
-            logger.info(f"✅ Obtain fundamental analyst v2.0 system prompt words from the template system")
+            logger.info("✅ Obtain fundamental analyst v2.0 system prompt words from the template system")
             return prompt
         
         # Downgrade: Use default prompt word

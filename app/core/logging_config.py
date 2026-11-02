@@ -113,7 +113,7 @@ def setup_logging(log_level: str = "INFO"):
                 toml_data = toml_loader.load(f)
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] Successfully loaded TOML configuration")
+                print("🔍 [setup_logging] Successfully loaded TOML configuration")
 
             # Read basic fields
             logging_root = toml_data.get("logging", {})
@@ -167,7 +167,7 @@ def setup_logging(log_level: str = "INFO"):
             main_backup_count = int(main_handler_cfg.get("backup_count", 5))
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] Master log file configuration:")
+                print("🔍 [setup_logging] Master log file configuration:")
                 print(f"  - file path: {main_log}")
                 print(f"  - Whether to enable: {main_enabled}")
                 print(f"  - Log level: {main_level}")
@@ -209,7 +209,7 @@ def setup_logging(log_level: str = "INFO"):
             error_backup_count = int(error_handler_cfg.get("backup_count", 5))
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] Error log file configuration:")
+                print("🔍 [setup_logging] Error log file configuration:")
                 print(f"  - file path: {error_log}")
                 print(f"  - Whether to enable: {error_enabled}")
                 print(f"  - Log level: {error_level}")
@@ -228,7 +228,7 @@ def setup_logging(log_level: str = "INFO"):
             skill_backup_count = int(skill_handler_cfg.get("backup_count", 10))
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] Skill Workshop log file configuration:")
+                print("🔍 [setup_logging] Skill Workshop log file configuration:")
                 print(f"  - file path: {skill_log}")
                 print(f"  - Whether to enable: {skill_enabled}")
                 print(f"  - Log level: {skill_level}")
@@ -253,7 +253,7 @@ def setup_logging(log_level: str = "INFO"):
             }
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] Start building handlers configuration")
+                print("🔍 [setup_logging] Start building handlers configuration")
 
             # 🔥 Select a log handler class (Windows uses ConcurrentRotatingFileHandler)
             handler_class = "concurrent_log_handler.ConcurrentRotatingFileHandler" if _USE_CONCURRENT_HANDLER else "logging.handlers.RotatingFileHandler"
@@ -274,7 +274,7 @@ def setup_logging(log_level: str = "INFO"):
                 }
             else:
                 if verbose_setup:
-                    print(f"⚠️ [setup_logging] main_file handler Not enabled")
+                    print("⚠️ [setup_logging] main_file handler Not enabled")
 
             # WebAPI log file
             if webapi_enabled:
@@ -456,12 +456,12 @@ def setup_logging(log_level: str = "INFO"):
 
             if verbose_setup:
                 print(f"🔍 [setup_logging] Final handlers configuration: {list(handlers_config.keys())}")
-                print(f"🔍 [setup_logging] Start applying dictConfig")
+                print("🔍 [setup_logging] Start applying dictConfig")
 
             logging.config.dictConfig(logging_config)
 
             if verbose_setup:
-                print(f"✅ [setup_logging] dictConfig Application successful")
+                print("✅ [setup_logging] dictConfig Application successful")
 
             logging.getLogger("webapi").info(f"Logging configured from {cfg_path}")
 
@@ -470,7 +470,7 @@ def setup_logging(log_level: str = "INFO"):
                 test_logger = logging.getLogger("tradingagents")
                 test_logger.info(f"🔍 Test main log file writing: {main_log}")
                 if verbose_setup:
-                    print(f"🔍 [setup_logging] Test log written to tradingagents logger")
+                    print("🔍 [setup_logging] Test log written to tradingagents logger")
 
             return
     except Exception as e:
@@ -481,7 +481,7 @@ def setup_logging(log_level: str = "INFO"):
 
     # 2) Default built-in configuration (consistent with the original)
     if verbose_setup:
-        print(f"✅ [setup_logging] Use built-in default configuration")
+        print("✅ [setup_logging] Use built-in default configuration")
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
 

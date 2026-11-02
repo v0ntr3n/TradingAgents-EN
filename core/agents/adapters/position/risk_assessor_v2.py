@@ -417,7 +417,7 @@ class RiskAssessorV2(ResearcherAgent):
             variables["risk_report"] = ""
             variables["risk_management_decision"] = ""
             variables["has_cache"] = "false"
-            logger.info(f"🔧 [risk assessor] Template variables are ready: No cached reports")
+            logger.info("🔧 [risk assessor] Template variables are ready: No cached reports")
         
         # Try loading the template from the database (preference_id has been set to the context in the execute method)
         try:

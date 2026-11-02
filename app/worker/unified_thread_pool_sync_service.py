@@ -230,7 +230,7 @@ class UnifiedThreadPoolSyncService:
                                     timeout=5.0
                                 ))
                             except asyncio.TimeoutError:
-                                logger.warning(f"⚠️ Waiting for task cancellation timeout and forcing event loop to close")
+                                logger.warning("⚠️ Waiting for task cancellation timeout and forcing event loop to close")
                 except RuntimeError as cleanup_error:
                     # Event loop closed, errors ignored
                     if "shutdown" not in str(cleanup_error).lower() and "closed" not in str(cleanup_error).lower():
@@ -242,7 +242,7 @@ class UnifiedThreadPoolSyncService:
                 try:
                     if not loop.is_closed():
                         loop.close()
-                        logger.debug(f"✅ event loop closed")
+                        logger.debug("✅ event loop closed")
                 except RuntimeError as close_error:
                     # Event loop closed, errors ignored
                     if "shutdown" not in str(close_error).lower() and "closed" not in str(close_error).lower():
@@ -399,7 +399,7 @@ class UnifiedThreadPoolSyncService:
                 # Make sure the index exists
                 await historical_service._ensure_indexes()
                 connections['historical_service'] = historical_service
-                logger.debug(f"🔄 Create a thread-local historical data service")
+                logger.debug("🔄 Create a thread-local historical data service")
             except Exception as e:
                 logger.warning(f"⚠️ Failed to create thread local historical data service: {e}")
             
@@ -409,7 +409,7 @@ class UnifiedThreadPoolSyncService:
                 news_service = NewsDataService()
                 news_service.db = connections['db']
                 connections['news_service'] = news_service
-                logger.debug(f"🔄 Create a thread-local news data service")
+                logger.debug("🔄 Create a thread-local news data service")
             except Exception as e:
                 logger.warning(f"⚠️ Failed to create thread local news data service: {e}")
                 
@@ -431,7 +431,7 @@ class UnifiedThreadPoolSyncService:
                 mongo_client = connections['mongo_client']
                 if mongo_client:
                     mongo_client.close()
-                    logger.debug(f"🔄 Thread-local MongoDB client closed")
+                    logger.debug("🔄 Thread-local MongoDB client closed")
         except Exception as e:
             logger.warning(f"⚠️ Error cleaning thread local database connection: {e}")
     

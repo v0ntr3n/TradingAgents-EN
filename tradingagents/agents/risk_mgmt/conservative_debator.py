@@ -30,7 +30,7 @@ def create_safe_debator(llm):
         trader_decision = state.get("trader_investment_plan", "")
 
         # 📊 Record input data length
-        logger.info(f"📊 [Safe Analyst] Input data length statistics:")
+        logger.info("📊 [Safe Analyst] Input data length statistics:")
         logger.info(f"  - market_report: {len(market_research_report):,} character")
         logger.info(f"  - sentiment_report: {len(sentiment_report):,} character")
         logger.info(f"  - news_report: {len(news_report):,} character")
@@ -114,7 +114,7 @@ Final response from the neutral analyst:{current_neutral_response}
 
 {build_research_only_closing(["Please present your conservative research perspective, emphasizing vulnerabilities and sources of risk, but do not formulate stop-loss, position reduction, or exit plans."])}"""
 
-        logger.info(f"⏱️ [Safe Analyst] Start calling LLM...")
+        logger.info("⏱️ [Safe Analyst] Start calling LLM...")
         llm_start_time = time.time()
 
         response = llm.invoke(prompt)

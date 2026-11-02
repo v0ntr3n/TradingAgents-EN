@@ -236,7 +236,7 @@ class TechnicalAnalystV2(ResearcherAgent):
             if self._llm:
                 # 🔧 Fix: Use invoke_with_tools to support tool calls (tools need to be called to obtain market data when there is no cache)
                 if self._langchain_tools:
-                    logger.info(f"🔧 [technical analyst] Tools detected, use invoke_with_tools method")
+                    logger.info("🔧 [technical analyst] Tools detected, use invoke_with_tools method")
                     # Prepare analysis prompt words (generate report after tool execution)
                     analysis_prompt = """✅ The tool call has been completed and all required data has been obtained.
 
@@ -254,7 +254,7 @@ Start writing your report now:"""
                     report_content = self.invoke_with_tools(messages, analysis_prompt=analysis_prompt)
                     report = self._parse_response(report_content)
                 else:
-                    logger.info(f"🔧 [technical analyst] No tools, call directly LLM")
+                    logger.info("🔧 [technical analyst] No tools, call directly LLM")
                     response = self._llm.invoke(messages)
                     report = self._parse_response(response.content)
             else:
@@ -381,7 +381,7 @@ Start writing your report now:"""
         else:
             variables["market_report"] = ""  # Empty string, the template will not display this part
             variables["has_cache"] = "false"
-            logger.info(f"🔧 [technical analyst] Template variables are ready: market_report exist=False")
+            logger.info("🔧 [technical analyst] Template variables are ready: market_report exist=False")
         
         # Try loading the template from the database (preference_id has been set to the context in the execute method)
         try:

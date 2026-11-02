@@ -231,7 +231,7 @@ class PlannedAnalysisService:
         # === Pre-check: Unsupported symbol type ===
         unsupported_msg = _check_unsupported_asset(question)
         if unsupported_msg:
-            logger.info(f"[planning analysis] If an unsupported variety type is detected, a prompt will be returned directly.")
+            logger.info("[planning analysis] If an unsupported variety type is detected, a prompt will be returned directly.")
             return PlannedAnalysisResult(
                 reply=unsupported_msg,
                 source=PlanSource.SEED_FLOW,

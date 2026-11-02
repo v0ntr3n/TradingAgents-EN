@@ -862,12 +862,12 @@ async def get_analysis_detail(
                             advice_json = json.loads(action_reason_str)
                         
                         if advice_json:
-                            logger.info(f"📊 [Analysis details interface] JSON Parsed successfully, converted to Markdown")
+                            logger.info("📊 [Analysis details interface] JSON Parsed successfully, converted to Markdown")
                             report["ai_analysis"]["action_reason"] = service._convert_action_advice_json_to_markdown(advice_json)
                     except Exception as e:
                         logger.warning(f"⚠️ [Analysis details interface] JSON Parsing failed: {e}")
             elif isinstance(action_reason_raw, dict):
-                logger.info(f"📊 [Analysis details interface] action_reason is a dictionary format, converted to Markdown")
+                logger.info("📊 [Analysis details interface] action_reason is a dictionary format, converted to Markdown")
                 report["ai_analysis"]["action_reason"] = service._convert_action_advice_json_to_markdown(action_reason_raw)
 
         # Convert ObjectId
@@ -1047,7 +1047,7 @@ async def analyze_position_by_code(
         from app.services.unified_analysis_service import get_unified_analysis_service
 
         unified_service = get_unified_analysis_service()
-        logger.info(f"✅ [Position research route] Get the UnifiedAnalysisService instance")
+        logger.info("✅ [Position research route] Get the UnifiedAnalysisService instance")
 
         # Prepare task parameters
         task_params = {
@@ -1065,7 +1065,7 @@ async def analyze_position_by_code(
         logger.info(f"📋 [Position research route] Task parameters are ready: {list(task_params.keys())}")
 
         # Create unified research tasks
-        logger.info(f"🔄 [Position research route] Start creating tasks...")
+        logger.info("🔄 [Position research route] Start creating tasks...")
         result = await unified_service.create_position_analysis_task(
             user_id=current_user["id"],
             code=data.code,
@@ -1078,7 +1078,7 @@ async def analyze_position_by_code(
         result["analysis_id"] = result["task_id"]
 
         # Backend execution research
-        logger.info(f"🚀 [Position research route] Start background task execution...")
+        logger.info("🚀 [Position research route] Start background task execution...")
         asyncio.create_task(
             unified_service.execute_position_analysis(
                 task_id=result["task_id"],
@@ -1088,7 +1088,7 @@ async def analyze_position_by_code(
                 task_params=task_params
             )
         )
-        logger.info(f"✅ [Position research route] Background task started")
+        logger.info("✅ [Position research route] Background task started")
 
         return ok(data=result, message="The position research task has been submitted and is expected to take 2-5 minutes to complete.")
     except HTTPException:
@@ -1212,11 +1212,11 @@ async def get_position_analysis_status(
                     # If the top-level recommendation has been converted, synchronize it to the result.
                     if "recommendation" in result_data:
                         ai_analysis_copy["recommendation"] = result_data["recommendation"]
-                        logger.info(f"📊 [Position research interface] Synchronize the converted recommendation to result.ai_analysis")
+                        logger.info("📊 [Position research interface] Synchronize the converted recommendation to result.ai_analysis")
                     # If the top-level action_reason has been converted, it will also be synchronized to the result.
                     if "action_reason" in result_data:
                         ai_analysis_copy["action_reason"] = result_data["action_reason"]
-                        logger.info(f"📊 [Position research interface] Synchronize the converted action_reason to result.ai_analysis")
+                        logger.info("📊 [Position research interface] Synchronize the converted action_reason to result.ai_analysis")
                     if "detailed_analysis" in result_data:
                         ai_analysis_copy["detailed_analysis"] = result_data["detailed_analysis"]
                     if "user_view" in result_data:

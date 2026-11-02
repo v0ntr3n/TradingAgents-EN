@@ -53,7 +53,7 @@ class AttributionAnalystAgent(BaseAgent):
         trade_info = state.get("trade_info", {})
         benchmark_data = state.get("benchmark_data", {})
 
-        logger.info(f"📈 [attribution analyst] Start analyzing revenue attribution...")
+        logger.info("📈 [attribution analyst] Start analyzing revenue attribution...")
         logger.info(f"   📋 stocks: {trade_info.get('code', 'N/A')}, Yield: {trade_info.get('return_rate', 0):.2%}")
         logger.info(f"   📊 benchmark: Market={benchmark_data.get('market_return', 0):.2%}, Industry={benchmark_data.get('industry_name', 'N/A')}")
 
@@ -65,7 +65,7 @@ class AttributionAnalystAgent(BaseAgent):
 
         if self._llm:
             try:
-                logger.info(f"   🤖 Call LLM analysis...")
+                logger.info("   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
                 logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
@@ -74,10 +74,10 @@ class AttributionAnalystAgent(BaseAgent):
                 logger.error(f"   ❌ [attribution analyst] LLM call failed: {e}")
                 analysis = f"Attribution analysis failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM Not configured")
+            logger.warning("   ⚠️ LLM Not configured")
             analysis = "LLM Not configured for attribution analysis"
 
-        logger.info(f"📈 [attribution analyst] ✅ Analysis completed")
+        logger.info("📈 [attribution analyst] ✅ Analysis completed")
 
         # Only the newly added fields are returned, not the entire state (to avoid concurrent update conflicts)
         return {

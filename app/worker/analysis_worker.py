@@ -1085,7 +1085,7 @@ class AnalysisWorker:
 
             if suspended_count > 0:
                 logger.warning(f"⏸️ Already {suspended_count} unfinished tasks marked as pending")
-                logger.info(f"💡 Users can manually resume or cancel these tasks in the task list")
+                logger.info("💡 Users can manually resume or cancel these tasks in the task list")
             else:
                 logger.info("✅ No unfinished tasks found")
 

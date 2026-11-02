@@ -256,7 +256,7 @@ Please add it to the review report"Trading Plan Compliance"Part, summary:
         }
 
         # 🆕 If there is a trading plan, add trading plan variables
-        logger.info(f"🔍 [Review manager] Check the state in trading_plan...")
+        logger.info("🔍 [Review manager] Check the state in trading_plan...")
         logger.info(f"🔍 [Review manager] state all keys of: {list(state.keys())}")
 
         trading_plan = state.get('trading_plan')
@@ -275,7 +275,7 @@ Please add it to the review report"Trading Plan Compliance"Part, summary:
             logger.info(f"   - style: {trading_plan.get('style', 'N/A')}")
             logger.info(f"   - rules_text length: {len(trading_plan.get('rules_text', ''))}")
         else:
-            logger.warning(f"⚠️ [Review manager] state There is no trading_plan field in!")
+            logger.warning("⚠️ [Review manager] state There is no trading_plan field in!")
 
         # 🆕 Construct profit information text (including floating profit and loss) - used for template variables
         # Build the complete text based on the condition instead of letting the template handle the condition
@@ -329,7 +329,7 @@ Note: The score field is reserved for compatibility only. The review conclusion 
 It is prohibited to write suggestions as buying or selling, adding or subtracting positions, stop loss and take profit, position adjustment or It should be executed at a certain price next time Such future actions."""
 
         # Print template variables (for debugging)
-        logger.info(f"📊 [Review manager] Template variables:")
+        logger.info("📊 [Review manager] Template variables:")
         for key, value in template_variables.items():
             # The analysis report content is too long, only the first 100 characters are printed.
             if key.endswith('_analysis'):

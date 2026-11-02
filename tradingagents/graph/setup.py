@@ -156,13 +156,13 @@ class GraphSetup:
             )
 
             if using_dashscope_openai:
-                logger.debug(f"📈 [DEBUG] Use standard market analysts (Alibaba Bailian OpenAI compatible mode)")
+                logger.debug("📈 [DEBUG] Use standard market analysts (Alibaba Bailian OpenAI compatible mode)")
             elif "dashscope" in llm_provider or "Ali Bailian" in self.config.get("llm_provider", ""):
-                logger.debug(f"📈 [DEBUG] Use standard market analysts (Alibaba Bailian native mode)")
+                logger.debug("📈 [DEBUG] Use standard market analysts (Alibaba Bailian native mode)")
             elif "deepseek" in llm_provider:
-                logger.debug(f"📈 [DEBUG] Use Standard Market Analyst (DeepSeek)")
+                logger.debug("📈 [DEBUG] Use Standard Market Analyst (DeepSeek)")
             else:
-                logger.debug(f"📈 [DEBUG] Use standard market analysts")
+                logger.debug("📈 [DEBUG] Use standard market analysts")
 
             # All LLMs use standard analysts
             analyst_nodes["market"] = create_market_analyst(
@@ -197,13 +197,13 @@ class GraphSetup:
             )
 
             if using_dashscope_openai:
-                logger.debug(f"📊 [DEBUG] Use standard fundamental analysts (Alibaba Bailian OpenAI compatible mode)")
+                logger.debug("📊 [DEBUG] Use standard fundamental analysts (Alibaba Bailian OpenAI compatible mode)")
             elif "dashscope" in llm_provider or "Ali Bailian" in self.config.get("llm_provider", ""):
-                logger.debug(f"📊 [DEBUG] Use standard fundamental analysts (Alibaba Bailian native mode)")
+                logger.debug("📊 [DEBUG] Use standard fundamental analysts (Alibaba Bailian native mode)")
             elif "deepseek" in llm_provider:
-                logger.debug(f"📊 [DEBUG] Using standard fundamental analysts (DeepSeek)")
+                logger.debug("📊 [DEBUG] Using standard fundamental analysts (DeepSeek)")
             else:
-                logger.debug(f"📊 [DEBUG] Use standard fundamental analysts")
+                logger.debug("📊 [DEBUG] Use standard fundamental analysts")
 
             # All LLMs use standard analysts (including forced tool invocation mechanism)
             analyst_nodes["fundamentals"] = create_fundamentals_analyst(

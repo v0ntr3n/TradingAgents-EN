@@ -120,25 +120,25 @@ class ChatGoogleOpenAI(ChatGoogleGenerativeAI):
                     api_endpoint = base_url
                     logger.info(f"🔍 [Google official] Use full base_url as domain name: {api_endpoint}")
 
-                logger.info(f"✅ [Google official] SDK The /v1beta path will be added automatically")
+                logger.info("✅ [Google official] SDK The /v1beta path will be added automatically")
             else:
                 # 🔄 Transit address: Use the complete URL directly and do not allow the SDK to add it. /v1beta
                 # Transit services usually already include complete path mapping
                 api_endpoint = base_url
                 logger.info(f"🔄 [transit address] Unofficial domain name detected, use full URL: {api_endpoint}")
-                logger.info(f"   Transit services usually already contain the full path and do not require SDK addition /v1beta")
+                logger.info("   Transit services usually already contain the full path and do not require SDK addition /v1beta")
 
             # Pass custom endpoint via client_options
             # Reference: https://github.com/langchain-ai/langchain-google/issues/783
             kwargs["client_options"] = {"api_endpoint": api_endpoint}
             logger.info(f"✅ [Google initialization] settings client_options.api_endpoint: {api_endpoint}")
         else:
-            logger.info(f"🔍 [Google initialization] base_url not provided, default endpoint used")
+            logger.info("🔍 [Google initialization] base_url not provided, default endpoint used")
 
         # Call parent class initialization
         super().__init__(**kwargs)
 
-        logger.info(f"✅ Google AI OpenAI Compatible adapter initialized successfully")
+        logger.info("✅ Google AI OpenAI Compatible adapter initialized successfully")
         logger.info(f"   model: {kwargs.get('model', 'gemini-pro')}")
         logger.info(f"   temperature: {kwargs.get('temperature', 0.1)}")
         logger.info(f"   maximum Token: {kwargs.get('max_tokens', 2000)}")
@@ -215,7 +215,7 @@ class ChatGoogleOpenAI(ChatGoogleGenerativeAI):
             optimized_content = self._enhance_news_content(content)
             message.content = optimized_content
             
-            logger.debug(f"🔧 [Google adapter] Optimize news content format")
+            logger.debug("🔧 [Google adapter] Optimize news content format")
             logger.debug(f"   original length: {len(content)} character")
             logger.debug(f"   Optimized length: {len(optimized_content)} character")
     
@@ -393,7 +393,7 @@ def test_google_openai_connection(
     """Test Google AI OpenAI compatible interface connection"""
     
     try:
-        logger.info(f"🧪 Test Google AI OpenAI compatible interface connection")
+        logger.info("🧪 Test Google AI OpenAI compatible interface connection")
         logger.info(f"   model: {model}")
         
         # Create client
@@ -407,11 +407,11 @@ def test_google_openai_connection(
         response = llm.invoke("Hello, please introduce yourself briefly.")
         
         if response and hasattr(response, 'content') and response.content:
-            logger.info(f"✅ Google AI OpenAI Compatible interface connected successfully")
+            logger.info("✅ Google AI OpenAI Compatible interface connected successfully")
             logger.info(f"   response: {response.content[:100]}...")
             return True
         else:
-            logger.error(f"❌ Google AI OpenAI Compatible interface response is empty")
+            logger.error("❌ Google AI OpenAI Compatible interface response is empty")
             return False
             
     except Exception as e:
@@ -426,7 +426,7 @@ def test_google_openai_function_calling(
     """Testing the Google AI OpenAI compatible interface Function Calling"""
     
     try:
-        logger.info(f"🧪 test Google AI Function Calling")
+        logger.info("🧪 test Google AI Function Calling")
         logger.info(f"   model: {model}")
         
         # Create client
@@ -455,7 +455,7 @@ Investors expressed concern, and analysts gave positive reviews."""
         # Test tool call
         response = llm_with_tools.invoke("Please use test_news_tool to query'apple inc.'news")
         
-        logger.info(f"✅ Google AI Function Calling Test completed")
+        logger.info("✅ Google AI Function Calling Test completed")
         logger.info(f"   response type: {type(response)}")
         
         if hasattr(response, 'tool_calls') and response.tool_calls:
@@ -472,8 +472,8 @@ Investors expressed concern, and analysts gave positive reviews."""
 
 if __name__ == "__main__":
     """test script"""
-    logger.info(f"🧪 Google AI OpenAI Compatible adapter testing")
-    logger.info(f"=" * 50)
+    logger.info("🧪 Google AI OpenAI Compatible adapter testing")
+    logger.info("=" * 50)
     
     # test connection
     connection_ok = test_google_openai_connection()
@@ -483,8 +483,8 @@ if __name__ == "__main__":
         function_calling_ok = test_google_openai_function_calling()
         
         if function_calling_ok:
-            logger.info(f"\n🎉 All tests passed! Google AI OpenAI compatible adapter works fine")
+            logger.info("\n🎉 All tests passed! Google AI OpenAI compatible adapter works fine")
         else:
-            logger.error(f"\n⚠️ Function Calling test failed")
+            logger.error("\n⚠️ Function Calling test failed")
     else:
-        logger.error(f"\n❌ Connection test failed")
+        logger.error("\n❌ Connection test failed")

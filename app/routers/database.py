@@ -259,7 +259,7 @@ async def import_data(
             file_ext = os.path.splitext(file.filename)[1].lower()
             if file_ext == '.zip':
                 detected_format = 'json'  # ZIP Inside the file is JSON
-                logger.info(f"   ZIP file detected, will be automatically decompressed")
+                logger.info("   ZIP file detected, will be automatically decompressed")
             elif file_ext == '.json':
                 detected_format = 'json'
         

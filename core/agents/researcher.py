@@ -799,7 +799,7 @@ class ResearcherAgent(BaseAgent):
                     elif key == "current_price":
                         try:
                             current_price = float(value)
-                        except:
+                        except Exception:
                             pass
             
             if company_name:
@@ -840,7 +840,7 @@ class ResearcherAgent(BaseAgent):
             # 🔥 self.config Yes AgentConfig (Pydantic BaseModel), Direct access to properties
             memory_enabled = getattr(self.config, "memory_enabled", True)
             if not memory_enabled:
-                logger.info(f"📭 Memory function disabled (quick analysis mode)")
+                logger.info("📭 Memory function disabled (quick analysis mode)")
                 return ""
 
             if not hasattr(self.memory, 'search_memories'):
@@ -883,7 +883,7 @@ class ResearcherAgent(BaseAgent):
                         max_chars=1500,
                     )
                     if lessons_str:
-                        logger.info(f"🧠 Recall reflection lessons from mem0 (closed loop L2/L3)")
+                        logger.info("🧠 Recall reflection lessons from mem0 (closed loop L2/L3)")
             except Exception as lessons_exc:
                 logger.debug(f"[Researcher] Recall reflection and lesson failure (not blocking): {lessons_exc}")
 

@@ -612,7 +612,7 @@ def get_residual_income_valuation(
                 roe = net_profit / total_equity
             else:
                 roe = 0.08
-                warnings.append(f"ROE For missing data, the 8% imputation was used by default.")
+                warnings.append("ROE For missing data, the 8% imputation was used by default.")
 
         # cost of equity
         if cost_of_equity is not None:

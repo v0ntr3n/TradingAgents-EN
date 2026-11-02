@@ -672,7 +672,7 @@ pre, code {
             try:
                 if 'output_file' in locals() and os.path.exists(output_file):
                     os.unlink(output_file)
-            except:
+            except Exception:
                 pass
             raise Exception(f"Failed to generate Word document: {e}")
     

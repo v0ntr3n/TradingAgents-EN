@@ -69,7 +69,7 @@ def _get_api_key_from_database() -> Optional[str]:
                             logger.debug(f"✅ [DB Query] API Key valid (length: {len(api_key)})")
                             return api_key
                         else:
-                            logger.debug(f"⚠️ [DB Query] API Key Invalid or a placeholder")
+                            logger.debug("⚠️ [DB Query] API Key Invalid or a placeholder")
             else:
                 logger.debug("⚠️ [DB Query] Not in configuration data_source_configs")
         else:

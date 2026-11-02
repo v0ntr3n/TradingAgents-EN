@@ -419,7 +419,7 @@ class SchedulerService:
                             final_kwargs["_resume_from_index"] = processed_items
                             logger.info(f"📊 Recovery operation: Read from execution record processed_items={processed_items}, has been added to kwargs")
                         else:
-                            logger.warning(f"⚠️ There is no processed_items in the execution record and will start from 0")
+                            logger.warning("⚠️ There is no processed_items in the execution record and will start from 0")
                         
                         # 🔥 Add _resume_execution_id to final_kwargs as well so that the task function knows this is a resume execution
                         final_kwargs["_resume_execution_id"] = resume_execution_id
@@ -522,7 +522,7 @@ class SchedulerService:
                                 final_kwargs["_resume_from_index"] = processed_items
                                 logger.info(f"📊 Manually trigger the resumption of pending tasks: Read from execution record processed_items={processed_items}, has been added to kwargs")
                             else:
-                                logger.warning(f"⚠️ There is no processed_items in the execution record and will start from 0")
+                                logger.warning("⚠️ There is no processed_items in the execution record and will start from 0")
                             
                             # Add _resume_execution_id to final_kwargs
                             final_kwargs["_resume_execution_id"] = resume_execution_id
@@ -1032,7 +1032,7 @@ class SchedulerService:
                     if existing_progress_str:
                         try:
                             progress_data = json.loads(existing_progress_str)
-                        except:
+                        except Exception:
                             progress_data = {}
                     else:
                         progress_data = {}
@@ -2006,7 +2006,7 @@ async def update_job_progress(
                                 cancel_requested = True
                                 logger.info(f"🔄 同步取消标记: 从 {original_job_id} 同步到 {execution_job_id} (时间差: {time_diff:.0f}秒)")
                             else:
-                                logger.debug(f"🔍 The active execution record of the original job_id does not have a cancellation mark set and the cancellation status is not synchronized.")
+                                logger.debug("🔍 The active execution record of the original job_id does not have a cancellation mark set and the cancellation status is not synchronized.")
             
             if cancel_requested:
                 logger.warning(f"⚠️ 任务 {job_id} 收到取消请求，即将停止 (execution_job_id={execution_job_id})")

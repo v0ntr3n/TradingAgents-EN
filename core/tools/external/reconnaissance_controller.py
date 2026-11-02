@@ -1421,7 +1421,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         ]
         if spec.parameters:
             param_lines = [f"  - {p.name}: {p.type} (默认: {p.default})" for p in spec.parameters]
-            parts.append(f"- 参数:\n" + "\n".join(param_lines))
+            parts.append("- 参数:\n" + "\n".join(param_lines))
         if spec.expected_output.fields:
             parts.append(f"- 期望输出字段: {', '.join(spec.expected_output.fields)}")
         if spec.test_input:
@@ -1430,7 +1430,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         # Additional rule baseline known facts
         if rule_report.schema_facts:
             baseline_facts = [f"  - [{f.source}] {f.fact}" for f in rule_report.schema_facts[:5]]
-            parts.append(f"\n## Rule baseline known facts (from vector search + Static analysis, already trusted)\n" + "\n".join(baseline_facts))
+            parts.append("\n## Rule baseline known facts (from vector search + Static analysis, already trusted)\n" + "\n".join(baseline_facts))
         if rule_report.available_helpers:
             helper_lines = []
             for h in rule_report.available_helpers[:5]:

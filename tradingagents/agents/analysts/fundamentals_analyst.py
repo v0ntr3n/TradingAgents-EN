@@ -102,7 +102,7 @@ def _get_company_name_for_fundamentals(ticker: str, market_info: dict) -> str:
 def create_fundamentals_analyst(llm, toolkit):
     @log_analyst_module("fundamentals")
     def fundamentals_analyst_node(state):
-        logger.debug(f"📊 [DEBUG] ===== Fundamental analyst node starts =====")
+        logger.debug("📊 [DEBUG] ===== Fundamental analyst node starts =====")
 
         # 🔧 Tool call counter - prevent infinite loops
         # Check if there is a ToolMessage in the message history. If there is, the tool has been executed.
@@ -164,7 +164,7 @@ def create_fundamentals_analyst(llm, toolkit):
         # Unify the use of get_stock_fundamentals_unified tool
         # The tool will automatically identify the stock type (A shares/Hong Kong stocks/US stocks) internally and call the corresponding data source
         # For A shares, it automatically obtains price data and fundamental data without the need for LLM to call multiple tools
-        logger.info(f"📊 [fundamental analyst] Use unified fundamental analysis tools to automatically identify stock types")
+        logger.info("📊 [fundamental analyst] Use unified fundamental analysis tools to automatically identify stock types")
         tools = [toolkit.get_stock_fundamentals_unified]
 
         # Safely obtain tool names for debugging
@@ -256,7 +256,7 @@ def create_fundamentals_analyst(llm, toolkit):
 
         # Detect Alibaba Bailian model and create a new instance
         if hasattr(llm, '__class__') and 'DashScope' in llm.__class__.__name__:
-            logger.debug(f"📊 [DEBUG] Alibaba Bailian model is detected and a new instance is created to avoid tool caching")
+            logger.debug("📊 [DEBUG] Alibaba Bailian model is detected and a new instance is created to avoid tool caching")
             from tradingagents.llm_adapters import ChatDashScopeOpenAI
             from pydantic import SecretStr
 
@@ -267,7 +267,7 @@ def create_fundamentals_analyst(llm, toolkit):
             # 🔥 If api_key is a SecretStr object, it needs to be unpacked
             if isinstance(original_api_key, SecretStr):
                 original_api_key = original_api_key.get_secret_value()
-                logger.debug(f"📊 [DEBUG] API Key is SecretStr, unpacked")
+                logger.debug("📊 [DEBUG] API Key is SecretStr, unpacked")
 
             fresh_llm = ChatDashScopeOpenAI(
                 model=llm.model_name,
@@ -280,7 +280,7 @@ def create_fundamentals_analyst(llm, toolkit):
             if original_base_url:
                 logger.debug(f"📊 [DEBUG] The new instance uses the original base_url: {original_base_url}")
             if original_api_key:
-                logger.debug(f"📊 [DEBUG] The new instance uses the original API Key (from the database configuration)")
+                logger.debug("📊 [DEBUG] The new instance uses the original API Key (from the database configuration)")
         else:
             fresh_llm = llm
 
@@ -295,7 +295,7 @@ def create_fundamentals_analyst(llm, toolkit):
             else:
                 debug_tool_names.append(str(tool))
         logger.debug(f"📊 [DEBUG] List of bound tools: {debug_tool_names}")
-        logger.debug(f"📊 [DEBUG] Create a tool chain and let the model decide whether to call the tool independently")
+        logger.debug("📊 [DEBUG] Create a tool chain and let the model decide whether to call the tool independently")
 
         # Add detailed log
         logger.info(f"📊 [fundamental analyst] LLM Type: {fresh_llm.__class__.__name__}")
@@ -309,7 +309,7 @@ def create_fundamentals_analyst(llm, toolkit):
             logger.error(f"📊 [fundamental analyst] ❌ Tool binding failed: {e}")
             raise e
 
-        logger.info(f"📊 [fundamental analyst] Start calling LLM...")
+        logger.info("📊 [fundamental analyst] Start calling LLM...")
 
         # Add detailed ticker tracking logs
         logger.info(f"🔍 [Stock symbol tracking] LLM Before calling, ticker parameter: '{ticker}'")
@@ -377,20 +377,20 @@ def create_fundamentals_analyst(llm, toolkit):
         }
         logger.debug(f"📊 [fundamental analyst] Call parameters: {list(invoke_params.keys())}")
         result = chain.invoke(invoke_params)
-        logger.info(f"📊 [fundamental analyst] LLM Call completed")
+        logger.info("📊 [fundamental analyst] LLM Call completed")
         
         # 🔍 [debug log] Print the details of AIMessage
-        logger.info(f"🤖 [fundamental analyst] AIMessage Details:")
+        logger.info("🤖 [fundamental analyst] AIMessage Details:")
         logger.info(f"🤖 [fundamental analyst] - Message type: {type(result).__name__}")
         logger.info(f"🤖 [fundamental analyst] - content length: {len(result.content) if hasattr(result, 'content') else 0}")
         if hasattr(result, 'content') and result.content:
             # 🔥 Debug mode: print the complete content without truncation
-            logger.info(f"🤖 [fundamental analyst] - full content:")
+            logger.info("🤖 [fundamental analyst] - full content:")
             logger.info(f"{result.content}")
         
         # 🔍 [debug log] Print details of tool_calls
         # Detailed records of LLM return results
-        logger.info(f"📊 [fundamental analyst] ===== LLM Return result analysis =====")
+        logger.info("📊 [fundamental analyst] ===== LLM Return result analysis =====")
         logger.info(f"📊 [fundamental analyst] - result type: {type(result).__name__}")
         logger.info(f"📊 [fundamental analyst] - Is there a tool_calls attribute?: {hasattr(result, 'tool_calls')}")
 
@@ -408,15 +408,15 @@ def create_fundamentals_analyst(llm, toolkit):
                     if 'args' in tc:
                         logger.info(f"🔧 [fundamental analyst] - parameters: {tc['args']}")
             else:
-                logger.info(f"🔧 [fundamental analyst] tool_calls Is an empty list")
+                logger.info("🔧 [fundamental analyst] tool_calls Is an empty list")
         else:
-            logger.info(f"🔧 [fundamental analyst] No tool_calls attribute")
+            logger.info("🔧 [fundamental analyst] No tool_calls attribute")
 
-        logger.info(f"📊 [fundamental analyst] ===== LLM Return result analysis ends =====")
+        logger.info("📊 [fundamental analyst] ===== LLM Return result analysis ends =====")
 
         # Call handlers using unified Google tools
         if GoogleToolCallHandler.is_google_model(fresh_llm):
-            logger.info(f"📊 [fundamental analyst] Google model detected, processor invoked using unified tools")
+            logger.info("📊 [fundamental analyst] Google model detected, processor invoked using unified tools")
             
             # Create analysis prompt words
             analysis_prompt_template = GoogleToolCallHandler.create_analysis_prompt(
@@ -453,7 +453,7 @@ def create_fundamentals_analyst(llm, toolkit):
 
                 if has_tool_result:
                     # There are already tool results, LLM should not call the tool again to force report generation
-                    logger.warning(f"⚠️ [Force report generation] The tool has returned data, but LLM still tries to call the tool to force a report based on the existing data")
+                    logger.warning("⚠️ [Force report generation] The tool has returned data, but LLM still tries to call the tool to force a report based on the existing data")
 
                     # Create dedicated mandatory reporting prompt words (no mention of tools)
                     force_system_prompt = (
@@ -483,7 +483,7 @@ def create_fundamentals_analyst(llm, toolkit):
                     # Not binding the tool, forcing LLM to generate text
                     force_chain = force_prompt | fresh_llm
 
-                    logger.info(f"🔧 [Force report generation] Recall using specialized prompt words LLM...")
+                    logger.info("🔧 [Force report generation] Recall using specialized prompt words LLM...")
                     force_result = force_chain.invoke({"messages": messages})
 
                     report = str(force_result.content) if hasattr(force_result, 'content') else "Fundamental analysis completed"
@@ -506,7 +506,7 @@ def create_fundamentals_analyst(llm, toolkit):
                     }
                 else:
                     # Calling the tool for the first time, normal process
-                    logger.info(f"✅ [normal process] ===== LLM First time calling tool =====")
+                    logger.info("✅ [normal process] ===== LLM First time calling tool =====")
                     tool_calls_info = []
                     for tc in result.tool_calls:
                         tool_calls_info.append(tc['name'])
@@ -514,7 +514,7 @@ def create_fundamentals_analyst(llm, toolkit):
 
                     logger.info(f"📊 [normal process] LLM Request to call tool: {tool_calls_info}")
                     logger.info(f"📊 [normal process] Number of tool calls: {len(tool_calls_info)}")
-                    logger.info(f"📊 [normal process] Return status and wait for tool execution")
+                    logger.info("📊 [normal process] Return status and wait for tool execution")
                     # ⚠️ NOTE: Don't increment the counter here!
                     # The counter should only be incremented after the tool execution is complete (the next time the analyst node is entered)
                     return {
@@ -522,8 +522,8 @@ def create_fundamentals_analyst(llm, toolkit):
                     }
             else:
                 # There is no tool call, check whether you need to force the tool to be called
-                logger.info(f"📊 [fundamental analyst] ===== Force tool call check to start =====")
-                logger.debug(f"📊 [DEBUG] It is detected that the model does not call the tool, check whether it needs to be forced to call")
+                logger.info("📊 [fundamental analyst] ===== Force tool call check to start =====")
+                logger.debug("📊 [DEBUG] It is detected that the model does not call the tool, check whether it needs to be forced to call")
 
                 # Option 1: Check whether there is already data returned by the tool in the message history
                 messages = state.get("messages", [])
@@ -553,28 +553,28 @@ def create_fundamentals_analyst(llm, toolkit):
                     else:
                         logger.info(f"⚠️ [content inspection] LLM Return content is shorter (length: {content_length}character < 500 character threshold)")
                 else:
-                    logger.info(f"⚠️ [content inspection] LLM No content returned or the content is empty")
+                    logger.info("⚠️ [content inspection] LLM No content returned or the content is empty")
 
                 # Solution 3: Count the number of tool calls
                 tool_call_count = sum(1 for msg in messages if isinstance(msg, ToolMessage))
                 logger.info(f"🔍 [statistics] Number of historical tool calls: {tool_call_count}")
 
                 logger.info(f"🔍 [Repeat call check] Summary - Number of tool results: {tool_call_count}, Already have tool results: {has_tool_result}, Already analyzed content: {has_analysis_content}")
-                logger.info(f"📊 [fundamental analyst] ===== Force tool call check to end =====")
+                logger.info("📊 [fundamental analyst] ===== Force tool call check to end =====")
 
                 # If there are already tool results or analysis content, skip the forced call
                 if has_tool_result or has_analysis_content:
-                    logger.info(f"🚫 [decision making] ===== Skip force tool call =====")
+                    logger.info("🚫 [decision making] ===== Skip force tool call =====")
                     if has_tool_result:
                         logger.info(f"⚠️ [Reasons for decision] Detected {tool_call_count} The result of tool call to avoid repeated calls")
                     if has_analysis_content:
-                        logger.info(f"⚠️ [Reasons for decision] LLM Valid analysis content has been returned, no need to force tool calls")
+                        logger.info("⚠️ [Reasons for decision] LLM Valid analysis content has been returned, no need to force tool calls")
 
                     # Use the content returned by LLM directly as a report
                     report = str(result.content) if hasattr(result, 'content') else "Fundamental analysis completed"
                     logger.info(f"📊 [Return results] Analysis content returned using LLM, report length: {len(report)}character")
                     logger.info(f"📊 [Return results] Report preview(first 200 characters): {report[:200]}...")
-                    logger.info(f"✅ [decision making] Fundamental analysis is completed and repeated calls are skipped successfully")
+                    logger.info("✅ [decision making] Fundamental analysis is completed and repeated calls are skipped successfully")
 
                     # 🔧 Keep tool call counter unchanged (already updated at start based on ToolMessage)
                     return {
@@ -584,13 +584,13 @@ def create_fundamentals_analyst(llm, toolkit):
                     }
 
                 # If there is no tool result and no analysis content, a forced call will be made.
-                logger.info(f"🔧 [decision making] ===== Execute force tool call =====")
-                logger.info(f"🔧 [Reasons for decision] No tool results or analysis content detected, fundamental data needs to be obtained")
-                logger.info(f"🔧 [decision making] Enable forced tool invocation mode")
+                logger.info("🔧 [decision making] ===== Execute force tool call =====")
+                logger.info("🔧 [Reasons for decision] No tool results or analysis content detected, fundamental data needs to be obtained")
+                logger.info("🔧 [decision making] Enable forced tool invocation mode")
 
                 # Forced call of unified fundamental analysis tool
                 try:
-                    logger.debug(f"📊 [DEBUG] Forced call get_stock_fundamentals_unified...")
+                    logger.debug("📊 [DEBUG] Forced call get_stock_fundamentals_unified...")
                     # Safely find unified fundamental analysis tools
                     unified_tool = None
                     for tool in tools:
@@ -604,7 +604,7 @@ def create_fundamentals_analyst(llm, toolkit):
                             unified_tool = tool
                             break
                     if unified_tool:
-                        logger.info(f"🔍 [Tool call] Find the unified tool and prepare to force it to be called")
+                        logger.info("🔍 [Tool call] Find the unified tool and prepare to force it to be called")
                         logger.info(f"🔍 [Tool call] Pass in parameters - ticker: '{ticker}', start_date: {start_date}, end_date: {current_date}")
 
                         combined_data = unified_tool.invoke({
@@ -614,7 +614,7 @@ def create_fundamentals_analyst(llm, toolkit):
                             'curr_date': current_date
                         })
 
-                        logger.info(f"✅ [Tool call] Unified tool call successful")
+                        logger.info("✅ [Tool call] Unified tool call successful")
                         logger.info(f"📊 [Tool call] Return data length: {len(combined_data)}character")
                         logger.debug(f"📊 [DEBUG] Unified tool data acquisition successful, length: {len(combined_data)}character")
                         # Write the data returned by the unified tool into the log to facilitate troubleshooting and analysis
@@ -636,7 +636,7 @@ def create_fundamentals_analyst(llm, toolkit):
                             logger.warning(f"⚠️ [fundamental analyst] Error logging unified tool data: {_log_err}")
                     else:
                         combined_data = "Unified fundamental analysis tools are not available"
-                        logger.debug(f"📊 [DEBUG] Unified tool not found")
+                        logger.debug("📊 [DEBUG] Unified tool not found")
                 except Exception as e:
                     combined_data = f"Unified fundamental analysis tool failed to call: {e}"
                     logger.debug(f"📊 [DEBUG] Unified tool calling exception: {e}")

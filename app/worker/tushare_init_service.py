@@ -95,7 +95,7 @@ class TushareInitService:
             if enable_multi_period:
                 sync_items.extend(['weekly', 'monthly'])
 
-        logger.info(f"🚀 Start Tushare data initialization...")
+        logger.info("🚀 Start Tushare data initialization...")
         logger.info(f"📋 Sync projects: {', '.join(sync_items)}")
 
         # Calculate the total number of steps (check status + Number of synchronized items + verification)
@@ -180,7 +180,7 @@ class TushareInitService:
         basic_count = await self.db.stock_basic_info.count_documents({})
         quotes_count = await self.db.market_quotes.count_documents({})
         
-        logger.info(f"  Current data status:")
+        logger.info("  Current data status:")
         logger.info(f"    Basic stock information: {basic_count}Article")
         logger.info(f"    Market data: {quotes_count}Article")
         
@@ -385,7 +385,7 @@ class TushareInitService:
             "market_info": {"$exists": True}
         })
         
-        logger.info(f"  Data integrity verification:")
+        logger.info("  Data integrity verification:")
         logger.info(f"    Basic stock information: {basic_count}Article")
         logger.info(f"    Extended field coverage: {extended_count}Article ({extended_count/basic_count*100:.1f}%)")
         logger.info(f"    Market data: {quotes_count}Article")

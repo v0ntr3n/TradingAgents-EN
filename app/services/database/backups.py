@@ -422,7 +422,7 @@ async def import_data(content: bytes, collection: str, *, format: str = "json", 
 
     # 🔥 New format: dictionary containing export_info and data
     if isinstance(data, dict) and "export_info" in data and "data" in data:
-        logger.info(f"📦 New version of multi-collection export file detected (contains export_info)")
+        logger.info("📦 New version of multi-collection export file detected (contains export_info)")
         export_info = data.get("export_info", {})
         logger.info(f"📋 导出信息: 创建时间={export_info.get('created_at')}, 集合数={len(export_info.get('collections', []))}")
 
@@ -500,7 +500,7 @@ async def import_data(content: bytes, collection: str, *, format: str = "json", 
         collection_obj = db[collection]
 
         if not isinstance(data, list):
-            logger.info(f"🔍 [Single collection mode] Data is not a list, convert to list")
+            logger.info("🔍 [Single collection mode] Data is not a list, convert to list")
             data = [data]
 
         logger.info(f"🔍 [单集合模式] 准备插入 {len(data)} 条文档")

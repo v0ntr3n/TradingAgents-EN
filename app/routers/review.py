@@ -54,7 +54,7 @@ async def create_trade_review(
 
     try:
         logger.info(f"📝 [Transaction review routing] Receive review request: code={request.code}, trade_ids={request.trade_ids}")
-        logger.info(f"🔧 [Transaction review routing] Unified use of task center mode")
+        logger.info("🔧 [Transaction review routing] Unified use of task center mode")
 
         if request.trading_system_id:
             license_service = get_license_service()
@@ -71,18 +71,18 @@ async def create_trade_review(
                 )
 
         # 🆕 Unified use of task center mode (supports progress query)
-        logger.info(f"=" * 60)
-        logger.info(f"🎯 [Transaction review routing] Enter mission center mode")
-        logger.info(f"=" * 60)
+        logger.info("=" * 60)
+        logger.info("🎯 [Transaction review routing] Enter mission center mode")
+        logger.info("=" * 60)
 
         from app.services.unified_analysis_service import get_unified_analysis_service
 
-        logger.info(f"🔄 [Transaction review routing] Get UnifiedAnalysisService instance...")
+        logger.info("🔄 [Transaction review routing] Get UnifiedAnalysisService instance...")
         unified_service = get_unified_analysis_service()
-        logger.info(f"✅ [Transaction review routing] Get the UnifiedAnalysisService instance")
+        logger.info("✅ [Transaction review routing] Get the UnifiedAnalysisService instance")
 
         # Create task (return immediately)
-        logger.info(f"🔄 [Transaction review routing] Start creating tasks...")
+        logger.info("🔄 [Transaction review routing] Start creating tasks...")
         logger.info(f"   📋 user_id: {current_user['id']}")
         logger.info(f"   📋 code: {request.code}")
         logger.info(f"   📋 trade_ids: {request.trade_ids}")
@@ -92,7 +92,7 @@ async def create_trade_review(
             user_id=current_user["id"],
             request=request
         )
-        logger.info(f"✅ [Transaction review routing] Task created successfully")
+        logger.info("✅ [Transaction review routing] Task created successfully")
         logger.info(f"   📋 task_id: {result['task_id']}")
         logger.info(f"   📋 status: {result['status']}")
         logger.info(f"   📋 message: {result['message']}")
@@ -102,8 +102,8 @@ async def create_trade_review(
         logger.info(f"   📋 review_id (Compatible fields): {result['review_id']}")
 
         # Perform review in the background
-        logger.info(f"🚀 [Transaction review routing] Start background task execution...")
-        logger.info(f"   📋 This will be executed asynchronously in the background without blocking the current request")
+        logger.info("🚀 [Transaction review routing] Start background task execution...")
+        logger.info("   📋 This will be executed asynchronously in the background without blocking the current request")
 
         asyncio.create_task(
             unified_service.execute_trade_review(
@@ -112,9 +112,9 @@ async def create_trade_review(
                 request=request
             )
         )
-        logger.info(f"✅ [Transaction review routing] Background task started")
+        logger.info("✅ [Transaction review routing] Background task started")
         logger.info(f"   📋 The client can pass /api/v1/analysis/tasks/{result['task_id']} Query progress")
-        logger.info(f"=" * 60)
+        logger.info("=" * 60)
 
         return ok(data=result, message="The transaction review task has been submitted and is expected to take 1-3 minutes to complete.")
 

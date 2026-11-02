@@ -32,7 +32,7 @@ def _get_extension_reports(state: dict) -> dict:
 
 def create_bull_researcher(llm, memory):
     def bull_node(state) -> dict:
-        logger.debug(f"🐂 [DEBUG] ===== Bullish Researcher Node Begins =====")
+        logger.debug("🐂 [DEBUG] ===== Bullish Researcher Node Begins =====")
 
         # Use .get() Secure access to debate status
         investment_debate_state = state.get("investment_debate_state", {})
@@ -132,7 +132,7 @@ def create_bull_researcher(llm, memory):
         if memory is not None:
             past_memories = memory.get_memories(curr_situation, n_matches=2)
         else:
-            logger.warning(f"⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
+            logger.warning("⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
             past_memories = []
 
         past_memory_str = ""

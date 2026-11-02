@@ -757,7 +757,7 @@ async def resume_suspended_execution(
         
         # 🔥 Detailed log: record progress information of pending recording
         logger.info(f"📊 Task {job_id} share {len(all_suspended)} pending records, the latest record will be restored {execution_id}")
-        logger.info(f"📋 Pending record details:")
+        logger.info("📋 Pending record details:")
         logger.info(f"   - execution_id: {execution_id}")
         logger.info(f"   - progress: {exec_record.get('progress', 0)}%")
         logger.info(f"   - processed_items: {exec_record.get('processed_items')}")
@@ -785,7 +785,7 @@ async def resume_suspended_execution(
         if resume_kwargs:
             logger.info(f"📋 recovery task {job_id}, Use saved parameters: {resume_kwargs}")
         else:
-            logger.warning(f"⚠️ There are no kwargs saved in the execution record, using default parameters")
+            logger.warning("⚠️ There are no kwargs saved in the execution record, using default parameters")
         
         # 🔥 Save progress information to kwargs for use by task functions
         processed_items = exec_record.get("processed_items")
@@ -793,7 +793,7 @@ async def resume_suspended_execution(
             resume_kwargs["_resume_from_index"] = processed_items  # Mark where to continue from
             logger.info(f"🔄 will be from {processed_items} Position continues execution (processed {processed_items}/{exec_record.get('total_items', '?')}) ")
         else:
-            logger.warning(f"⚠️ There is no processed_items in the execution record and execution will start from 0")
+            logger.warning("⚠️ There is no processed_items in the execution record and execution will start from 0")
         
         # 🔥 First update the execution record status to running, and save the execution_id to kwargs.
         # In this way, trigger_job can recognize that this is a recovery operation and reuse this execution record instead of creating a new one.

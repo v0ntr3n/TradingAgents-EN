@@ -191,7 +191,7 @@ class SocialMediaAnalystV2(AnalystAgent):
             return prompt + data_constraint
         
         # Downgrade: Use default prompt word
-        return f"""You are a professional social media sentiment analyst.
+        return """You are a professional social media sentiment analyst.
 
     Your job will be to analyze the structure of investor sentiment, buzz, and disagreements on social media to identify which sentiment signals are worth tracking and which are just noise.
 

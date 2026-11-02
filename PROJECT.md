@@ -3,7 +3,7 @@
 ## Overview
 **TradingAgents-EN** is a multi-agent financial trading and market intelligence system incorporating the **CARE-Agents** (Cost-Aware, Regime-Adaptive Multi-Agent Coordination) research framework. The system is designed to simulate analyst deliberation, coordinate multi-round research debates, and execute portfolio strategies across Chinese A-shares (CSI 300) and US Equities under realistic transaction friction.
 
-This document provides a comprehensive feature inventory, system architecture summary, verification commands, and audit milestone roadmap reflecting the academic peer-review readiness assessment of `care_agents_paper.tex`.
+This document provides a comprehensive feature inventory, system architecture summary, verification commands, and audit milestone roadmap reflecting the academic peer-review readiness assessment of `paper/care_agents_paper.tex`.
 
 ---
 
@@ -12,10 +12,9 @@ This document provides a comprehensive feature inventory, system architecture su
 ```
 TradingAgents-EN/
 ├── paper/                               # Academic Manuscript & Publication Artifacts
-│   ├── care_agents_paper.tex            # Canonical 490-line LaTeX manuscript (MR-1–MR-7)
-│   ├── care_agents_paper.pdf            # Compiled preprint PDF (7 pages, LuaTeX)
+│   ├── care_agents_paper.tex            # Canonical LaTeX manuscript (MR-1–MR-7)
+│   ├── care_agents_paper.pdf            # Compiled preprint PDF (LuaTeX)
 │   └── *.aux, *.log, *.out              # Compilation build artifacts
-├── care_agents_paper.tex                # Root duplicate draft (437 lines, obsolete)
 ├── tradingagents/                       # Core Multi-Agent Framework (~53 modules)
 │   ├── agents/                          # Analysts, Researchers, Managers, Risk, Traders
 │   ├── dataflows/                       # Data connectors (TuShare, AkShare, AlphaVantage)
@@ -120,12 +119,11 @@ PYTHONPATH=. ./.venv/bin/python scripts/run_cph_ablation_benchmark.py
 # Expected: M4 Net Cumulative Return +123.9%, Net Sharpe 2.5028, Max Drawdown 8.67%
 ```
 
-### 5. Verify Clean 8-Page Typeset PDF & LaTeX Synchronization
+### 5. Verify Clean Typeset PDF & Canonical LaTeX Source
 ```bash
 pdfinfo paper/care_agents_paper.pdf | grep "Pages:"
 # Expected output: Pages:           8
-diff -u paper/care_agents_paper.tex care_agents_paper.tex
-# Expected output: 0 differences (exit code 0)
+test -f paper/care_agents_paper.tex && echo "Canonical paper/care_agents_paper.tex present"
 ```
 
 ---
@@ -146,7 +144,6 @@ diff -u paper/care_agents_paper.tex care_agents_paper.tex
 - **Peer-Review Readiness Report:** `./PEER_REVIEW_READINESS_REPORT.md` (Verdict: READY FOR SUBMISSION)
 - **Canonical LaTeX Manuscript:** `./paper/care_agents_paper.tex` (Typeset to 8 pages with TikZ Figure 1 and Appendix A proofs)
 - **Compiled PDF Manuscript:** `./paper/care_agents_paper.pdf` (8 pages, zero orphan lines)
-- **Root LaTeX Copy:** `./care_agents_paper.tex` (100% synchronized)
 - **Live LLM Inference Cache:** `./results/live_llm_posteriors_cache.json` (15,246 genuine DeepSeek traces, 37 MB, zero hardcoded tokens)
 - **Verification Logs & Handoffs:**
   - `.agents/teamwork/worker_m1_code/handoff.md` (Code & Benchmark Remediation)

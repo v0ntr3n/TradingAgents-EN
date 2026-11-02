@@ -244,7 +244,7 @@ class RiskManagerV2(ManagerAgent):
             else:
                 logger.warning("⚠️ The system prompt word may not contain [output format requirements] (old version of the prompt word may be used)")
 
-            logger.debug(f"✅ Get the risk assessor system prompt words from the template system")
+            logger.debug("✅ Get the risk assessor system prompt words from the template system")
             return prompt
 
         logger.warning("⚠️ Failed to obtain the system prompt word from the template system, use the default prompt word")

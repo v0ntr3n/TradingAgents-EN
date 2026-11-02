@@ -102,7 +102,7 @@ def _get_enabled_hk_data_sources() -> list:
                 logger.info(f"✅ [Hong Kong stock data source] Read from database: {result}")
                 return result
             else:
-                logger.warning(f"⚠️ [Hong Kong stock data source] There is no enabled Hong Kong stock data source in the database, and the default order is used.")
+                logger.warning("⚠️ [Hong Kong stock data source] There is no enabled Hong Kong stock data source in the database, and the default order is used.")
         else:
             logger.warning("⚠️ [Hong Kong stock data source] There is no configuration in the database, the default order is used")
     except Exception as e:
@@ -162,7 +162,7 @@ def _get_enabled_us_data_sources() -> list:
                 logger.info(f"✅ [US stock data source] Read from database: {result}")
                 return result
             else:
-                logger.warning(f"⚠️ [US stock data source] There is no US stock data source enabled in the database, and the default order is used.")
+                logger.warning("⚠️ [US stock data source] There is no US stock data source enabled in the database, and the default order is used.")
         else:
             logger.warning("⚠️ [US stock data source] There is no configuration in the database, the default order is used")
     except Exception as e:
@@ -246,11 +246,11 @@ def get_finnhub_news(
 
     if len(result) == 0:
         error_msg = f"⚠️ 无法获取{ticker}的新闻数据 ({before} 到 {curr_date})\n"
-        error_msg += f"Possible reasons:\n"
-        error_msg += f"1. The data file does not exist or the path configuration is incorrect.\n"
-        error_msg += f"2. There is no news data in the specified date range\n"
-        error_msg += f"3. You need to download or update Finnhub news data first\n"
-        error_msg += f"Suggestion: Check the data directory configuration or re-fetch the news data"
+        error_msg += "Possible reasons:\n"
+        error_msg += "1. The data file does not exist or the path configuration is incorrect.\n"
+        error_msg += "2. There is no news data in the specified date range\n"
+        error_msg += "3. You need to download or update Finnhub news data first\n"
+        error_msg += "Suggestion: Check the data directory configuration or re-fetch the news data"
         logger.debug(f"📰 [DEBUG] {error_msg}")
         return error_msg
 
@@ -385,7 +385,7 @@ def get_simfin_balance_sheet(
 
     # Check if there are any available reports; if not, return a notification
     if filtered_df.empty:
-        logger.info(f"No balance sheet available before the given current date.")
+        logger.info("No balance sheet available before the given current date.")
         return ""
 
     # Get the most recent balance sheet by selecting the row with the latest Publish Date
@@ -432,7 +432,7 @@ def get_simfin_cashflow(
 
     # Check if there are any available reports; if not, return a notification
     if filtered_df.empty:
-        logger.info(f"No cash flow statement available before the given current date.")
+        logger.info("No cash flow statement available before the given current date.")
         return ""
 
     # Get the most recent cash flow statement by selecting the row with the latest Publish Date
@@ -479,7 +479,7 @@ def get_simfin_income_statements(
 
     # Check if there are any available reports; if not, return a notification
     if filtered_df.empty:
-        logger.info(f"No income statement available before the given current date.")
+        logger.info("No income statement available before the given current date.")
         return ""
 
     # Get the most recent income statement by selecting the row with the latest Publish Date
@@ -1074,7 +1074,7 @@ def get_fundamentals_finnhub(ticker, curr_date):
         # Format reports
         report = f"# {ticker} Fundamental analysis report (Finnhub data source)\n\n"
         report += f"**数据获取时间**: {curr_date}\n"
-        report += f"**Data source**: Finnhub API\n\n"
+        report += "**Data source**: Finnhub API\n\n"
         
         # Company Profile Section
         if company_profile:
@@ -1237,7 +1237,7 @@ def get_fundamentals_openai(ticker, curr_date):
             backend_url = config.get("backend_url", "")
             if "openai.com" in backend_url:
                 try:
-                    logger.info(f"📊 [OpenAI] Try using OpenAI to get fundamental data...")
+                    logger.info("📊 [OpenAI] Try using OpenAI to get fundamental data...")
                     return _get_fundamentals_openai_impl(ticker, curr_date, config, cache)
                 except Exception as e:
                     logger.warning(f"⚠️ [OpenAI] Failed to obtain: {e}")
@@ -1275,7 +1275,7 @@ def _get_fundamentals_alpha_vantage(ticker, curr_date, cache):
             logger.info(f"✅ [Alpha Vantage] Fundamental data obtained successfully: {ticker}")
             return result
         else:
-            logger.warning(f"⚠️ [Alpha Vantage] Poor data quality")
+            logger.warning("⚠️ [Alpha Vantage] Poor data quality")
             return None
     except Exception as e:
         logger.warning(f"⚠️ [Alpha Vantage] Failed to obtain: {e}")
@@ -1349,7 +1349,7 @@ def _get_fundamentals_yfinance(ticker, curr_date, cache):
             logger.info(f"✅ [yfinance] Fundamental data obtained successfully: {ticker}")
             return result
         else:
-            logger.warning(f"⚠️ [yfinance] Data is incomplete")
+            logger.warning("⚠️ [yfinance] Data is incomplete")
             return None
     except Exception as e:
         logger.warning(f"⚠️ [yfinance] Failed to obtain: {e}")
@@ -1442,7 +1442,7 @@ def get_china_stock_data_tushare(
 
         # Add detailed ticker tracking logs
         logger.info(f"🔍 [股票代码追踪] get_china_stock_data_tushare 接收到的股票代码: '{ticker}' (类型: {type(ticker)})")
-        logger.info(f"🔍 [Stock symbol tracking] redirect to data_source_manager")
+        logger.info("🔍 [Stock symbol tracking] redirect to data_source_manager")
 
         manager = get_data_source_manager()
         return manager.get_china_stock_data_tushare(ticker, start_date, end_date)
@@ -1470,7 +1470,7 @@ def get_china_stock_info_tushare(
 
         logger.debug(f"📊 [Tushare] 获取{ticker}股票信息...")
         logger.info(f"🔍 [股票代码追踪] get_china_stock_info_tushare 接收到的股票代码: '{ticker}' (类型: {type(ticker)})")
-        logger.info(f"🔍 [Stock symbol tracking] Directly call the Tushare adapter")
+        logger.info("🔍 [Stock symbol tracking] Directly call the Tushare adapter")
 
         manager = get_data_source_manager()
 
@@ -1510,7 +1510,7 @@ def get_china_stock_fundamentals_tushare(
         from .data_source_manager import get_data_source_manager
 
         logger.debug(f"📊 获取{ticker}基本面数据...")
-        logger.info(f"🔍 [Stock symbol tracking] redirect to data_source_manager.get_fundamentals_data")
+        logger.info("🔍 [Stock symbol tracking] redirect to data_source_manager.get_fundamentals_data")
 
         manager = get_data_source_manager()
         # Use new unified interface to support multiple data sources and automatic downgrade
@@ -1551,9 +1551,9 @@ def get_china_stock_data_unified(
     try:
         settings = get_settings()
         lookback_days = settings.MARKET_ANALYST_LOOKBACK_DAYS
-        logger.info(f"📅 [Configuration verification] ===== MARKET_ANALYST_LOOKBACK_DAYS Configuration check =====")
+        logger.info("📅 [Configuration verification] ===== MARKET_ANALYST_LOOKBACK_DAYS Configuration check =====")
         logger.info(f"📅 [配置验证] 从配置文件读取: {lookback_days}天")
-        logger.info(f"📅 [Configuration verification] Configuration source: app.core.config.Settings")
+        logger.info("📅 [Configuration verification] Configuration source: app.core.config.Settings")
         logger.info(f"📅 [Configuration verification] environment variables: MARKET_ANALYST_LOOKBACK_DAYS={lookback_days}")
     except Exception as e:
         lookback_days = 30  # Default 30 days
@@ -1563,15 +1563,15 @@ def get_china_stock_data_unified(
     # Use end_date as the target date to look back a specified number of days
     start_date, end_date = get_trading_date_range(end_date, lookback_days=lookback_days)
 
-    logger.info(f"📅 [smart date] ===== Date range calculation result =====")
+    logger.info("📅 [smart date] ===== Date range calculation result =====")
     logger.info(f"📅 [智能日期] 原始输入: {original_start_date} 至 {original_end_date}")
     logger.info(f"📅 [智能日期] 回溯天数: {lookback_days}天")
     logger.info(f"📅 [智能日期] 计算结果: {start_date} 至 {end_date}")
     logger.info(f"📅 [智能日期] 实际天数: {(datetime.strptime(end_date, '%Y-%m-%d') - datetime.strptime(start_date, '%Y-%m-%d')).days}天")
-    logger.info(f"💡 [smart date] Description: Automatically expand date ranges to handle weekends, holidays and data delays")
+    logger.info("💡 [smart date] Description: Automatically expand date ranges to handle weekends, holidays and data delays")
 
     # Record detailed input parameters
-    logger.info(f"📊 [unified interface] Start getting China stock data",
+    logger.info("📊 [unified interface] Start getting China stock data",
                extra={
                    'function': 'get_china_stock_data_unified',
                    'ticker': ticker,
@@ -1598,7 +1598,7 @@ def get_china_stock_data_unified(
         is_success = result and "❌" not in result and "错误" not in result
 
         if is_success:
-            logger.info(f"✅ [unified interface] China stock data obtained successfully",
+            logger.info("✅ [unified interface] China stock data obtained successfully",
                        extra={
                            'function': 'get_china_stock_data_unified',
                            'ticker': ticker,
@@ -1610,7 +1610,7 @@ def get_china_stock_data_unified(
                            'event_type': 'unified_data_call_success'
                        })
         else:
-            logger.warning(f"⚠️ [unified interface] Abnormal quality of Chinese stock data",
+            logger.warning("⚠️ [unified interface] Abnormal quality of Chinese stock data",
                           extra={
                               'function': 'get_china_stock_data_unified',
                               'ticker': ticker,
@@ -1810,7 +1810,7 @@ def get_hk_stock_data_unified(symbol: str, start_date: str = None, end_date: str
                         logger.info(f"✅ AKShare Hong Kong stock data obtained successfully: {symbol}")
                         return result
                     else:
-                        logger.warning(f"⚠️ AKShare Returns an error result, try the next data source")
+                        logger.warning("⚠️ AKShare Returns an error result, try the next data source")
                 except Exception as e:
                     logger.error(f"⚠️ AKShare Failed to obtain Hong Kong stock data: {e}, Try next data source")
 
@@ -1822,7 +1822,7 @@ def get_hk_stock_data_unified(symbol: str, start_date: str = None, end_date: str
                         logger.info(f"✅ Yahoo Finance Hong Kong stock data obtained successfully: {symbol}")
                         return result
                     else:
-                        logger.warning(f"⚠️ Yahoo Finance Returns an error result, try the next data source")
+                        logger.warning("⚠️ Yahoo Finance Returns an error result, try the next data source")
                 except Exception as e:
                     logger.error(f"⚠️ Yahoo Finance Failed to obtain Hong Kong stock data: {e}, Try next data source")
 
@@ -1842,7 +1842,7 @@ def get_hk_stock_data_unified(symbol: str, start_date: str = None, end_date: str
                         logger.info(f"✅ FINNHUB Hong Kong stock data obtained successfully: {symbol}")
                         return result
                     else:
-                        logger.warning(f"⚠️ FINNHUB Returns an error result, try the next data source")
+                        logger.warning("⚠️ FINNHUB Returns an error result, try the next data source")
                 except Exception as e:
                     logger.error(f"⚠️ FINNHUB Failed to obtain Hong Kong stock data: {e}, Try next data source")
 
@@ -1880,7 +1880,7 @@ def get_hk_stock_info_unified(symbol: str) -> Dict:
                         logger.info(f"✅ AKShare Successfully obtained Hong Kong stock information: {symbol} -> {result.get('name', 'N/A')}")
                         return result
                     else:
-                        logger.warning(f"⚠️ AKShare Return to default information and try next data source")
+                        logger.warning("⚠️ AKShare Return to default information and try next data source")
                 except Exception as e:
                     logger.error(f"⚠️ AKShare Failed to obtain Hong Kong stock information: {e}, Try next data source")
 
@@ -1892,7 +1892,7 @@ def get_hk_stock_info_unified(symbol: str) -> Dict:
                         logger.info(f"✅ Yahoo Finance Successfully obtained Hong Kong stock information: {symbol} -> {result.get('name', 'N/A')}")
                         return result
                     else:
-                        logger.warning(f"⚠️ Yahoo Finance Return to default information and try next data source")
+                        logger.warning("⚠️ Yahoo Finance Return to default information and try next data source")
                 except Exception as e:
                     logger.error(f"⚠️ Yahoo Finance Failed to obtain Hong Kong stock information: {e}, Try next data source")
 

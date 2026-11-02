@@ -240,7 +240,7 @@ async def add_favorite(
             )
 
         # Add to stock watchlist
-        logger.info(f"➕ Start adding to research list...")
+        logger.info("➕ Start adding to research list...")
         success = await favorites_service.add_favorite(
             user_id=current_user["id"],
             stock_code=stock_code,
@@ -257,7 +257,7 @@ async def add_favorite(
         if success:
             return ok({"stock_code": stock_code}, "Added successfully")
         else:
-            logger.error(f"❌ Add failed: success=False")
+            logger.error("❌ Add failed: success=False")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Add failed"

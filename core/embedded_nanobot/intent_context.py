@@ -410,8 +410,8 @@ class IntentContext:
         if self.spec_id:
             lines.append(f"- All tool calls (inspect, create, build, test, iterate) only operate spec_id={self.spec_id}")
             lines.append(f"- When users say this Agent , it and what s the progress now , they are referring to {self.spec_name}] ")
-            lines.append(f"- Do not query, discuss, or operate other Agents (unless the user explicitly mentions another Agent s name)")
-            lines.append(f"- Do not save other Agent information in save_memory")
+            lines.append("- Do not query, discuss, or operate other Agents (unless the user explicitly mentions another Agent s name)")
+            lines.append("- Do not save other Agent information in save_memory")
 
         lines.extend([
             "- When the user says confirm or ok , if the current stage is confirmation_pending, the user-selected plan in pending_options must be parsed first, and then executed according to selected_plan_id; do not understand confirmation as unconditional generation",
@@ -477,7 +477,7 @@ class IntentContext:
         # Multi-Agent discussion history (if multiple exist)
         other_agents = [a for a in self.agents_discussed if a["spec_id"] != self.spec_id]
         if other_agents:
-            lines.append(f"### ⚠️ Other Agents are also discussed in this thread (for reference only, do not operate them)")
+            lines.append("### ⚠️ Other Agents are also discussed in this thread (for reference only, do not operate them)")
             for a in other_agents[-5:]:  # last 5
                 lines.append(f"- {a['spec_name']} ({a['spec_id']}) — Last operation: {a['last_action']}")
             lines.append("")

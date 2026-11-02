@@ -122,7 +122,9 @@ class QdrantAdapter:
         
         Prevent collection registration information from being lost due to concurrent writing, abnormal process exit, or Qdrant version upgrade.
         """
-        import json, sqlite3, pickle
+        import json
+        import sqlite3
+        import pickle
 
         meta_path = os.path.join(data_dir, "meta.json")
         collection_dir = os.path.join(data_dir, "collection")
@@ -219,7 +221,7 @@ class QdrantCollection:
                     f"⚠️ Qdrant collection {collection_name} The vector dimensions of do not match!"
                     f"Existing: {existing_vector_size}, need: {vector_size}"
                 )
-                logger.info(f"🔄 The collection will be deleted and recreated...")
+                logger.info("🔄 The collection will be deleted and recreated...")
                 need_recreate = True
             else:
                 logger.debug(f"📂 Qdrant Collection already exists: {collection_name} (vector dimensions: {existing_vector_size})")

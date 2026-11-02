@@ -677,7 +677,7 @@ async def _execute_general_workflow_slot(
     from bson import ObjectId
     import asyncio
 
-    logger.info(f"📋 Common research process execution parameters:")
+    logger.info("📋 Common research process execution parameters:")
     workflow_params = slot.get("workflow_params") or {}
     analysis_target = workflow_params.get("analysis_target", "") or ""
     custom_params = workflow_params.get("custom_params") or {}
@@ -686,7 +686,7 @@ async def _execute_general_workflow_slot(
     logger.info(f"   Custom parameters: {custom_params}")
 
     if not analysis_target:
-        logger.warning(f"⚠️ Analysis target not configured, execution skipped")
+        logger.warning("⚠️ Analysis target not configured, execution skipped")
         # Record failure history
         try:
             history_doc = {
@@ -800,7 +800,7 @@ async def _execute_general_workflow_slot(
         logger.error(f"❌ Recording execution history failed: {e}")
 
     logger.info("=" * 70)
-    logger.info(f"✅ The general research process time period task is completed")
+    logger.info("✅ The general research process time period task is completed")
     logger.info(f"   Successfully started: {total_success} tasks")
     logger.info(f"   failed: {total_failed} a")
     logger.info("=" * 70)
@@ -816,7 +816,7 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
         slot_index: time period index
     """
     logger.info("=" * 70)
-    logger.info(f"🚀 Start executing scheduled analysis time period tasks")
+    logger.info("🚀 Start executing scheduled analysis time period tasks")
     logger.info(f"   Configuration ID: {config_id}")
     logger.info(f"   User ID: {user_id}")
     logger.info(f"   time period index: {slot_index}")
@@ -897,7 +897,7 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
                 logger.error(f"❌ Failed to get group: {group_id} - {e}")
 
         if not groups:
-            logger.warning(f"⚠️ No valid group found")
+            logger.warning("⚠️ No valid group found")
             return
 
         logger.info(f"✅ found {len(groups)} valid groups")
@@ -1006,7 +1006,7 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
             logger.error(f"❌ Recording execution history failed: {e}")
 
         logger.info("=" * 70)
-        logger.info(f"✅ Scheduled analysis time period task completed")
+        logger.info("✅ Scheduled analysis time period task completed")
         logger.info(f"   Total number of shares: {total_stocks}")
         logger.info(f"   Successfully started: {total_success} analysis tasks")
         logger.info(f"   failed: {total_failed} a")

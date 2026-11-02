@@ -146,15 +146,15 @@ class MongoDBCacheAdapter:
                         logger.info(f"✅ [数据源优先级] {symbol} ({market_category}): {result}")
                         return result
                     else:
-                        logger.warning(f"⚠️ [Data source priority] No data source configuration available, default order used")
+                        logger.warning("⚠️ [Data source priority] No data source configuration available, default order used")
                 else:
-                    logger.warning(f"⚠️ [Data source priority] Data source configuration not found in database")
+                    logger.warning("⚠️ [Data source priority] Data source configuration not found in database")
 
         except Exception as e:
             logger.error(f"❌ Failed to get data source priority: {e}", exc_info=True)
 
         # Default order:Tushare > AKShare > BaoStock
-        logger.info(f"📊 [Data source priority] Use default order: ['tushare', 'akshare', 'baostock']")
+        logger.info("📊 [Data source priority] Use default order: ['tushare', 'akshare', 'baostock']")
         return ['tushare', 'akshare', 'baostock']
 
     def get_historical_data(self, symbol: str, start_date: str = None, end_date: str = None,
@@ -333,7 +333,7 @@ class MongoDBCacheAdapter:
                 logger.debug(f"✅ [数据来源: MongoDB-新闻数据] 从MongoDB获取新闻数据: {len(data)}条")
                 return data
             else:
-                logger.debug(f"📊 [Data source: MongoDB-news data] MongoDB News data not found in")
+                logger.debug("📊 [Data source: MongoDB-news data] MongoDB News data not found in")
                 return None
 
         except Exception as e:
@@ -367,7 +367,7 @@ class MongoDBCacheAdapter:
                 logger.debug(f"✅ 从MongoDB获取社媒数据: {len(data)}条")
                 return data
             else:
-                logger.debug(f"📊 MongoDB No social media data found in")
+                logger.debug("📊 MongoDB No social media data found in")
                 return None
                 
         except Exception as e:

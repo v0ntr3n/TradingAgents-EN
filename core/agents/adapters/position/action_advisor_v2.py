@@ -169,9 +169,9 @@ class ActionAdvisorV2(ManagerAgent):
             logger.info(f"✅ Obtain the position analyst s prompt words from the template system (length: {len(prompt)})")
             # Check whether the template still has execution semantics remaining
             if "confidence" in prompt.lower():
-                logger.info(f"📊 [ActionAdvisorV2] ✅ The prompt word contains the confidence field requirement")
+                logger.info("📊 [ActionAdvisorV2] ✅ The prompt word contains the confidence field requirement")
             else:
-                logger.warning(f"⚠️ [ActionAdvisorV2] ❌ The prompt word does not contain the confidence field requirement!")
+                logger.warning("⚠️ [ActionAdvisorV2] ❌ The prompt word does not contain the confidence field requirement!")
             if _contains_legacy_execution_prompt_terms(prompt):
                 logger.warning("⚠️ [ActionAdvisorV2] The prompt word still contains executable terms, please check the template content")
             if "observation_factors" in prompt.lower() or "Things to observe" in prompt:
@@ -340,15 +340,15 @@ This analysis is only used for research assistance and risk warning, and does no
             logger.info(f"User prompt words: {user_prompt}")            
             
             if self._llm:
-                logger.info(f"📊 [ActionAdvisorV2] Call LLM to generate position research observations...")
+                logger.info("📊 [ActionAdvisorV2] Call LLM to generate position research observations...")
                 
                 # Print the user prompt word and check whether it contains JSON format requirements
                 logger.info(f"📊 [ActionAdvisorV2] User prompt word length: {len(user_prompt)}")
                 logger.info(f"📊 [ActionAdvisorV2] The last 500 characters of the user prompt word:\n{user_prompt[-500:]}")
                 if "confidence" in user_prompt.lower():
-                    logger.info(f"📊 [ActionAdvisorV2] ✅ The user prompt word contains the confidence field requirement")
+                    logger.info("📊 [ActionAdvisorV2] ✅ The user prompt word contains the confidence field requirement")
                 else:
-                    logger.warning(f"⚠️ [ActionAdvisorV2] ❌ The user prompt word does not contain the confidence field requirement!")
+                    logger.warning("⚠️ [ActionAdvisorV2] ❌ The user prompt word does not contain the confidence field requirement!")
                 if _contains_legacy_execution_prompt_terms(user_prompt):
                     logger.warning("⚠️ [ActionAdvisorV2] The user prompt word still contains execution terms, please check the downgrade prompt word")
                 if "observation_factors" in user_prompt.lower() or "Things to observe" in user_prompt:
@@ -369,9 +369,9 @@ This analysis is only used for research assistance and risk warning, and does no
                     content_preview = decision.get("content", "")[:200]
                     logger.info(f"📊 [ActionAdvisorV2] content Preview: {content_preview}")
                     if "confidence" in decision.get("content", "").lower():
-                        logger.info(f"📊 [ActionAdvisorV2] ✅ content may contain a confidence field")
+                        logger.info("📊 [ActionAdvisorV2] ✅ content may contain a confidence field")
                     else:
-                        logger.warning(f"⚠️ [ActionAdvisorV2] ⚠️ content may not contain the confidence field")
+                        logger.warning("⚠️ [ActionAdvisorV2] ⚠️ content may not contain the confidence field")
             else:
                 raise ValueError("LLM not initialized")
             

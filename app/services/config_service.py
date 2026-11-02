@@ -488,9 +488,9 @@ class ConfigService:
                     )
                     print(f"✅ [Priority synchronization] The system_configs collection has been synchronized and updated with a new version: {config_data.get('version', 0) + 1}")
                 else:
-                    print(f"⚠️ [Priority synchronization] No data source configuration that needs to be updated was found.")
+                    print("⚠️ [Priority synchronization] No data source configuration that needs to be updated was found.")
             else:
-                print(f"⚠️ [Priority synchronization] Activated system configuration not found")
+                print("⚠️ [Priority synchronization] Activated system configuration not found")
 
             return True
         except Exception as e:
@@ -704,11 +704,11 @@ class ConfigService:
             if 'quick_analysis_model' in system_settings:
                 print(f"  ✓ contains quick_analysis_model: {system_settings['quick_analysis_model']}")
             else:
-                print(f"  ⚠️  Not included quick_analysis_model")
+                print("  ⚠️  Not included quick_analysis_model")
             if 'deep_analysis_model' in system_settings:
                 print(f"  ✓ contains deep_analysis_model: {system_settings['deep_analysis_model']}")
             else:
-                print(f"  ⚠️  Not included deep_analysis_model")
+                print("  ⚠️  Not included deep_analysis_model")
 
             insert_result = await config_collection.insert_one(config_dict)
             print(f"📝 新配置ID: {insert_result.inserted_id}")
@@ -844,7 +844,7 @@ class ConfigService:
             if 'quick_analysis_model' in config.system_settings:
                 print(f"  ✓ Included before updating quick_analysis_model: {config.system_settings['quick_analysis_model']}")
             else:
-                print(f"  ⚠️  Not included before update quick_analysis_model")
+                print("  ⚠️  Not included before update quick_analysis_model")
 
             # Update system settings
             config.system_settings.update(settings)
@@ -854,11 +854,11 @@ class ConfigService:
             if 'quick_analysis_model' in config.system_settings:
                 print(f"  ✓ Updated to include quick_analysis_model: {config.system_settings['quick_analysis_model']}")
             else:
-                print(f"  ⚠️  Not included after update quick_analysis_model")
+                print("  ⚠️  Not included after update quick_analysis_model")
             if 'deep_analysis_model' in config.system_settings:
                 print(f"  ✓ Updated to include deep_analysis_model: {config.system_settings['deep_analysis_model']}")
             else:
-                print(f"  ⚠️  Not included after update deep_analysis_model")
+                print("  ⚠️  Not included after update deep_analysis_model")
 
             result = await self.save_system_config(config)
 
@@ -867,7 +867,7 @@ class ConfigService:
                 try:
                     from app.core.unified_config import unified_config
                     unified_config.sync_to_legacy_format(config)
-                    print(f"✅ System settings synced to file system")
+                    print("✅ System settings synced to file system")
                 except Exception as e:
                     print(f"⚠️  Syncing system settings to file system failed: {e}")
 
@@ -1250,7 +1250,7 @@ class ConfigService:
                 else:
                     return {
                         "success": False,
-                        "message": f"Neither the model configuration nor the factory configuration has the API base set URL",
+                        "message": "Neither the model configuration nor the factory configuration has the API base set URL",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
@@ -1275,18 +1275,18 @@ class ConfigService:
                 if provider_data and provider_data.get("api_key") and self._is_valid_api_key(provider_data.get("api_key")):
                     api_key = provider_data["api_key"]
                     api_key_source = "厂家配置（数据库）"
-                    logger.info(f"✅ Obtain API key from manufacturer configuration")
+                    logger.info("✅ Obtain API key from manufacturer configuration")
                 # Secondly, get it from the model configuration
                 elif llm_config.api_key and self._is_valid_api_key(llm_config.api_key):
                     api_key = llm_config.api_key
                     api_key_source = "模型配置"
-                    logger.info(f"✅ Get API key from model configuration")
+                    logger.info("✅ Get API key from model configuration")
                 # Finally try to get from environment variables
                 else:
                     api_key = self._get_env_api_key(provider_str)
                     if api_key:
                         api_key_source = "环境变量"
-                        logger.info(f"✅ Get API key from environment variable")
+                        logger.info("✅ Get API key from environment variable")
 
                 # The cloud model must be configured with a valid API Key
                 if not api_key or not self._is_valid_api_key(api_key):
@@ -1307,13 +1307,13 @@ class ConfigService:
             # 3. Select test method according to manufacturer type
             if provider_str == "google":
                 # Google AI Use specialized testing methods
-                logger.info(f"🔍 Use Google AI-specific testing methods")
+                logger.info("🔍 Use Google AI-specific testing methods")
                 result = self._test_google_api(api_key, f"{provider_str} {llm_config.model_name}", api_base, llm_config.model_name)
                 result["response_time"] = time.time() - start_time
                 return result
             elif provider_str == "deepseek":
                 # DeepSeek Use specialized testing methods
-                logger.info(f"🔍 Use DeepSeek dedicated testing methods")
+                logger.info("🔍 Use DeepSeek dedicated testing methods")
                 result = self._test_deepseek_api(
                     api_key,
                     f"{provider_str} {llm_config.model_name}",
@@ -1326,13 +1326,13 @@ class ConfigService:
                 return result
             elif provider_str == "dashscope":
                 # DashScope Use specialized testing methods
-                logger.info(f"🔍 Using DashScope-specific test methods")
+                logger.info("🔍 Using DashScope-specific test methods")
                 result = self._test_dashscope_api(api_key, f"{provider_str} {llm_config.model_name}", llm_config.model_name)
                 result["response_time"] = time.time() - start_time
                 return result
             else:
                 # Other manufacturers use OpenAI compatible test methods
-                logger.info(f"🔍 Use OpenAI compliant testing methods")
+                logger.info("🔍 Use OpenAI compliant testing methods")
 
                 # Build test request
                 api_base_normalized = api_base.rstrip("/")
@@ -1428,7 +1428,7 @@ class ConfigService:
                                     }
                                 }
                             else:
-                                logger.warning(f"⚠️ API响应内容为空")
+                                logger.warning("⚠️ API响应内容为空")
                                 return {
                                     "success": False,
                                     "message": "API响应内容为空",
@@ -1436,7 +1436,7 @@ class ConfigService:
                                     "details": None
                                 }
                         else:
-                            logger.warning(f"⚠️ API The response format is abnormal and the choices field is missing")
+                            logger.warning("⚠️ API The response format is abnormal and the choices field is missing")
                             logger.warning(f"   响应内容: {result}")
                             return {
                                 "success": False,
@@ -1509,7 +1509,7 @@ class ConfigService:
                             "response_time": response_time,
                             "details": None
                         }
-                    except:
+                    except Exception:
                         return {
                         "success": False,
                         "message": f"API test failed: HTTP {response.status_code}",
@@ -1582,7 +1582,7 @@ class ConfigService:
             if ds_type == "tushare":
                 # 🔥 If the API Key in the configuration contains "..." (truncation mark), need to verify whether it is the unmodified original value
                 if api_key and "..." in api_key:
-                    logger.info(f"🔍 [TEST] API Key contains '...' (truncated), checking if it matches database value")
+                    logger.info("🔍 [TEST] API Key contains '...' (truncated), checking if it matches database value")
 
                     # Get complete from database API Key
                     system_config = await self.get_system_config()
@@ -1607,7 +1607,7 @@ class ConfigService:
                             logger.info(f"✅ [TEST] Truncated values match, using complete API Key from database (length: {len(api_key)})")
                         else:
                             # Different, indicating that the user has modified it but the modification is incomplete.
-                            logger.error(f"❌ [TEST] Truncated API Key doesn't match database value, user may have modified it incorrectly")
+                            logger.error("❌ [TEST] Truncated API Key doesn't match database value, user may have modified it incorrectly")
                             return {
                                 "success": False,
                                 "message": "API Key Format error: Truncation token detected but does not match value in database, please enter complete API Key",
@@ -1620,14 +1620,14 @@ class ConfigService:
                             }
                     else:
                         # There is no valid API Key in the database, try to get it from environment variables
-                        logger.info(f"⚠️  [TEST] No valid API Key in database, trying environment variable")
+                        logger.info("⚠️  [TEST] No valid API Key in database, trying environment variable")
                         env_token = os.getenv('TUSHARE_TOKEN')
                         if env_token:
                             api_key = env_token.strip().strip('"').strip("'")
                             used_env_credentials = True
                             logger.info(f"🔑 [TEST] Using TUSHARE_TOKEN from environment (length: {len(api_key)})")
                         else:
-                            logger.error(f"❌ [TEST] No valid API Key in database or environment")
+                            logger.error("❌ [TEST] No valid API Key in database or environment")
                             return {
                                 "success": False,
                                 "message": "API Key Invalid: There is no valid configuration in the database or environment variables. Token",
@@ -1637,7 +1637,7 @@ class ConfigService:
 
                 # If the API Key is empty, try to get it from the database or environment variables
                 elif not api_key:
-                    logger.info(f"⚠️  [TEST] API Key is empty, trying to get from database")
+                    logger.info("⚠️  [TEST] API Key is empty, trying to get from database")
 
                     # Get complete from database API Key
                     system_config = await self.get_system_config()
@@ -1654,14 +1654,14 @@ class ConfigService:
                         logger.info(f"🔑 [TEST] Using API Key from database (length: {len(api_key)})")
                     else:
                         # If it is not in the database, try to get it from environment variables
-                        logger.info(f"⚠️  [TEST] No valid API Key in database, trying environment variable")
+                        logger.info("⚠️  [TEST] No valid API Key in database, trying environment variable")
                         env_token = os.getenv('TUSHARE_TOKEN')
                         if env_token:
                             api_key = env_token.strip().strip('"').strip("'")
                             used_env_credentials = True
                             logger.info(f"🔑 [TEST] Using TUSHARE_TOKEN from environment (length: {len(api_key)})")
                         else:
-                            logger.error(f"❌ [TEST] No valid API Key in config, database, or environment")
+                            logger.error("❌ [TEST] No valid API Key in config, database, or environment")
                             return {
                                 "success": False,
                                 "message": "API Key Invalid: There is no valid configuration in the configuration, database and environment variables. Token",
@@ -1696,7 +1696,7 @@ class ConfigService:
                         if 'https_proxy' in os.environ:
                             del os.environ['https_proxy']
 
-                        logger.info(f"🌐 [TEST] Proxy disabled for Tushare API call (domestic data source)")
+                        logger.info("🌐 [TEST] Proxy disabled for Tushare API call (domestic data source)")
 
                         # Directly pass the token to pro_api without calling set_token to avoid writing the tk.csv file
                         pro = ts.pro_api(api_key)
@@ -1737,7 +1737,7 @@ class ConfigService:
                             }
                         }
                     else:
-                        logger.error(f"❌ [TEST] Tushare API returned empty data")
+                        logger.error("❌ [TEST] Tushare API returned empty data")
                         return {
                             "success": False,
                             "message": "Tushare API Return data is empty",
@@ -1745,7 +1745,7 @@ class ConfigService:
                             "details": None
                         }
                 except ImportError:
-                    logger.error(f"❌ [TEST] Tushare library not installed")
+                    logger.error("❌ [TEST] Tushare library not installed")
                     return {
                         "success": False,
                         "message": "Tushare The library is not installed, please run: pip install tushare",
@@ -1773,7 +1773,7 @@ class ConfigService:
                         response_time = time.time() - start_time
                         return {
                             "success": True,
-                            "message": f"Successfully connected to AKShare data source",
+                            "message": "Successfully connected to AKShare data source",
                             "response_time": response_time,
                             "details": {
                                 "type": ds_type,
@@ -1982,7 +1982,7 @@ class ConfigService:
                                 bs.logout()
                                 return {
                                     "success": True,
-                                    "message": f"Successfully connected to BaoStock data source",
+                                    "message": "Successfully connected to BaoStock data source",
                                     "response_time": response_time,
                                     "details": {
                                         "type": ds_type,
@@ -2190,7 +2190,7 @@ class ConfigService:
             elif ds_type == "alpha_vantage":
                 # 🔥 If the API Key in the configuration contains "..." (truncation mark), need to verify whether it is the unmodified original value
                 if api_key and "..." in api_key:
-                    logger.info(f"🔍 [TEST] API Key contains '...' (truncated), checking if it matches database value")
+                    logger.info("🔍 [TEST] API Key contains '...' (truncated), checking if it matches database value")
 
                     # Get complete from database API Key
                     system_config = await self.get_system_config()
@@ -2215,7 +2215,7 @@ class ConfigService:
                             logger.info(f"✅ [TEST] Truncated values match, using complete API Key from database (length: {len(api_key)})")
                         else:
                             # Different, indicating that the user has modified it but the modification is incomplete.
-                            logger.error(f"❌ [TEST] Truncated API Key doesn't match database value")
+                            logger.error("❌ [TEST] Truncated API Key doesn't match database value")
                             return {
                                 "success": False,
                                 "message": "API Key Format error: Truncation token detected but does not match value in database, please enter complete API Key",
@@ -2228,14 +2228,14 @@ class ConfigService:
                             }
                     else:
                         # There is no valid API Key in the database, try to get it from environment variables
-                        logger.info(f"⚠️  [TEST] No valid API Key in database, trying environment variable")
+                        logger.info("⚠️  [TEST] No valid API Key in database, trying environment variable")
                         env_key = os.getenv('ALPHA_VANTAGE_API_KEY')
                         if env_key:
                             api_key = env_key.strip().strip('"').strip("'")
                             used_env_credentials = True
                             logger.info(f"🔑 [TEST] Using ALPHA_VANTAGE_API_KEY from environment (length: {len(api_key)})")
                         else:
-                            logger.error(f"❌ [TEST] No valid API Key in database or environment")
+                            logger.error("❌ [TEST] No valid API Key in database or environment")
                             return {
                                 "success": False,
                                 "message": "API Key Invalid: There is no valid configuration in the database or environment variables. API Key",
@@ -2245,7 +2245,7 @@ class ConfigService:
 
                 # If the API Key is empty, try to get it from the database or environment variables
                 elif not api_key:
-                    logger.info(f"⚠️  [TEST] API Key is empty, trying to get from database")
+                    logger.info("⚠️  [TEST] API Key is empty, trying to get from database")
 
                     # Get complete from database API Key
                     system_config = await self.get_system_config()
@@ -2262,14 +2262,14 @@ class ConfigService:
                         logger.info(f"🔑 [TEST] Using API Key from database (length: {len(api_key)})")
                     else:
                         # If it is not in the database, try to get it from environment variables
-                        logger.info(f"⚠️  [TEST] No valid API Key in database, trying environment variable")
+                        logger.info("⚠️  [TEST] No valid API Key in database, trying environment variable")
                         env_key = os.getenv('ALPHA_VANTAGE_API_KEY')
                         if env_key:
                             api_key = env_key.strip().strip('"').strip("'")
                             used_env_credentials = True
                             logger.info(f"🔑 [TEST] Using ALPHA_VANTAGE_API_KEY from environment (length: {len(api_key)})")
                         else:
-                            logger.error(f"❌ [TEST] No valid API Key in config, database, or environment")
+                            logger.error("❌ [TEST] No valid API Key in config, database, or environment")
                             return {
                                 "success": False,
                                 "message": "API Key Invalid: There is no valid configuration in the configuration, database and environment variables. API Key",
@@ -2509,7 +2509,7 @@ class ConfigService:
                                 # 🔥 Docker environment, replace localhost with mongodb
                                 if is_docker and host == 'localhost':
                                     host = 'mongodb'
-                                    logger.info(f"🐳 Docker environment detected, change host from localhost to mongodb")
+                                    logger.info("🐳 Docker environment detected, change host from localhost to mongodb")
 
                             if env_port:
                                 port = int(env_port)
@@ -2579,7 +2579,7 @@ class ConfigService:
 
                     return {
                         "success": True,
-                        "message": f"Successfully connected to MongoDB database",
+                        "message": "Successfully connected to MongoDB database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2655,7 +2655,7 @@ class ConfigService:
                                 # 🔥 Docker environment, replace localhost with redis
                                 if is_docker and host == 'localhost':
                                     host = 'redis'
-                                    logger.info(f"🐳 Docker environment detected, change Redis host from localhost to redis")
+                                    logger.info("🐳 Docker environment detected, change Redis host from localhost to redis")
 
                             if env_port:
                                 port = int(env_port)
@@ -2702,7 +2702,7 @@ class ConfigService:
 
                     return {
                         "success": True,
-                        "message": f"Successfully connected to Redis database",
+                        "message": "Successfully connected to Redis database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2764,7 +2764,7 @@ class ConfigService:
 
                     return {
                         "success": True,
-                        "message": f"Successfully connected to MySQL database",
+                        "message": "Successfully connected to MySQL database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2823,7 +2823,7 @@ class ConfigService:
 
                     return {
                         "success": True,
-                        "message": f"Successfully connected to PostgreSQL database",
+                        "message": "Successfully connected to PostgreSQL database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2875,7 +2875,7 @@ class ConfigService:
 
                     return {
                         "success": True,
-                        "message": f"Successfully connected to SQLite database",
+                        "message": "Successfully connected to SQLite database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -4240,17 +4240,17 @@ class ConfigService:
 
             # First list the IDs of all manufacturers and look at the format.
             all_providers = await providers_collection.find({}, {"_id": 1, "display_name": 1}).to_list(length=None)
-            print(f"📋 All manufacturers in the database ID:")
+            print("📋 All manufacturers in the database ID:")
             for p in all_providers:
                 print(f"   - {p['_id']} ({type(p['_id'])}) - {p.get('display_name')}")
                 if str(p['_id']) == provider_id:
-                    print(f"   ✅ 找到匹配的ID!")
+                    print("   ✅ 找到匹配的ID!")
 
             # Try different search methods
-            print(f"🔍 Try to find with ObjectId...")
+            print("🔍 Try to find with ObjectId...")
             existing1 = await providers_collection.find_one({"_id": ObjectId(provider_id)})
 
-            print(f"🔍 Try to find with string...")
+            print("🔍 Try to find with string...")
             existing2 = await providers_collection.find_one({"_id": provider_id})
 
             print(f"🔍 ObjectId Find results: {existing1 is not None}")
@@ -4770,7 +4770,7 @@ class ConfigService:
                 model_name = "gemini-2.0-flash-exp"
                 logger.info(f"⚠️ No model specified, default model used: {model_name}")
 
-            logger.info(f"🔍 [Google AI test] Start testing")
+            logger.info("🔍 [Google AI test] Start testing")
             logger.info(f"   display_name: {display_name}")
             logger.info(f"   model_name: {model_name}")
             logger.info(f"   base_url (original): {base_url}")
@@ -4821,7 +4821,7 @@ class ConfigService:
                 print(f"📥 [Google AI test] Response content (first 1000 characters): {response.text[:1000]}")
 
                 result = response.json()
-                print(f"📥 [Google AI test] Parsed JSON structure:")
+                print("📥 [Google AI test] Parsed JSON structure:")
                 print(f"   - 顶层键: {list(result.keys())}")
                 print(f"   - Does it contain 'candidates': {'candidates' in result}")
                 if "candidates" in result:
@@ -4851,14 +4851,14 @@ class ConfigService:
                                     "message": f"{display_name} API连接测试成功"
                                 }
                             else:
-                                print(f"❌ [Google AI test] Text is empty")
+                                print("❌ [Google AI test] Text is empty")
                                 return {
                                     "success": False,
                                     "message": f"{display_name} API响应内容为空"
                                 }
                         else:
                             # content There are no parts in , maybe because of MAX_TOKENS or other reasons
-                            print(f"❌ [Google AI test] content None parts")
+                            print("❌ [Google AI test] content None parts")
                             print(f"   content 的键: {list(content.keys())}")
 
                             if finish_reason == "MAX_TOKENS":
@@ -4872,14 +4872,14 @@ class ConfigService:
                                     "message": f"{display_name} API Abnormal response format (missing parts,finishReason: {finish_reason}) "
                                 }
                     else:
-                        print(f"❌ [Google AI test] candidate missing in 'content'")
+                        print("❌ [Google AI test] candidate missing in 'content'")
                         print(f"   candidate key: {list(candidate.keys())}")
                         return {
                             "success": False,
                             "message": f"{display_name} API Abnormal response format (missing content)"
                         }
                 else:
-                    print(f"❌ [Google AI test] candidates are missing or empty")
+                    print("❌ [Google AI test] candidates are missing or empty")
                     return {
                         "success": False,
                         "message": f"{display_name} API无有效候选响应"
@@ -4893,7 +4893,7 @@ class ConfigService:
                         "success": False,
                         "message": f"{display_name} API请求错误: {error_msg}"
                     }
-                except:
+                except Exception:
                     return {
                         "success": False,
                         "message": f"{display_name} API请求格式错误"
@@ -4927,7 +4927,7 @@ class ConfigService:
                             "success": False,
                             "message": f"{display_name} 服务暂时不可用: {error_msg}"
                         }
-                except:
+                except Exception:
                     return {
                         "success": False,
                         "message": f"{display_name} Service is temporarily unavailable (HTTP 503)"
@@ -5415,7 +5415,7 @@ class ConfigService:
                         "success": False,
                         "message": f"{display_name} API测试失败: {error_msg}"
                     }
-                except:
+                except Exception:
                     return {
                         "success": False,
                         "message": f"{display_name} API test failed: HTTP {response.status_code}"
@@ -5563,7 +5563,7 @@ class ConfigService:
 
                     # Print the complete structure of the first few models (for debugging price fields)
                     if all_models:
-                        print(f"🔍 Complete structure of the first model:")
+                        print("🔍 Complete structure of the first model:")
                         import json
                         print(json.dumps(all_models[0], indent=2, ensure_ascii=False))
 
@@ -5587,7 +5587,7 @@ class ConfigService:
                         "message": f"成功获取 {len(formatted_models)} 个常用模型（已过滤）"
                     }
                 else:
-                    print(f"❌ Response format exception, expected 'data' Field is a list")
+                    print("❌ Response format exception, expected 'data' Field is a list")
                     return {
                         "success": False,
                         "message": f"{display_name} API Response format exception (data field is missing or incorrectly formatted)"
@@ -5616,7 +5616,7 @@ class ConfigService:
                         "success": False,
                         "message": f"{display_name} API请求失败: {error_msg}"
                     }
-                except:
+                except Exception:
                     print(f"❌ HTTP 错误: {response.status_code}")
                     return {
                         "success": False,
@@ -5918,7 +5918,7 @@ class ConfigService:
                         "success": False,
                         "message": f"{display_name} API测试失败: {error_msg}"
                     }
-                except:
+                except Exception:
                     logger.error(f"❌ [{display_name}] API测试失败")
                     logger.error(f"   请求URL: {url}")
                     logger.error(f"   状态码: {response.status_code}")

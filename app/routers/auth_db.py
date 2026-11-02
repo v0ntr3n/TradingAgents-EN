@@ -176,7 +176,7 @@ async def get_current_user(
 
     # way 1: JWT Token Certification (preferred)
     if authorization and authorization.lower().startswith("bearer "):
-        logger.debug(f"📋 Authentication using JWT Token")
+        logger.debug("📋 Authentication using JWT Token")
 
         token = authorization.split(" ", 1)[1]
         logger.debug(
@@ -284,7 +284,7 @@ async def login(payload: LoginRequest, request: Request):
     try:
         # Validate input
         if not payload.username or not payload.password:
-            logger.warning(f"❌ Login failed - username or password is empty")
+            logger.warning("❌ Login failed - username or password is empty")
             await log_operation(
                 user_id="unknown",
                 username=payload.username or "unknown",
@@ -409,7 +409,7 @@ async def login(payload: LoginRequest, request: Request):
 async def refresh_token(payload: RefreshTokenRequest):
     """Refresh access token"""
     try:
-        logger.debug(f"🔄 Refresh token request received")
+        logger.debug("🔄 Refresh token request received")
         logger.debug(f"📝 Refresh token length: {len(payload.refresh_token) if payload.refresh_token else 0}")
 
         if not payload.refresh_token:
@@ -462,7 +462,7 @@ async def refresh_token(payload: RefreshTokenRequest):
             session_id=new_refresh_session_id
         )
 
-        logger.debug(f"🎉 New token generated successfully")
+        logger.debug("🎉 New token generated successfully")
 
         return {
             "success": True,

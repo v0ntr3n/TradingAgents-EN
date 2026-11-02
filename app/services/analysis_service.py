@@ -512,7 +512,7 @@ class AnalysisService:
     ) -> Dict[str, Any]:
         """提交单股分析任务"""
         try:
-            logger.info(f"📝 开始提交单股分析任务")
+            logger.info("📝 开始提交单股分析任务")
             logger.info(f"👤 用户ID: {user_id} (类型: {type(user_id)})")
 
             # Get stock code (Compatible with old fields)
@@ -529,7 +529,7 @@ class AnalysisService:
             logger.info(f"🔄 转换后的用户ID: {converted_user_id} (类型: {type(converted_user_id)})")
 
             # Create analysis tasks
-            logger.info(f"🏗️ Start creating AnalysisTask object...")
+            logger.info("🏗️ Start creating AnalysisTask object...")
 
             # Read merged system settings (ENV first → DB) , For populating models with concurrency/timeout configuration
             try:
@@ -561,18 +561,18 @@ class AnalysisService:
                 parameters=params,
                 status=AnalysisStatus.PENDING
             )
-            logger.info(f"✅ AnalysisTask Object created successfully")
+            logger.info("✅ AnalysisTask Object created successfully")
 
             # Save task to database
-            logger.info(f"💾 Start saving tasks to the database...")
+            logger.info("💾 Start saving tasks to the database...")
             db = get_mongo_db()
             task_dict = task.model_dump(by_alias=True)
             logger.info(f"📄 任务字典: {task_dict}")
             await db.analysis_tasks.insert_one(task_dict)
-            logger.info(f"✅ 任务已保存到数据库")
+            logger.info("✅ 任务已保存到数据库")
 
             # 🔥 Single stock analysis: submitted to the queue and processed by the Worker process (consistent with batch analysis)
-            logger.info(f"🚀 Start submitting tasks to the queue...")
+            logger.info("🚀 Start submitting tasks to the queue...")
 
             # Prepare queue parameters (pass analysis parameters directly, no nesting)
             queue_params = task.parameters.dict() if task.parameters else {}
@@ -1058,7 +1058,7 @@ class AnalysisService:
             if success:
                 logger.info(f"💰 记录使用成本: {provider}/{model_name} - ¥{cost:.4f}")
             else:
-                logger.warning(f"⚠️  记录使用成本失败")
+                logger.warning("⚠️  记录使用成本失败")
 
         except Exception as e:
             logger.error(f"❌ Record token usage failure: {e}")

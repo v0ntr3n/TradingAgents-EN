@@ -2142,7 +2142,7 @@ You must call the analyze_agent_workshop_gaps tool."""
         blocking_gaps = gap.get("blocking_gaps", []) or []
         suggested_tools = gap.get("suggested_tools", []) or []
 
-        gap_display = f"\n\n---\n\n## Gap Analysis Report\n\n"
+        gap_display = "\n\n---\n\n## Gap Analysis Report\n\n"
         gap_display += f"**Existing tools:** {len(existing_tools)} a\n"
         if existing_tools:
             tool_names = [t.get("name", t.get("tool_id", str(t))) if isinstance(t, dict) else str(t) for t in existing_tools[:8]]
@@ -2891,18 +2891,18 @@ async def node_wait_test_request(
             gap_desc = "\n".join(gap_items)
 
         skill_msg = (
-            f"Got it, you want to fill in the missing tools/skills.\n\n"
+            "Got it, you want to fill in the missing tools/skills.\n\n"
         )
         if gap_desc:
             skill_msg += f"Capability gaps currently identified:\n{gap_desc}\n\n"
         skill_msg += (
-            f"> **Note**: Skill/The creation of tools requires developers to write code to implement them."
-            f"This cannot be done automatically in the current Agent build process.\n\n"
-            f"You have two options:\n"
-            f"1. **Test in downgrade mode first**: Reply Test or stock symbol (e.g. `600519`) , "
-            f"Agent Testing will be done using existing tools and missing capabilities will be noted in the report\n"
-            f"2. **Record requirements for subsequent development**: Reply to Record Requirements and I will save the requirements for the missing skill.\n\n"
-            f"It is recommended to test the current version first to confirm the output quality of downgrade mode."
+            "> **Note**: Skill/The creation of tools requires developers to write code to implement them."
+            "This cannot be done automatically in the current Agent build process.\n\n"
+            "You have two options:\n"
+            "1. **Test in downgrade mode first**: Reply Test or stock symbol (e.g. `600519`) , "
+            "Agent Testing will be done using existing tools and missing capabilities will be noted in the report\n"
+            "2. **Record requirements for subsequent development**: Reply to Record Requirements and I will save the requirements for the missing skill.\n\n"
+            "It is recommended to test the current version first to confirm the output quality of downgrade mode."
         )
         state["final_response"] = skill_msg
         state["skill_creation_requested"] = False
@@ -3236,7 +3236,7 @@ You must call the run_agent_workshop_real_data_test tool."""
     report_length = debug_result.get("report_length") or len(test_report)
 
     # Build test report display
-    report_display = f"## Real data test results\n\n"
+    report_display = "## Real data test results\n\n"
     report_display += f"**Target:** {test_symbol}\n"
     report_display += f"**Agent：** {spec_name}\n"
     report_display += f"**Report length:** {report_length} character\n\n"
@@ -3314,7 +3314,7 @@ You must call the evaluate_agent_workshop_version tool."""
     )
 
     # Build evaluation results display
-    eval_display = f"\n\n---\n\n## Assessment results\n\n"
+    eval_display = "\n\n---\n\n## Assessment results\n\n"
     if eval_result and eval_result.get("status") == "ok":
         evaluation = eval_result.get("evaluation", {}) if isinstance(eval_result, dict) else {}
         decision = evaluation.get("decision", "unknown") if isinstance(evaluation, dict) else "unknown"

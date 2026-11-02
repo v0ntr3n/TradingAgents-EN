@@ -2779,7 +2779,7 @@ Upgrade planning requirements:
             parts.append(header)
 
             if it.validation and not it.validation.passed:
-                parts.append(f"  静态验证失败:")
+                parts.append("  静态验证失败:")
                 for err in it.validation.errors[:3]:
                     parts.append(f"    - {err}")
 

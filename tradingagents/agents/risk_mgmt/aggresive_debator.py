@@ -29,7 +29,7 @@ def create_risky_debator(llm):
         trader_decision = state.get("trader_investment_plan", "")
 
         # 📊 Record input data length
-        logger.info(f"📊 [Risky Analyst] Input data length statistics:")
+        logger.info("📊 [Risky Analyst] Input data length statistics:")
         logger.info(f"  - market_report: {len(market_research_report):,} character")
         logger.info(f"  - sentiment_report: {len(sentiment_report):,} character")
         logger.info(f"  - news_report: {len(news_report):,} character")
@@ -113,7 +113,7 @@ Neutral Analyst s Final Argument:{current_neutral_response}
 
 {build_research_only_closing(["Please present your aggressive research ideas, highlighting upside resilience and potential catalysts, but do not formulate a trade proposal."])}"""
 
-        logger.info(f"⏱️ [Risky Analyst] Start calling LLM...")
+        logger.info("⏱️ [Risky Analyst] Start calling LLM...")
         import time
         llm_start_time = time.time()
 

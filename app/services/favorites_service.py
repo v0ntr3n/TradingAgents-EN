@@ -348,7 +348,7 @@ class FavoritesService:
             logger.info(f"🔧 [add_favorite] Start adding to research list: user_id={user_id}, stock_code={stock_code}")
 
             db = await self._get_db()
-            logger.info(f"🔧 [add_favorite] Database connection obtained successfully")
+            logger.info("🔧 [add_favorite] Database connection obtained successfully")
 
             normalized_tags = await self._ensure_tags_exist(user_id, tags)
 
@@ -369,7 +369,7 @@ class FavoritesService:
             logger.info(f"🔧 [add_favorite] User ID type check: is_valid_object_id={is_oid}")
 
             if is_oid:
-                logger.info(f"🔧 [add_favorite] Add to users collection using ObjectId method")
+                logger.info("🔧 [add_favorite] Add to users collection using ObjectId method")
 
                 # Try using ObjectId query first
                 result = await db.users.update_one(
@@ -383,7 +383,7 @@ class FavoritesService:
 
                 # If ObjectId query fails, try using string query
                 if result.matched_count == 0:
-                    logger.info(f"🔧 [add_favorite] ObjectId Query failed, trying to query using string ID")
+                    logger.info("🔧 [add_favorite] ObjectId Query failed, trying to query using string ID")
                     result = await db.users.update_one(
                         {"_id": user_id},
                         {
@@ -396,7 +396,7 @@ class FavoritesService:
                 logger.info(f"🔧 [add_favorite] Return results: {success}")
                 return success
             else:
-                logger.info(f"🔧 [add_favorite] Add to user_favorites collection using string ID")
+                logger.info("🔧 [add_favorite] Add to user_favorites collection using string ID")
                 result = await db.user_favorites.update_one(
                     {"user_id": user_id},
                     {
@@ -407,7 +407,7 @@ class FavoritesService:
                     upsert=True
                 )
                 logger.info(f"🔧 [add_favorite] Update results: matched_count={result.matched_count}, modified_count={result.modified_count}, upserted_id={result.upserted_id}")
-                logger.info(f"🔧 [add_favorite] Return results: True")
+                logger.info("🔧 [add_favorite] Return results: True")
                 return True
         except Exception as e:
             logger.error(f"❌ [add_favorite] Add to study list exception: {type(e).__name__}: {str(e)}", exc_info=True)
@@ -520,7 +520,7 @@ class FavoritesService:
 
                 # If ObjectId query fails, try using string query
                 if user is None:
-                    logger.info(f"🔧 [is_favorite] ObjectId Query not found, try querying using string ID")
+                    logger.info("🔧 [is_favorite] ObjectId Query not found, try querying using string ID")
                     user = await db.users.find_one(
                         {
                             "_id": user_id,

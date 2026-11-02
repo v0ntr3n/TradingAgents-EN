@@ -213,7 +213,7 @@ Please write a detailed attribution analysis report, including:
 It is prohibited to output future trading actions, target prices, stop-loss and take-profit or position plans."""
 
         # Print template variables (for debugging)
-        logger.info(f"📊 [attribution analyst] Template variables:")
+        logger.info("📊 [attribution analyst] Template variables:")
         for key, value in template_variables.items():
             logger.info(f"  - {key}: {value}")
 

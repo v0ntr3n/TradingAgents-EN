@@ -64,7 +64,7 @@ class OptimizedChinaDataProvider:
         self.last_api_call = 0
         self.min_api_interval = get_float("TA_CHINA_MIN_API_INTERVAL_SECONDS", "ta_china_min_api_interval_seconds", 0.5)
 
-        logger.info(f"📊 Optimization of A-share data provider initialization completed")
+        logger.info("📊 Optimization of A-share data provider initialization completed")
 
     def _wait_for_rate_limit(self):
         """等待API限制"""
@@ -253,7 +253,7 @@ class OptimizedChinaDataProvider:
         # 2. Check file cache (unless force refresh)
         if not force_refresh:
             # Find fundamental data cache
-            for metadata_file in self.cache.metadata_dir.glob(f"*_meta.json"):
+            for metadata_file in self.cache.metadata_dir.glob("*_meta.json"):
                 try:
                     import json
                     with open(metadata_file, 'r', encoding='utf-8') as f:
@@ -463,7 +463,7 @@ class OptimizedChinaDataProvider:
             logger.debug(f"🔍 [Stock symbol tracking] _estimate_financial_metrics Return results: {financial_estimates}")
         except Exception as e:
             logger.warning(f"⚠️ [fundamental analysis] Unable to get financial metrics: {e}")
-            logger.info(f"📊 [fundamental analysis] Returns a simplified fundamentals report (without financial indicators)")
+            logger.info("📊 [fundamental analysis] Returns a simplified fundamentals report (without financial indicators)")
 
             # Returns a simplified fundamentals report (excluding financial metrics)
             simplified_report = f"""# 中国A股基本面分析报告 - {symbol} (简化版)
@@ -767,7 +767,7 @@ class OptimizedChinaDataProvider:
             logger.warning(f"⚠️ Failed to obtain industry information from database: {e}")
 
         # Alternative: Use code prefix determination (but correct industry/market mapping)
-        logger.debug(f"🔍 [Stock symbol tracking] Use alternative solutions, based on code prefix judgment")
+        logger.debug("🔍 [Stock symbol tracking] Use alternative solutions, based on code prefix judgment")
         code_prefix = symbol[:3]
         logger.debug(f"🔍 [Stock symbol tracking] Extracted code prefix: '{code_prefix}'")
 
@@ -859,7 +859,7 @@ class OptimizedChinaDataProvider:
         # Extract price value
         try:
             price_value = float(current_price.replace('¥', '').replace(',', ''))
-        except:
+        except Exception:
             price_value = 10.0  # Default value
 
         # Try to get real financial data
@@ -917,10 +917,10 @@ class OptimizedChinaDataProvider:
                     # Parse MongoDB standardized financial data
                     metrics = self._parse_mongodb_financial_data(financial_data, price_value)
                     if metrics:
-                        logger.info(f"✅ MongoDB Financial data parsing is successful and indicators are returned")
+                        logger.info("✅ MongoDB Financial data parsing is successful and indicators are returned")
                         return metrics
                     else:
-                        logger.warning(f"⚠️ MongoDB Financial data parsing failed")
+                        logger.warning("⚠️ MongoDB Financial data parsing failed")
                 else:
                     logger.info(f"🔄 MongoDB not found{symbol}Financial data, try to get it from AKShare API")
             else:
@@ -947,16 +947,16 @@ class OptimizedChinaDataProvider:
                     metrics = self._parse_akshare_financial_data(financial_data, stock_info, price_value)
                     logger.debug(f"🔧 AKShare Parse results: {metrics}")
                     if metrics:
-                        logger.info(f"✅ AKShare The parsing is successful and the indicator is returned.")
+                        logger.info("✅ AKShare The parsing is successful and the indicator is returned.")
                         # Cache raw financial data to database (instead of parsed metrics)
                         self._cache_raw_financial_data(symbol, financial_data, stock_info)
                         return metrics
                     else:
-                        logger.warning(f"⚠️ AKShare Parsing failed, return None")
+                        logger.warning("⚠️ AKShare Parsing failed, return None")
                 else:
                     logger.warning(f"⚠️ AKShare Not obtained{symbol}financial data, try Tushare")
             else:
-                logger.warning(f"⚠️ AKShare Not connected, try Tushare")
+                logger.warning("⚠️ AKShare Not connected, try Tushare")
 
             # Third priority: Use Tushare data source
             logger.info(f"🔄 使用Tushare备用数据源获取{symbol}财务数据")
@@ -1173,14 +1173,14 @@ class OptimizedChinaDataProvider:
                                 is_loss_stock = True
                                 logger.info(f"⚠️ [PE Compute - Tier 1 failed] Losing stocks detected (pe_ttm={pe_ttm_static}) , Skip downgrade calculation")
                             else:
-                                logger.warning(f"⚠️ [PE Compute - Tier 1 failed] Real-time calculations return empty results, and downgrade calculations will be attempted.")
+                                logger.warning("⚠️ [PE Compute - Tier 1 failed] Real-time calculations return empty results, and downgrade calculations will be attempted.")
 
             except Exception as e:
                 logger.warning(f"⚠️ [PE Compute - Layer 1 Exception] Real-time calculation failed: {e}, Will try to downgrade the calculation")
 
             # If real-time calculation fails, try to get total market cap from latest_indicators
             if "total_mv" not in metrics:
-                logger.info(f"📊 [Total Market Cap - Tier 2] Try to get from stock_basic_info")
+                logger.info("📊 [Total Market Cap - Tier 2] Try to get from stock_basic_info")
                 total_mv_static = latest_indicators.get('total_mv')
                 if total_mv_static is not None and total_mv_static > 0:
                     metrics["total_mv"] = f"{total_mv_static:.2f}亿元"
@@ -1194,16 +1194,16 @@ class OptimizedChinaDataProvider:
                         logger.info(f"✅ [Total Market Cap - Tier 3 Success] Total market capitalization={total_mv_yi:.2f}billion (Convert from money_cap)")
                     else:
                         metrics["total_mv"] = "N/A"
-                        logger.warning(f"⚠️ [Total Market Cap - All Failed] No total market capitalization data available")
+                        logger.warning("⚠️ [Total Market Cap - All Failed] No total market capitalization data available")
 
             # If real-time calculation fails, try traditional calculation method
             if pe_value is None:
                 # 🔥 If it has been confirmed that it is a loss-making stock, directly set the PE to N/A and no longer attempt the downgrade calculation.
                 if is_loss_stock:
                     metrics["pe"] = "N/A"
-                    logger.info(f"⚠️ [PE Calculation-Lossing Stocks] It has been confirmed as a loss-making stock, PE is set to N/A, and the second level calculation is skipped.")
+                    logger.info("⚠️ [PE Calculation-Lossing Stocks] It has been confirmed as a loss-making stock, PE is set to N/A, and the second level calculation is skipped.")
                 else:
-                    logger.info(f"📊 [PE Compute - Tier 2] Try using market cap/net profit calculation")
+                    logger.info("📊 [PE Compute - Tier 2] Try using market cap/net profit calculation")
 
                     net_profit = latest_indicators.get('net_profit')
 
@@ -1229,7 +1229,7 @@ class OptimizedChinaDataProvider:
                                         if pe_float > 0:
                                             metrics["pe"] = f"{pe_float:.1f}倍"
                                             logger.info(f"✅ [PE Compute - Tier 3 Success] Use static PE: {metrics['pe']}")
-                                            logger.info(f"   └─ Data source: stock_basic_info.pe")
+                                            logger.info("   └─ Data source: stock_basic_info.pe")
                                         else:
                                             metrics["pe"] = "N/A"
                                             logger.info(f"⚠️ [PE Calculation - Tier 3 Skip] Static PE is negative or zero (loss-making stocks): {pe_float}")
@@ -1238,7 +1238,7 @@ class OptimizedChinaDataProvider:
                                         logger.error(f"❌ [PE Compute - Layer 3 failed] Static PE format error: {pe_static}")
                                 else:
                                     metrics["pe"] = "N/A"
-                                    logger.error(f"❌ [PE Calculate - all failed] No PE data available")
+                                    logger.error("❌ [PE Calculate - all failed] No PE data available")
                         except (ValueError, TypeError, ZeroDivisionError) as e:
                             metrics["pe"] = "N/A"
                             logger.error(f"❌ [PE Compute - Layer 2 Exceptions] Calculation failed: {e}")
@@ -1258,7 +1258,7 @@ class OptimizedChinaDataProvider:
                                 if pe_float > 0:
                                     metrics["pe"] = f"{pe_float:.1f}倍"
                                     logger.info(f"✅ [PE Compute - Tier 3 Success] Use static PE: {metrics['pe']}")
-                                    logger.info(f"   └─ Data source: stock_basic_info.pe")
+                                    logger.info("   └─ Data source: stock_basic_info.pe")
                                 else:
                                     metrics["pe"] = "N/A"
                                     logger.info(f"⚠️ [PE Calculation - Tier 3 Skip] Static PE is negative or zero (loss-making stocks): {pe_float}")
@@ -1267,16 +1267,16 @@ class OptimizedChinaDataProvider:
                                 logger.error(f"❌ [PE Compute - Layer 3 failed] Static PE format error: {pe_static}")
                         else:
                             metrics["pe"] = "N/A"
-                            logger.error(f"❌ [PE Calculate - all failed] No PE data available")
+                            logger.error("❌ [PE Calculate - all failed] No PE data available")
 
             # If PE_TTM is not obtained, try to obtain it from static data
             if pe_ttm_value is None:
                 # 🔥 If it has been confirmed that it is a loss stock, directly set PE_TTM to N/A
                 if is_loss_stock:
                     metrics["pe_ttm"] = "N/A"
-                    logger.info(f"⚠️ [PE_TTM Calculation-Lossing Stocks] Confirmed as a loss-making stock, PE_TTM is set to N/A")
+                    logger.info("⚠️ [PE_TTM Calculation-Lossing Stocks] Confirmed as a loss-making stock, PE_TTM is set to N/A")
                 else:
-                    logger.info(f"📊 [PE_TTM Compute - Tier 2] Try to get from static data")
+                    logger.info("📊 [PE_TTM Compute - Tier 2] Try to get from static data")
                     pe_ttm_static = latest_indicators.get('pe_ttm')
                     if pe_ttm_static is not None and str(pe_ttm_static) != 'nan' and pe_ttm_static != '--':
                         try:
@@ -1285,7 +1285,7 @@ class OptimizedChinaDataProvider:
                             if pe_ttm_float > 0:
                                 metrics["pe_ttm"] = f"{pe_ttm_float:.1f}倍"
                                 logger.info(f"✅ [PE_TTM Compute - Layer 2 Success] Use static PE_TTM: {metrics['pe_ttm']}")
-                                logger.info(f"   └─ Data source: stock_basic_info.pe_ttm")
+                                logger.info("   └─ Data source: stock_basic_info.pe_ttm")
                             else:
                                 metrics["pe_ttm"] = "N/A"
                                 logger.info(f"⚠️ [PE_TTM Compute - Tier 2 Skip] Static PE_TTM is negative or zero (loss-making stocks): {pe_ttm_float}")
@@ -1294,7 +1294,7 @@ class OptimizedChinaDataProvider:
                             logger.error(f"❌ [PE_TTM Compute - Layer 2 failed] Static PE_TTM format error: {pe_ttm_static}")
                     else:
                         metrics["pe_ttm"] = "N/A"
-                        logger.warning(f"⚠️ [PE_TTM Calculate - all failed] No PE_TTM data available")
+                        logger.warning("⚠️ [PE_TTM Calculate - all failed] No PE_TTM data available")
 
             if pb_value is None:
                 total_equity = latest_indicators.get('total_hldr_eqy_exc_min_int')
@@ -1316,7 +1316,7 @@ class OptimizedChinaDataProvider:
                                 try:
                                     metrics["pb"] = f"{float(pb_static):.2f}倍"
                                     logger.info(f"✅ [PB Compute - Tier 3 Success] Use static PB: {metrics['pb']}")
-                                    logger.info(f"   └─ Data source: stock_basic_info.pb")
+                                    logger.info("   └─ Data source: stock_basic_info.pb")
                                 except (ValueError, TypeError):
                                     metrics["pb"] = "N/A"
                             else:
@@ -1331,7 +1331,7 @@ class OptimizedChinaDataProvider:
                         try:
                             metrics["pb"] = f"{float(pb_static):.2f}倍"
                             logger.info(f"✅ [PB Compute - Tier 3 Success] Use static PB: {metrics['pb']}")
-                            logger.info(f"   └─ Data source: stock_basic_info.pb")
+                            logger.info("   └─ Data source: stock_basic_info.pb")
                         except (ValueError, TypeError):
                             metrics["pb"] = "N/A"
                     else:
@@ -1492,7 +1492,7 @@ class OptimizedChinaDataProvider:
                                 metrics["pb"] = f"{pb_value:.2f}倍{realtime_tag}"
                                 logger.info(f"✅ [AKShare-PB计算-第1层成功] PB={pb_value:.2f}倍")
                         else:
-                            logger.warning(f"⚠️ [AKShare-PE Compute - Tier 1 failed] Real-time calculations return empty results, and downgrade calculations will be attempted.")
+                            logger.warning("⚠️ [AKShare-PE Compute - Tier 1 failed] Real-time calculations return empty results, and downgrade calculations will be attempted.")
             except Exception as e:
                 logger.warning(f"⚠️ [AKShare-PE Compute - Layer 1 Exception] Real-time calculation failed: {e}, Will try to downgrade the calculation")
 
@@ -1511,18 +1511,18 @@ class OptimizedChinaDataProvider:
 
             # If real-time calculation fails, try to get total market cap from stock_info
             if "total_mv" not in metrics:
-                logger.info(f"📊 [AKShare-Total Market Cap - Tier 2] Try to get from stock_info")
+                logger.info("📊 [AKShare-Total Market Cap - Tier 2] Try to get from stock_info")
                 total_mv_static = stock_info.get('total_mv')
                 if total_mv_static is not None and total_mv_static > 0:
                     metrics["total_mv"] = f"{total_mv_static:.2f}亿元"
                     logger.info(f"✅ [AKShare-总市值-第2层成功] 总市值={total_mv_static:.2f}亿元")
                 else:
                     metrics["total_mv"] = "N/A"
-                    logger.warning(f"⚠️ [AKShare-Total Market Cap - All Failed] No total market capitalization data available")
+                    logger.warning("⚠️ [AKShare-Total Market Cap - All Failed] No total market capitalization data available")
 
             # 🔥 If real-time calculation fails, fall back to traditional calculation method
             if pe_value is None:
-                logger.info(f"📊 [AKShare-PE Compute - Tier 2] Try using the share price/EPS calculation")
+                logger.info("📊 [AKShare-PE Compute - Tier 2] Try using the share price/EPS calculation")
 
                 # Calculate PE - Prefer TTM data
                 # Try to calculate from main_indicators DataFrame TTM EPS
@@ -1577,11 +1577,11 @@ class OptimizedChinaDataProvider:
                     logger.warning(f"⚠️ [AKShare-PE Compute - Layer 2 failed] losing stocks,EPS={eps_for_pe}")
                 else:
                     metrics["pe"] = "N/A"
-                    logger.error(f"❌ [AKShare-PE Calculate - all failed] No EPS data available")
+                    logger.error("❌ [AKShare-PE Calculate - all failed] No EPS data available")
 
             # 🔥 If real-time PB calculation fails, downgrade to traditional calculation method
             if pb_value is None:
-                logger.info(f"📊 [AKShare-PB Compute - Tier 2] Try using stock price/BPS calculation")
+                logger.info("📊 [AKShare-PB Compute - Tier 2] Try using stock price/BPS calculation")
 
                 # Get net assets per share - used in calculations PB
                 bps_value = indicators_dict.get('每股净资产_最新股数')
@@ -1601,7 +1601,7 @@ class OptimizedChinaDataProvider:
                         logger.error(f"❌ [AKShare-PB Compute - Layer 2 Exceptions] {e}")
                 else:
                     metrics["pb"] = "N/A"
-                    logger.error(f"❌ [AKShare-PB Calculate - all failed] No BPS data available")
+                    logger.error("❌ [AKShare-PB Calculate - all failed] No BPS data available")
 
             # Try to get other metrics
             # return on total assets(ROA)
@@ -1719,7 +1719,7 @@ class OptimizedChinaDataProvider:
                     logger.info(f"✅ 计算PS({ps_type}): 市值{market_cap:.2f}万元 / 营业收入{revenue_for_ps:.2f}万元 = {metrics['ps']}")
                 else:
                     metrics["ps"] = "N/A（无总股本数据）"
-                    logger.warning(f"⚠️ Unable to calculate PS: Missing total share capital data")
+                    logger.warning("⚠️ Unable to calculate PS: Missing total share capital data")
             else:
                 metrics["ps"] = "N/A"
 
@@ -1939,7 +1939,7 @@ class OptimizedChinaDataProvider:
                     score += 1.0
                 elif roe > 5:
                     score += 0.5
-            except:
+            except Exception:
                 pass
 
         # Net profit margin score
@@ -1951,7 +1951,7 @@ class OptimizedChinaDataProvider:
                     score += 1.0
                 elif net_margin > 10:
                     score += 0.5
-            except:
+            except Exception:
                 pass
 
         return min(score, 10.0)
@@ -1971,7 +1971,7 @@ class OptimizedChinaDataProvider:
                     score += 1.0
                 elif pe > 50:
                     score -= 1.0
-            except:
+            except Exception:
                 pass
 
         # PB Rating
@@ -1985,7 +1985,7 @@ class OptimizedChinaDataProvider:
                     score += 0.5
                 elif pb > 5:
                     score -= 0.5
-            except:
+            except Exception:
                 pass
 
         return min(max(score, 1.0), 10.0)
@@ -2016,7 +2016,7 @@ class OptimizedChinaDataProvider:
                     return "中等"
                 else:
                     return "较低"
-            except:
+            except Exception:
                 pass
 
         # Based on industry judgment
@@ -2105,7 +2105,7 @@ class OptimizedChinaDataProvider:
         """Try to get expired cached data as backup"""
         try:
             # Find any relevant caches, regardless of TTL
-            for metadata_file in self.cache.metadata_dir.glob(f"*_meta.json"):
+            for metadata_file in self.cache.metadata_dir.glob("*_meta.json"):
                 try:
                     import json
 
@@ -2218,7 +2218,7 @@ def _add_financial_cache_methods():
             from .cache.app_adapter import get_mongodb_client
             client = get_mongodb_client()
             if not client:
-                logger.debug(f"📊 [financial cache] MongoDB Client is unavailable")
+                logger.debug("📊 [financial cache] MongoDB Client is unavailable")
                 return None
 
             db = client.get_database('tradingagents')
@@ -2363,13 +2363,13 @@ def _add_financial_cache_methods():
         try:
             from tradingagents.config.runtime_settings import use_app_cache_enabled
             if not use_app_cache_enabled(False):
-                logger.debug(f"📊 [financial cache] App cache is not enabled, skip cache saving")
+                logger.debug("📊 [financial cache] App cache is not enabled, skip cache saving")
                 return
 
             from .cache.app_adapter import get_mongodb_client
             client = get_mongodb_client()
             if not client:
-                logger.debug(f"📊 [financial cache] MongoDB Client is unavailable")
+                logger.debug("📊 [financial cache] MongoDB Client is unavailable")
                 return
 
             db = client.get_database('tradingagents')

@@ -202,7 +202,7 @@ class UnifiedAnalysisService:
                     logger.info(f"🔍 [价格查询] 开始查询股票 {stock_code} 的价格...")
 
                     # Get the latest prices from market_quotes first
-                    logger.info(f"🔍 [Price inquiry] steps 1: Query from market_quotes...")
+                    logger.info("🔍 [Price inquiry] steps 1: Query from market_quotes...")
                     quote = db.market_quotes.find_one(
                         {"$or": [{"code": stock_code}, {"symbol": stock_code}]},
                         {"_id": 0, "close": 1, "trade_date": 1},
@@ -214,11 +214,11 @@ class UnifiedAnalysisService:
                         current_price = str(quote["close"])
                         logger.info(f"✅ [系统变量-数据库] 当前价格: ¥{current_price} (日期: {quote.get('trade_date', 'N/A')})")
                     else:
-                        logger.info(f"🔍 [Price inquiry] market_quotes No data found, try steps 2...")
+                        logger.info("🔍 [Price inquiry] market_quotes No data found, try steps 2...")
                         # For ETFs, try first etf_daily_quotes
                         from tradingagents.utils.stock_utils import StockUtils as _SU2
                         if _SU2.is_fund(stock_code):
-                            logger.info(f"🔍 [Price inquiry] steps 2a: ETF, Query from etf_daily_quotes...")
+                            logger.info("🔍 [Price inquiry] steps 2a: ETF, Query from etf_daily_quotes...")
                             etf_quote = db.etf_daily_quotes.find_one(
                                 {"$or": [{"code": stock_code}, {"symbol": stock_code}, {"ts_code": {"$regex": f"^{stock_code}"}}]},
                                 {"_id": 0, "close": 1, "trade_date": 1},
@@ -230,7 +230,7 @@ class UnifiedAnalysisService:
                                 logger.info(f"✅ [System variables - database] ETF current price: ¥{current_price}")
                         if current_price == "未知":
                             # Fallback to the current_price field of stock_basic_info
-                            logger.info(f"🔍 [Price inquiry] steps 2b: Query from stock_basic_info...")
+                            logger.info("🔍 [Price inquiry] steps 2b: Query from stock_basic_info...")
                             stock_info = db.stock_basic_info.find_one(
                                 {"$or": [{"code": stock_code}, {"symbol": stock_code}]},
                                 {"_id": 0, "current_price": 1}
@@ -291,9 +291,9 @@ class UnifiedAnalysisService:
             logger.info(f"   - current_price: {current_price}")
             logger.info(f"   - market_name: {market_name}")
             if system_vars.get("industry_dimensions"):
-                logger.info(f"   - 🏭 Infused with industry analysis dimensions")
+                logger.info("   - 🏭 Infused with industry analysis dimensions")
             if system_vars.get("stock_dimensions"):
-                logger.info(f"   - 📊 Injected into individual stock analysis dimension")
+                logger.info("   - 📊 Injected into individual stock analysis dimension")
 
         except Exception as e:
             logger.error(f"❌ 准备系统变量失败: {e}")
@@ -1256,7 +1256,7 @@ class UnifiedAnalysisService:
         logger.info(f"📊 [Position analysis service] Use user risk preferences: {preference_type}")
 
         # Create unified analysis tasks
-        logger.info(f"🔄 [Position analysis service] Create a UnifiedAnalysisTask object...")
+        logger.info("🔄 [Position analysis service] Create a UnifiedAnalysisTask object...")
         task = UnifiedAnalysisTask(
             task_id=task_id,
             user_id=ObjectId(user_id),
@@ -1273,7 +1273,7 @@ class UnifiedAnalysisService:
         )
 
         # Save to database
-        logger.info(f"💾 [Position analysis service] Prepare to save to database...")
+        logger.info("💾 [Position analysis service] Prepare to save to database...")
         try:
             db = get_mongo_db()
             task_dict = task.model_dump(by_alias=True, exclude={"id"})
@@ -1293,7 +1293,7 @@ class UnifiedAnalysisService:
             raise
 
         # Save to memory state manager
-        logger.info(f"💾 [Position analysis service] Prepare to save to memory state manager...")
+        logger.info("💾 [Position analysis service] Prepare to save to memory state manager...")
         memory_manager = get_memory_state_manager()
         await memory_manager.create_task(
             task_id=task_id,
@@ -1302,9 +1302,9 @@ class UnifiedAnalysisService:
             stock_name=f"{code} 持仓分析",
             parameters=task_params,
         )
-        logger.info(f"✅ [Position analysis service] Saved to memory state manager")
+        logger.info("✅ [Position analysis service] Saved to memory state manager")
 
-        logger.info(f"🎉 [Position analysis service] The task is created and results are ready to be returned.")
+        logger.info("🎉 [Position analysis service] The task is created and results are ready to be returned.")
         return {
             "task_id": task_id,
             "code": code,
@@ -1516,7 +1516,7 @@ class UnifiedAnalysisService:
         Returns:
             Task information dictionary {"task_id": "...", "status": "pending"}
         """
-        logger.info(f"🔧 [Transaction review service] create_trade_review_task called")
+        logger.info("🔧 [Transaction review service] create_trade_review_task called")
         logger.info(f"   📋 user_id: {user_id}")
         logger.info(f"   📋 code: {request.code}")
         logger.info(f"   📋 trade_ids: {request.trade_ids}")
@@ -1571,7 +1571,7 @@ class UnifiedAnalysisService:
         logger.info(f"📦 [Transaction review service] Task parameters: {task_params}")
 
         # Create unified analysis tasks
-        logger.info(f"🔄 [Transaction review service] Create a UnifiedAnalysisTask object...")
+        logger.info("🔄 [Transaction review service] Create a UnifiedAnalysisTask object...")
         task = UnifiedAnalysisTask(
             task_id=task_id,
             user_id=ObjectId(user_id),
@@ -1581,23 +1581,23 @@ class UnifiedAnalysisService:
             status=AnalysisStatus.PENDING,
             created_at=now_tz(),
         )
-        logger.info(f"✅ [Transaction review service] UnifiedAnalysisTask Object created successfully")
+        logger.info("✅ [Transaction review service] UnifiedAnalysisTask Object created successfully")
         logger.info(f"   📋 task_type: {task.task_type}")
         logger.info(f"   📋 engine_type: {task.engine_type}")
         logger.info(f"   📋 status: {task.status}")
 
         # Save to database
-        logger.info(f"💾 [Transaction review service] Prepare to save to database...")
+        logger.info("💾 [Transaction review service] Prepare to save to database...")
         try:
             db = get_mongo_db()
-            logger.info(f"✅ [Transaction review service] Obtain database connection successfully")
+            logger.info("✅ [Transaction review service] Obtain database connection successfully")
 
             task_dict = task.model_dump(by_alias=True, exclude={"id"})
             logger.info(f"📦 [Transaction review service] task dictionary: {list(task_dict.keys())}")
 
             # Make sure user_id is of type ObjectId
             if 'user_id' in task_dict and isinstance(task_dict['user_id'], str):
-                logger.info(f"🔄 [Transaction review service] Convert user_id to ObjectId")
+                logger.info("🔄 [Transaction review service] Convert user_id to ObjectId")
                 task_dict['user_id'] = ObjectId(task_dict['user_id'])
 
             await db.unified_analysis_tasks.insert_one(task_dict)
@@ -1607,10 +1607,10 @@ class UnifiedAnalysisService:
             raise
 
         # Save to memory state manager
-        logger.info(f"💾 [Transaction review service] Prepare to save to memory state manager...")
+        logger.info("💾 [Transaction review service] Prepare to save to memory state manager...")
         try:
             memory_manager = get_memory_state_manager()
-            logger.info(f"✅ [Transaction review service] Obtain memory status manager successfully")
+            logger.info("✅ [Transaction review service] Obtain memory status manager successfully")
 
             await memory_manager.create_task(
                 task_id=task_id,
@@ -1630,7 +1630,7 @@ class UnifiedAnalysisService:
             "message": "The transaction review task has been created and is expected to take 1-3 minutes.",
             "created_at": task.created_at.isoformat()
         }
-        logger.info(f"🎉 [Transaction review service] create_trade_review_task Complete")
+        logger.info("🎉 [Transaction review service] create_trade_review_task Complete")
         logger.info(f"   📋 返回结果: {result}")
 
         return result
@@ -1655,7 +1655,7 @@ class UnifiedAnalysisService:
         Returns:
             Analysis result dictionary
         """
-        logger.info(f"🚀 [Transaction review service] execute_trade_review called")
+        logger.info("🚀 [Transaction review service] execute_trade_review called")
         logger.info(f"   📋 task_id: {task_id}")
         logger.info(f"   📋 user_id: {user_id}")
         logger.info(f"   📋 trade_ids: {request.trade_ids}")
@@ -1666,13 +1666,13 @@ class UnifiedAnalysisService:
 
         try:
             # Update task status to Processing
-            logger.info(f"🔄 [Transaction review service] Update task status to PROCESSING...")
+            logger.info("🔄 [Transaction review service] Update task status to PROCESSING...")
             await self._update_trade_review_task_status(
                 task_id=task_id,
                 status=AnalysisStatus.PROCESSING,
                 message="正在进行交易复盘..."
             )
-            logger.info(f"✅ [Transaction review service] The task status has been updated to PROCESSING")
+            logger.info("✅ [Transaction review service] The task status has been updated to PROCESSING")
 
             # 🔥 Create a wrapped progress callback: save progress to database and memory
             from app.services.memory_state_manager import get_memory_state_manager, TaskStatus
@@ -1715,22 +1715,22 @@ class UnifiedAnalysisService:
                         progress_callback(progress, message, **kwargs)
 
             # Call existing review service
-            logger.info(f"🔄 [Transaction review service] Get TradeReviewService instance...")
+            logger.info("🔄 [Transaction review service] Get TradeReviewService instance...")
             from app.services.trade_review_service import get_trade_review_service
 
             trade_review_service = get_trade_review_service()
-            logger.info(f"✅ [Transaction review service] TradeReviewService Instance obtained successfully")
+            logger.info("✅ [Transaction review service] TradeReviewService Instance obtained successfully")
 
             # Perform review (using existing logic)
-            logger.info(f"🔄 [Transaction review service] call TradeReviewService.create_trade_review()...")
-            logger.info(f"   📋 This will use existing review logic (including the workflow engine)")
+            logger.info("🔄 [Transaction review service] call TradeReviewService.create_trade_review()...")
+            logger.info("   📋 This will use existing review logic (including the workflow engine)")
 
             report = await trade_review_service.create_trade_review(
                 user_id=user_id,
                 request=request,
                 progress_callback=wrapped_progress_callback  # 🔥 Pass progress callback
             )
-            logger.info(f"✅ [Transaction review service] TradeReviewService.create_trade_review() Executed successfully")
+            logger.info("✅ [Transaction review service] TradeReviewService.create_trade_review() Executed successfully")
             logger.info(f"   📋 review_id: {report.review_id}")
             logger.info(f"   📋 status: {report.status}")
             logger.info(f"   📋 code: {report.trade_info.code}")
@@ -1738,7 +1738,7 @@ class UnifiedAnalysisService:
             logger.info(f"   📋 execution_time: {report.execution_time}s")
 
             # Format results
-            logger.info(f"🔄 [Transaction review service] Format results...")
+            logger.info("🔄 [Transaction review service] Format results...")
             result = {
                 "success": True,
                 "task_id": task_id,
@@ -1751,10 +1751,10 @@ class UnifiedAnalysisService:
                 "status": report.status.value,
                 "execution_time": report.execution_time
             }
-            logger.info(f"✅ [Transaction review service] Result formatting completed")
+            logger.info("✅ [Transaction review service] Result formatting completed")
 
             # Update task status to complete
-            logger.info(f"🔄 [Transaction review service] Update task status to COMPLETED...")
+            logger.info("🔄 [Transaction review service] Update task status to COMPLETED...")
             # 🔑 Pass execution_time to avoid recalculation
             await self._update_trade_review_task_status(
                 task_id=task_id,
@@ -1763,7 +1763,7 @@ class UnifiedAnalysisService:
                 message="复盘完成",
                 execution_time=report.execution_time  # 🔑 Use report in execution_time
             )
-            logger.info(f"✅ [Transaction review service] The task status has been updated to COMPLETED")
+            logger.info("✅ [Transaction review service] The task status has been updated to COMPLETED")
 
             logger.info(f"🎉 [Transaction review service] Task execution successful: {task_id}")
             logger.info(f"   📋 总耗时: {report.execution_time}s")
@@ -1774,17 +1774,17 @@ class UnifiedAnalysisService:
             logger.error(f"❌ [Transaction review service] Task execution failed: {task_id}")
             logger.error(f"   📋 错误类型: {type(e).__name__}")
             logger.error(f"   📋 错误信息: {str(e)}")
-            logger.error(f"   📋 详细堆栈:", exc_info=True)
+            logger.error("   📋 详细堆栈:", exc_info=True)
 
             # Update task status is failed
-            logger.info(f"🔄 [Transaction review service] Update task status to FAILED...")
+            logger.info("🔄 [Transaction review service] Update task status to FAILED...")
             await self._update_trade_review_task_status(
                 task_id=task_id,
                 status=AnalysisStatus.FAILED,
                 error_message=str(e),
                 message=f"复盘失败: {str(e)}"
             )
-            logger.info(f"✅ [Transaction review service] The task status has been updated to FAILED")
+            logger.info("✅ [Transaction review service] The task status has been updated to FAILED")
 
             # Return wrong result
             error_result = {
@@ -1809,7 +1809,7 @@ class UnifiedAnalysisService:
 
         Reference:_update_position_task_status() realization
         """
-        logger.info(f"🔄 [Transaction review service] _update_trade_review_task_status called")
+        logger.info("🔄 [Transaction review service] _update_trade_review_task_status called")
         logger.info(f"   📋 task_id: {task_id}")
         logger.info(f"   📋 status: {status}")
         logger.info(f"   📋 message: {message}")
@@ -1820,9 +1820,9 @@ class UnifiedAnalysisService:
 
         try:
             # Update database
-            logger.info(f"💾 [Transaction review service] Prepare to update the database...")
+            logger.info("💾 [Transaction review service] Prepare to update the database...")
             db = get_mongo_db()
-            logger.info(f"✅ [Transaction review service] Obtain database connection successfully")
+            logger.info("✅ [Transaction review service] Obtain database connection successfully")
 
             update_data = {
                 "status": status.value if hasattr(status, "value") else status,
@@ -1862,12 +1862,12 @@ class UnifiedAnalysisService:
                         update_data["execution_time"] = calculated_time
                         logger.info(f"   📋 Calculate execution_time: {calculated_time:.2f}s (started_at: {started_at}, completed_at: {completed_at})")
                     else:
-                        logger.warning(f"   ⚠️ Unable to calculate execution_time: started_at does not exist")
+                        logger.warning("   ⚠️ Unable to calculate execution_time: started_at does not exist")
                 
                 # 🔑 Make sure progress is 100 (if completed)
                 if status == AnalysisStatus.COMPLETED:
                     update_data["progress"] = 100
-                    logger.info(f"   📋 settings progress: 100")
+                    logger.info("   📋 settings progress: 100")
 
             if result is not None:
                 update_data["result"] = result
@@ -1877,17 +1877,17 @@ class UnifiedAnalysisService:
                 update_data["error_message"] = error_message
                 logger.info(f"   📋 settings error_message: {error_message}")
 
-            logger.info(f"🔄 [Transaction review service] Perform database updates...")
+            logger.info("🔄 [Transaction review service] Perform database updates...")
             await db.unified_analysis_tasks.update_one(
                 {"task_id": task_id},
                 {"$set": update_data}
             )
-            logger.info(f"✅ [Transaction review service] Database update successful")
+            logger.info("✅ [Transaction review service] Database update successful")
 
             # Update memory status
-            logger.info(f"💾 [Transaction review service] Prepare to update memory status...")
+            logger.info("💾 [Transaction review service] Prepare to update memory status...")
             memory_manager = get_memory_state_manager()
-            logger.info(f"✅ [Transaction review service] Obtain memory status manager successfully")
+            logger.info("✅ [Transaction review service] Obtain memory status manager successfully")
 
             memory_status = TaskStatus.RUNNING if status == AnalysisStatus.PROCESSING else (
                 TaskStatus.COMPLETED if status == AnalysisStatus.COMPLETED else TaskStatus.FAILED
@@ -1895,15 +1895,15 @@ class UnifiedAnalysisService:
             logger.info(f"   📋 内存状态: {memory_status}")
 
             if status == AnalysisStatus.PROCESSING:
-                logger.info(f"🔄 [Transaction review service] Update the memory status to RUNNING...")
+                logger.info("🔄 [Transaction review service] Update the memory status to RUNNING...")
                 await memory_manager.update_task_status(
                     task_id=task_id,
                     status=memory_status,
                     message=message or "处理中...",
                 )
-                logger.info(f"✅ [Transaction review service] The memory status has been updated to RUNNING")
+                logger.info("✅ [Transaction review service] The memory status has been updated to RUNNING")
             elif status == AnalysisStatus.COMPLETED:
-                logger.info(f"🔄 [Transaction review service] Complete the task...")
+                logger.info("🔄 [Transaction review service] Complete the task...")
                 await memory_manager.update_task_status(
                     task_id=task_id,
                     status=memory_status,
@@ -1911,9 +1911,9 @@ class UnifiedAnalysisService:
                     message=message or "分析完成",
                     result_data=result
                 )
-                logger.info(f"✅ [Transaction review service] Task marked as complete")
+                logger.info("✅ [Transaction review service] Task marked as complete")
             elif status == AnalysisStatus.FAILED:
-                logger.info(f"🔄 [Transaction review service] Mark task failed...")
+                logger.info("🔄 [Transaction review service] Mark task failed...")
                 await memory_manager.update_task_status(
                     task_id=task_id,
                     status=memory_status,
@@ -1921,16 +1921,16 @@ class UnifiedAnalysisService:
                     message=message or "分析失败",
                     error_message=error_message or "未知错误"
                 )
-                logger.info(f"✅ [Transaction review service] Task marked as failed")
+                logger.info("✅ [Transaction review service] Task marked as failed")
 
-            logger.info(f"🎉 [Transaction review service] _update_trade_review_task_status Complete")
+            logger.info("🎉 [Transaction review service] _update_trade_review_task_status Complete")
 
         except Exception as e:
-            logger.error(f"❌ [Transaction review service] Failed to update task status")
+            logger.error("❌ [Transaction review service] Failed to update task status")
             logger.error(f"   📋 task_id: {task_id}")
             logger.error(f"   📋 错误类型: {type(e).__name__}")
             logger.error(f"   📋 错误信息: {str(e)}")
-            logger.error(f"   📋 详细堆栈:", exc_info=True)
+            logger.error("   📋 详细堆栈:", exc_info=True)
 
     async def _update_task_failed(self, task_id: str, error_message: str):
         """更新任务状态为失败"""

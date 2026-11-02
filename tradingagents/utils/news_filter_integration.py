@@ -51,7 +51,7 @@ def integrate_news_filtering(original_get_stock_news_em):
             
             # If filtering is not enabled, the original data will be returned directly.
             if not enable_filter:
-                logger.info(f"[News filter integration] Filtering disabled, return raw news data")
+                logger.info("[News filter integration] Filtering disabled, return raw news data")
                 return news_df
             
             # Enable news filtering
@@ -78,7 +78,7 @@ def integrate_news_filtering(original_get_stock_news_em):
                 filtered_count = len(filtered_df)
                 filter_rate = (original_count - filtered_count) / original_count * 100 if original_count > 0 else 0
                 
-                logger.info(f"[News filter integration] News filtering completed:")
+                logger.info("[News filter integration] News filtering completed:")
                 logger.info(f"  - original news: {original_count}Article")
                 logger.info(f"  - filtered news: {filtered_count}Article")
                 logger.info(f"  - Filtration rate: {filter_rate:.1f}%")
@@ -94,7 +94,7 @@ def integrate_news_filtering(original_get_stock_news_em):
                 
             except Exception as filter_error:
                 logger.error(f"[News filter integration] News filtering failed: {filter_error}")
-                logger.error(f"[News filter integration] Return original news data as backup")
+                logger.error("[News filter integration] Return original news data as backup")
                 return news_df
                 
         except Exception as fetch_error:
@@ -142,14 +142,14 @@ def create_filtered_realtime_news_function():
             original_report = get_realtime_stock_news(ticker, curr_date, hours_back)
             
             if not enable_filter:
-                logger.info(f"[Enhance real-time news] Filtering disabled, return to original report")
+                logger.info("[Enhance real-time news] Filtering disabled, return to original report")
                 return original_report
             
             # If filtering is enabled and it is an A-share, try to obtain and filter again.
             if any(suffix in ticker for suffix in ['.SH', '.SZ', '.SS', '.XSHE', '.XSHG']) or \
-               (not '.' in ticker and ticker.isdigit()):
+               ('.' not in ticker and ticker.isdigit()):
                 
-                logger.info(f"[Enhance real-time news] A-share code detected, try to use the filtered version of Oriental Fortune News")
+                logger.info("[Enhance real-time news] A-share code detected, try to use the filtered version of Oriental Fortune News")
                 
                 try:
                     # NOTE: akshare_utils is deprecated, use AKShareProvider instead
@@ -164,14 +164,14 @@ def create_filtered_realtime_news_function():
                     # TODO: Need to implement get_stock_news method
                     # original_news_df = provider.get_stock_news(clean_ticker)
                     # Skip for now and return to original report
-                    logger.warning(f"[Enhance real-time news] AKShare The news function has not been implemented yet, return to the original report")
+                    logger.warning("[Enhance real-time news] AKShare The news function has not been implemented yet, return to the original report")
                     return original_report
                         
                 except Exception as filter_error:
                     logger.error(f"[Enhance real-time news] News filtering failed: {filter_error}")
                     return original_report
             else:
-                logger.info(f"[Enhance real-time news] Non-A share code, return to original report")
+                logger.info("[Enhance real-time news] Non-A share code, return to original report")
                 return original_report
                 
         except Exception as e:

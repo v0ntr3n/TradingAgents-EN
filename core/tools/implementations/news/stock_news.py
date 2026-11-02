@@ -1808,7 +1808,7 @@ def get_stock_news_unified(
         footer_note = ""
 
         if is_china:
-            logger.info(f"🇨🇳 [unified news tool] Handle A-share news...")
+            logger.info("🇨🇳 [unified news tool] Handle A-share news...")
 
             clean_ticker = _normalize_a_share_symbol(ticker)
             company_name = _get_company_name(clean_ticker)
@@ -1899,7 +1899,7 @@ def get_stock_news_unified(
 
         elif is_hk:
             # Hong Kong stocks: Use Google News
-            logger.info(f"🇭🇰 [unified news tool] Handle Hong Kong stock news...")
+            logger.info("🇭🇰 [unified news tool] Handle Hong Kong stock news...")
 
             try:
                 search_query = f"{ticker} 港股"
@@ -1913,11 +1913,11 @@ def get_stock_news_unified(
                         news_data = future.result(timeout=30.0)  # Wait up to 30 seconds
                         if news_data:
                             result_data.append(f"## Google新闻\n{news_data}")
-                            logger.info(f"✅ Successfully obtained Google News")
+                            logger.info("✅ Successfully obtained Google News")
                         else:
-                            logger.warning(f"⚠️ Google News returns empty results")
+                            logger.warning("⚠️ Google News returns empty results")
                     except FutureTimeoutError:
-                        logger.warning(f"⚠️ Google News fetch timeout (30 seconds), skipping Google News to avoid blocking the process")
+                        logger.warning("⚠️ Google News fetch timeout (30 seconds), skipping Google News to avoid blocking the process")
                     except Exception as e:
                         logger.error(f"❌ Google Failed to get news: {e}")
             except Exception as google_e:
@@ -1925,7 +1925,7 @@ def get_stock_news_unified(
 
         elif is_us:
             # US stocks: Use Finnhub News and Google News
-            logger.info(f"🇺🇸 [unified news tool] Handle US stock news...")
+            logger.info("🇺🇸 [unified news tool] Handle US stock news...")
 
             # 1. Get Finnhub News
             try:
@@ -1950,11 +1950,11 @@ def get_stock_news_unified(
                         news_data = future.result(timeout=30.0)  # Wait up to 30 seconds
                         if news_data:
                             result_data.append(f"## Google新闻\n{news_data}")
-                            logger.info(f"✅ Successfully obtained Google News")
+                            logger.info("✅ Successfully obtained Google News")
                         else:
-                            logger.warning(f"⚠️ Google News returns empty results")
+                            logger.warning("⚠️ Google News returns empty results")
                     except FutureTimeoutError:
-                        logger.warning(f"⚠️ Google News fetch timeout (30 seconds), skipping Google News to avoid blocking the process")
+                        logger.warning("⚠️ Google News fetch timeout (30 seconds), skipping Google News to avoid blocking the process")
                     except Exception as e:
                         logger.error(f"❌ Google Failed to get news: {e}")
             except Exception as google_e:

@@ -92,11 +92,11 @@ class DataSourceManager:
             from .cache import get_cache
             self.cache_manager = get_cache()
             self.cache_enabled = True
-            logger.info(f"✅ 统一缓存管理器已启用")
+            logger.info("✅ 统一缓存管理器已启用")
         except Exception as e:
             logger.warning(f"⚠️ Unified Cache Manager initialization failed: {e}")
 
-        logger.info(f"📊 Data source manager initialization completed")
+        logger.info("📊 Data source manager initialization completed")
         logger.info(f"   MongoDB缓存: {'✅ 已启用' if self.use_mongodb_cache else '❌ 未启用'}")
         logger.info(f"   统一缓存: {'✅ 已启用' if self.cache_enabled else '❌ 未启用'}")
         logger.info(f"   默认数据源: {self.default_source.value}")
@@ -559,9 +559,9 @@ class DataSourceManager:
             try:
                 import baostock as bs
                 available.append(ChinaDataSource.BAOSTOCK)
-                logger.info(f"✅ BaoStock Data source is available and enabled")
+                logger.info("✅ BaoStock Data source is available and enabled")
             except ImportError:
-                logger.warning(f"⚠️ BaoStock Data source is not available: Library not installed")
+                logger.warning("⚠️ BaoStock Data source is not available: Library not installed")
         else:
             logger.info("ℹ️ BaoStock The data source has been disabled in the database")
 
@@ -841,7 +841,7 @@ class DataSourceManager:
             data['boll_upper'] = data['boll_mid'] + 2 * std
             data['boll_lower'] = data['boll_mid'] - 2 * std
 
-            logger.info(f"✅ [Technical indicators] Technical indicator calculation completed")
+            logger.info("✅ [Technical indicators] Technical indicator calculation completed")
 
             # 🔧 Only retain the last 3-5 days of data for display (reduce token consumption)
             display_rows = min(5, len(data))
@@ -926,7 +926,7 @@ class DataSourceManager:
                 logger.info(f"   RSI14: {row.get('rsi14', 0):.2f} (国际标准)")
                 logger.info(f"   BOLL: 上={row.get('boll_upper', 0):.2f}, 中={row.get('boll_mid', 0):.2f}, 下={row.get('boll_lower', 0):.2f}")
 
-            logger.info(f"🔍 [Technical indicator details] ===== end of data details =====")
+            logger.info("🔍 [Technical indicator details] ===== end of data details =====")
 
             # Calculate the latest price and percentage change
             latest_price = latest_data.get('close', 0)
@@ -951,7 +951,7 @@ class DataSourceManager:
             result += f"📈 涨跌额: {change:+.2f} ({change_pct:+.2f}%)\n\n"
 
             # Add technical indicators
-            result += f"📊 moving average (MA):\n"
+            result += "📊 moving average (MA):\n"
             result += f"   MA5:  ¥{latest_data['ma5']:.2f}"
             if latest_price > latest_data['ma5']:
                 result += " (价格在MA5上方 ↑)\n"
@@ -976,7 +976,7 @@ class DataSourceManager:
             else:
                 result += " (Price is below MA60 ↓)\n\n"
 
-            result += f"📐 Moving average direction conclusion (deterministic calculation on tool end):\n"
+            result += "📐 Moving average direction conclusion (deterministic calculation on tool end):\n"
             for ma_name, ma_result in ma_conclusions.items():
                 ma_label = ma_name.upper()
                 if ma_result['slope_abs'] is not None:
@@ -1006,7 +1006,7 @@ class DataSourceManager:
             result += "\n"
 
             # MACD indicator
-            result += f"📈 MACD指标:\n"
+            result += "📈 MACD指标:\n"
             result += f"   DIF:  {latest_data['macd_dif']:.3f}\n"
             result += f"   DEA:  {latest_data['macd_dea']:.3f}\n"
             result += f"   MACD: {latest_data['macd']:.3f}"
@@ -1063,7 +1063,7 @@ class DataSourceManager:
             rsi6 = latest_data['rsi6']
             rsi12 = latest_data['rsi12']
             rsi24 = latest_data['rsi24']
-            result += f"📉 RSI indicator (Flush style):\n"
+            result += "📉 RSI indicator (Flush style):\n"
             result += f"   RSI6:  {rsi6:.2f}"
             if rsi6 >= 80:
                 result += " (超买 ⚠️)\n"
@@ -1097,7 +1097,7 @@ class DataSourceManager:
                 result += "   趋势: 震荡整理 ↔\n\n"
 
             # Bollinger Bands
-            result += f"📊 Bollinger Bands (BOLL):\n"
+            result += "📊 Bollinger Bands (BOLL):\n"
             result += f"   上轨: ¥{latest_data['boll_upper']:.2f}\n"
             result += f"   中轨: ¥{latest_data['boll_mid']:.2f}\n"
             result += f"   下轨: ¥{latest_data['boll_lower']:.2f}\n"
@@ -1422,7 +1422,7 @@ class DataSourceManager:
                 # Call a unified formatting method (including technical indicator calculation)
                 result = self._format_stock_data_response(df, symbol, stock_name, start_date, end_date)
 
-                logger.info(f"✅ [MongoDB] Calculated technical indicators: MA5/10/20/60, MACD, RSI, BOLL")
+                logger.info("✅ [MongoDB] Calculated technical indicators: MA5/10/20/60, MACD, RSI, BOLL")
                 return result, "mongodb"
             else:
                 # MongoDB No data (detailed data source information has been recorded internally in the adapter), downgrade to other data sources
@@ -1538,7 +1538,7 @@ class DataSourceManager:
             # Call a unified formatting method (including technical indicator calculation)
             result = self._format_stock_data_response(df, code6, stock_name, start_date, end_date)
 
-            logger.info(f"✅ [LOCAL] Calculated technical indicators: MA5/10/20/60, MACD, RSI, BOLL")
+            logger.info("✅ [LOCAL] Calculated technical indicators: MA5/10/20/60, MACD, RSI, BOLL")
             return result
 
         except Exception as e:
@@ -1553,7 +1553,7 @@ class DataSourceManager:
         logger.info(f"🔍 [股票代码追踪] _get_tushare_data 接收到的股票代码: '{symbol}' (类型: {type(symbol)})")
         logger.info(f"🔍 [Stock symbol tracking] Stock symbol length: {len(str(symbol))}")
         logger.info(f"🔍 [Stock symbol tracking] ticker character: {list(str(symbol))}")
-        logger.info(f"🔍 [DataSourceManager Detailed log] _get_tushare_data Start execution")
+        logger.info("🔍 [DataSourceManager Detailed log] _get_tushare_data Start execution")
         logger.info(f"🔍 [DataSourceManager Detailed log] Current data source: {self.current_source.value}")
 
         start_time = time.time()
@@ -1586,11 +1586,11 @@ class DataSourceManager:
 
             # 2. Cache miss, obtained from provider
             logger.info(f"🔍 [Stock symbol tracking] Call tushare_provider, passing in parameters: symbol='{symbol}'")
-            logger.info(f"🔍 [DataSourceManager Detailed log] Start calling tushare_provider...")
+            logger.info("🔍 [DataSourceManager Detailed log] Start calling tushare_provider...")
 
             provider = self._get_tushare_adapter()
             if not provider:
-                return f"❌ Tushare Provider is unavailable"
+                return "❌ Tushare Provider is unavailable"
 
             # Use asynchronous methods to obtain historical data
             import asyncio
@@ -1673,7 +1673,7 @@ class DataSourceManager:
                 result = self._format_stock_data_response(data, symbol, stock_name, start_date, end_date)
 
                 logger.debug(f"📊 [AKShare] 调用成功: 耗时={duration:.2f}s, 数据条数={len(data)}, 结果长度={len(result)}")
-                logger.info(f"✅ [AKShare] Calculated technical indicators: MA5/10/20/60, MACD, RSI, BOLL")
+                logger.info("✅ [AKShare] Calculated technical indicators: MA5/10/20/60, MACD, RSI, BOLL")
                 return result
             else:
                 result = f"❌ 未能获取{symbol}的股票数据"
@@ -1714,7 +1714,7 @@ class DataSourceManager:
             # Call a unified formatting method (including technical indicator calculation)
             result = self._format_stock_data_response(data, symbol, stock_name, start_date, end_date)
 
-            logger.info(f"✅ [BaoStock] Calculated technical indicators: MA5/10/20/60, MACD, RSI, BOLL")
+            logger.info("✅ [BaoStock] Calculated technical indicators: MA5/10/20/60, MACD, RSI, BOLL")
             return result
         else:
             return f"❌ 未能获取{symbol}的股票数据"
@@ -2315,8 +2315,8 @@ class DataSourceManager:
 
     def _get_tushare_fundamentals(self, symbol: str) -> str:
         """Get fundamental data from Tushare - temporarily unavailable, needs to be implemented"""
-        logger.warning(f"⚠️ Tushare Fundamental data function is temporarily unavailable")
-        return f"⚠️ Tushare Fundamental data function is temporarily unavailable, please use other data sources"
+        logger.warning("⚠️ Tushare Fundamental data function is temporarily unavailable")
+        return "⚠️ Tushare Fundamental data function is temporarily unavailable, please use other data sources"
 
     def _get_akshare_fundamentals(self, symbol: str) -> str:
         """Generate fundamental analysis from AKShare"""
@@ -2373,7 +2373,7 @@ class DataSourceManager:
 
             # Basic information
             report += f"📅 报告期: {latest.get('report_period', latest.get('end_date', '未知'))}\n"
-            report += f"📈 Data source: MongoDB financial database\n\n"
+            report += "📈 Data source: MongoDB financial database\n\n"
 
             # financial indicators
             report += "💰 财务指标:\n"
@@ -2554,7 +2554,7 @@ class DataSourceManager:
         """Get news data from Tushare"""
         try:
             # Tushare The news function is temporarily unavailable and returns an empty list.
-            logger.warning(f"⚠️ [Data source: Tushare] Tushare News function is temporarily unavailable")
+            logger.warning("⚠️ [Data source: Tushare] Tushare News function is temporarily unavailable")
             return []
 
         except Exception as e:
@@ -2565,7 +2565,7 @@ class DataSourceManager:
         """Get news data from AKShare"""
         try:
             # AKShare The news function is temporarily unavailable and returns an empty list.
-            logger.warning(f"⚠️ [Data source: AKShare] AKShare News function is temporarily unavailable")
+            logger.warning("⚠️ [Data source: AKShare] AKShare News function is temporarily unavailable")
             return []
 
         except Exception as e:
@@ -2651,7 +2651,7 @@ def get_china_stock_data_unified(symbol: str, start_date: str, end_date: str) ->
         if len(data_lines) > 0:
             logger.info(f"🔍 [股票代码追踪] 数据行示例: 第1行='{data_lines[0][:100]}', 最后1行='{data_lines[-1][:100]}'")
     else:
-        logger.info(f"🔍 [Stock symbol tracking] Return results: None")
+        logger.info("🔍 [Stock symbol tracking] Return results: None")
     return result
 
 
@@ -2717,7 +2717,7 @@ class USDataSourceManager:
         self.default_source = self._get_default_source()
         self.current_source = self.default_source
 
-        logger.info(f"📊 US stock data source manager initialization completed")
+        logger.info("📊 US stock data source manager initialization completed")
         logger.info(f"   MongoDB缓存: {'✅ 已启用' if self.use_mongodb_cache else '❌ 未启用'}")
         logger.info(f"   默认数据源: {self.default_source.value}")
         logger.info(f"   可用数据源: {[s.value for s in self.available_sources]}")

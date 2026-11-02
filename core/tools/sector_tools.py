@@ -263,7 +263,7 @@ async def get_sector_performance(
         end_date_str = trade_date_clean
         
         report_lines = [
-            f"📊 板块表现分析报告",
+            "📊 板块表现分析报告",
             f"{'='*50}",
             f"🎯 目标股票: {ticker}",
             f"🏭 所属行业: {industry}",
@@ -373,7 +373,7 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
             period_label = trade_date_fmt
 
         report_lines = [
-            f"🔄 Sector capital flow and rotation analysis",
+            "🔄 Sector capital flow and rotation analysis",
             f"{'='*50}",
             f"📅 分析周期: {period_label}",
             f"📊 模式: {'累计聚合' if is_multi_day else '单日快照'}",
@@ -602,7 +602,7 @@ async def get_peer_comparison(
         )
 
         report_lines = [
-            f"📊 同业对比分析报告",
+            "📊 同业对比分析报告",
             f"{'='*50}",
             f"🎯 目标股票: {ticker}",
             f"🏭 所属行业: {industry}",
@@ -665,12 +665,12 @@ async def get_peer_comparison(
         if pd.notna(pe_median):
             report_lines.append(f"  • PE中位数: {pe_median:.2f} | PE均值: {pe_mean:.2f}")
         else:
-            report_lines.append(f"  • PE data: No valid data yet")
+            report_lines.append("  • PE data: No valid data yet")
 
         if pd.notna(pb_median):
             report_lines.append(f"  • PB中位数: {pb_median:.2f} | PB均值: {pb_mean:.2f}")
         else:
-            report_lines.append(f"  • PB data: No valid data yet")
+            report_lines.append("  • PB data: No valid data yet")
 
         # 7. The valuation position of the target stock in the industry
         if not target_row.empty:
@@ -689,7 +689,7 @@ async def get_peer_comparison(
                 else:
                     report_lines.append(f"  • PE估值: {target_pe:.2f}，接近行业中位数({pe_median:.1f})，估值合理")
             else:
-                report_lines.append(f"  • PE Valuation: Missing data (may be a loss or the data has not been updated)")
+                report_lines.append("  • PE Valuation: Missing data (may be a loss or the data has not been updated)")
 
             # Handle PB estimates (check if None or NaN)
             if pd.notna(target_pb) and pd.notna(pb_median):
@@ -700,7 +700,7 @@ async def get_peer_comparison(
                 else:
                     report_lines.append(f"  • PB估值: {target_pb:.2f}，接近行业中位数({pb_median:.1f})，估值合理")
             else:
-                report_lines.append(f"  • PB估值: 数据缺失")
+                report_lines.append("  • PB估值: 数据缺失")
 
         return "\n".join(report_lines)
 
@@ -1106,7 +1106,7 @@ async def get_sector_daily(
         )
 
         lines = [
-            f"📊 板块行情报告",
+            "📊 板块行情报告",
             f"{'='*50}",
             f"🏷️ 板块: {sector_display_name} ({sector_ts_code})",
             f"📅 截至: {trade_date}",
@@ -1182,7 +1182,7 @@ async def get_sector_constituents(
             return f"⚠️ 板块 {sector_display_name} 暂无成分股数据"
 
         lines = [
-            f"📋 板块成分股报告",
+            "📋 板块成分股报告",
             f"{'='*50}",
             f"🏷️ 板块: {sector_display_name} ({sector_ts_code})",
             f"📅 日期: {trade_date}",

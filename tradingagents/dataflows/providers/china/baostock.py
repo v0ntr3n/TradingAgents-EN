@@ -609,7 +609,7 @@ class BaoStockProvider(BaseStockDataProvider):
             if value is None:
                 return ""
             return str(value)
-        except:
+        except Exception:
             return ""
 
     async def get_historical_data(self, code: str, start_date: str, end_date: str,

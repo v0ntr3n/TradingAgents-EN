@@ -65,12 +65,12 @@ def get_stock_sentiment_unified(
 
         if is_china or is_hk:
             # China A-shares and Hong Kong stocks: give priority to social media data uploaded by users
-            logger.info(f"🇨🇳🇭🇰 [Unifying Emotion Tools] Dealing with Chinese market sentiment...")
+            logger.info("🇨🇳🇭🇰 [Unifying Emotion Tools] Dealing with Chinese market sentiment...")
 
             # 🔥 Prioritize query of social media data uploaded by users (using synchronization method)
             user_uploaded_data = None
             try:
-                logger.info(f"🔍 [Unifying Emotion Tools] Start querying social media data in the database...")
+                logger.info("🔍 [Unifying Emotion Tools] Start querying social media data in the database...")
                 from app.core.database import get_mongo_db_sync
                 
                 # Clean code suffix
@@ -242,7 +242,7 @@ def get_stock_sentiment_unified(
                 if user_uploaded_data:
                     logger.info(f"📰 [Unifying Emotion Tools] Insufficient data uploaded by user ({len(user_uploaded_data)}Article < 5 bars), using an alternate data source (news)...")
                 else:
-                    logger.info(f"📰 [Unifying Emotion Tools] The social media data uploaded by the user was not found (the database query returned 0 items or the query failed), and an alternate data source (news) was used....")
+                    logger.info("📰 [Unifying Emotion Tools] The social media data uploaded by the user was not found (the database query returned 0 items or the query failed), and an alternate data source (news) was used....")
                 try:
                     # Try using AKShareProvider to get news for sentiment analysis
                     from tradingagents.dataflows.providers.china.akshare import AKShareProvider
@@ -306,7 +306,7 @@ def get_stock_sentiment_unified(
                         result_data.append(news_summary)
                     else:
                         if not user_uploaded_data:
-                            result_data.append(f"## Chinese market sentiment\n There is currently no relevant data (it is recommended to upload social media data)")
+                            result_data.append("## Chinese market sentiment\n There is currently no relevant data (it is recommended to upload social media data)")
                             
                 except Exception as e:
                     logger.error(f"中文情绪分析失败: {e}")
@@ -315,7 +315,7 @@ def get_stock_sentiment_unified(
 
         else:
             # US Stocks: Using Reddit Sentiment Analysis
-            logger.info(f"🇺🇸 [Unifying Emotion Tools] Dealing with U.S. stock market sentiment...")
+            logger.info("🇺🇸 [Unifying Emotion Tools] Dealing with U.S. stock market sentiment...")
 
             try:
                 from tradingagents.dataflows.interface import get_reddit_sentiment

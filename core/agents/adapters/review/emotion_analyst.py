@@ -53,7 +53,7 @@ class EmotionAnalystAgent(BaseAgent):
         trade_info = state.get("trade_info", {})
         market_data = state.get("market_data", {})
 
-        logger.info(f"😤 [sentiment analyst] Start analyzing emotional control...")
+        logger.info("😤 [sentiment analyst] Start analyzing emotional control...")
         logger.info(f"   📋 stocks: {trade_info.get('code', 'N/A')}, Number of transactions: {len(trade_info.get('trades', []))}")
 
         # Build prompt words (support user preferences)
@@ -64,7 +64,7 @@ class EmotionAnalystAgent(BaseAgent):
 
         if self._llm:
             try:
-                logger.info(f"   🤖 Call LLM analysis...")
+                logger.info("   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
                 logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
@@ -73,10 +73,10 @@ class EmotionAnalystAgent(BaseAgent):
                 logger.error(f"   ❌ [sentiment analyst] LLM call failed: {e}")
                 analysis = f"Sentiment analysis failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM Not configured")
+            logger.warning("   ⚠️ LLM Not configured")
             analysis = "LLM Not configured, sentiment analysis cannot be performed"
 
-        logger.info(f"😤 [sentiment analyst] ✅ Analysis completed")
+        logger.info("😤 [sentiment analyst] ✅ Analysis completed")
 
         # Only the newly added fields are returned, not the entire state (to avoid concurrent update conflicts)
         return {

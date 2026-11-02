@@ -101,7 +101,7 @@ class DataPreparerV2(AnalystAgent):
         """
         super().__init__(llm=llm, config=config, **kwargs)
 
-        logger.debug(f"DataPreparerV2 Initialization completed")
+        logger.debug("DataPreparerV2 Initialization completed")
 
     def _build_system_prompt(self, state: Dict[str, Any]) -> str:
         """

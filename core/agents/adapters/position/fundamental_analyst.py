@@ -39,7 +39,7 @@ class FundamentalAnalystAgent(BaseAgent):
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Perform fundamental analysis"""
-        logger.info(f"📊 [fundamental analyst] Start analysis...")
+        logger.info("📊 [fundamental analyst] Start analysis...")
 
         position_info = state.get("position_info", {})
         stock_report = state.get("stock_analysis_report", {})
@@ -53,7 +53,7 @@ class FundamentalAnalystAgent(BaseAgent):
 
         if self._llm:
             try:
-                logger.info(f"   🤖 Call LLM analysis...")
+                logger.info("   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
                 logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
@@ -61,10 +61,10 @@ class FundamentalAnalystAgent(BaseAgent):
                 logger.error(f"   ❌ LLM call failed: {e}")
                 analysis = f"Fundamental analysis failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM Not configured")
+            logger.warning("   ⚠️ LLM Not configured")
             analysis = "LLM Not configured, fundamental analysis is not possible"
 
-        logger.info(f"📊 [fundamental analyst] ✅ Analysis completed")
+        logger.info("📊 [fundamental analyst] ✅ Analysis completed")
         return {"fundamental_analysis": analysis}
     
     def _build_prompt(self, position_info: Dict, stock_report: Dict,
@@ -111,8 +111,8 @@ Please answer in concise and professional language."""
             fallback_prompt=fallback_prompt
         )
         if prompt:
-            logger.info(f"✅ [fundamental analyst] Successfully obtained the prompt word from the template system")
+            logger.info("✅ [fundamental analyst] Successfully obtained the prompt word from the template system")
             return prompt
-        logger.warning(f"⚠️ [fundamental analyst] The template system did not return the prompt word, use the downgrade prompt word")
+        logger.warning("⚠️ [fundamental analyst] The template system did not return the prompt word, use the downgrade prompt word")
         return fallback_prompt
 

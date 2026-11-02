@@ -100,7 +100,7 @@ class TushareProvider(BaseStockDataProvider):
                                 self.logger.info(f"✅ [DB Query] Token valid (length: {len(api_key)})")
                                 return api_key
                             else:
-                                self.logger.warning(f"⚠️ [DB Query] Token Invalid or a placeholder")
+                                self.logger.warning("⚠️ [DB Query] Token Invalid or a placeholder")
                 else:
                     self.logger.warning("⚠️ [DB Query] Not in configuration data_source_configs")
             else:
@@ -585,11 +585,11 @@ class TushareProvider(BaseStockDataProvider):
                     f"period={period}, start={start_str}, end={end_str}"
                 )
                 self.logger.warning(
-                    f"💡 Possible reasons: "
-                    f"1) There was no trading data for this stock during this period "
-                    f"2) Incorrect date range "
-                    f"3) Stock code format error "
-                    f"4) Tushare API Limit or insufficient points"
+                    "💡 Possible reasons: "
+                    "1) There was no trading data for this stock during this period "
+                    "2) Incorrect date range "
+                    "3) Stock code format error "
+                    "4) Tushare API Limit or insufficient points"
                 )
                 return None
 
@@ -1742,7 +1742,7 @@ class TushareProvider(BaseStockDataProvider):
                 return "annual"  # annual report
             else:
                 return "quarterly"  # quarterly report
-        except:
+        except Exception:
             return "quarterly"
 
     def _safe_float(self, value) -> Optional[float]:

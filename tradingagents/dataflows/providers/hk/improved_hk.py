@@ -620,7 +620,7 @@ def get_hk_stock_data_akshare(symbol: str, start_date: str = None, end_date: str
                     return default
                 try:
                     return f"{value:{format_str}}{suffix}"
-                except:
+                except Exception:
                     return default
 
             financial_section = f"""
@@ -759,10 +759,10 @@ async def get_hk_stock_info_akshare_async(symbol: str) -> Dict[str, Any]:
             try:
                 # Try to acquire an asynchronous lock, wait up to 10 seconds
                 await asyncio.wait_for(async_lock.acquire(), timeout=10.0)
-                logger.info(f"✅ [AKShare Asynchronous lock] Lock acquired")
+                logger.info("✅ [AKShare Asynchronous lock] Lock acquired")
             except asyncio.TimeoutError:
                 # Timeout, return error
-                logger.error(f"⏰ [AKShare Asynchronous lock] Timeout for acquiring lock (10 seconds), give up")
+                logger.error("⏰ [AKShare Asynchronous lock] Timeout for acquiring lock (10 seconds), give up")
                 raise Exception("AKShare API Call timeout (occupied by other tasks)")
 
             try:
@@ -789,7 +789,7 @@ async def get_hk_stock_info_akshare_async(symbol: str) -> Dict[str, Any]:
                         logger.info(f"✅ [AKShare缓存-异步] 已缓存 {len(df)} 只港股数据")
                 else:
                     # Cache is empty, first call (executed in thread pool)
-                    logger.info(f"🔄 [AKShare Caching-Async] Obtain Hong Kong stock data for the first time (executed in the thread pool)")
+                    logger.info("🔄 [AKShare Caching-Async] Obtain Hong Kong stock data for the first time (executed in the thread pool)")
                     df = await asyncio.wait_for(
                         asyncio.to_thread(ak.stock_hk_spot),
                         timeout=30.0  # 30 seconds timeout
@@ -801,7 +801,7 @@ async def get_hk_stock_info_akshare_async(symbol: str) -> Dict[str, Any]:
             finally:
                 # Release asynchronous lock
                 async_lock.release()
-                logger.info(f"🔓 [AKShare Asynchronous lock] Lock released")
+                logger.info("🔓 [AKShare Asynchronous lock] Lock released")
 
             # Find target stocks from cached data
             if df is not None and not df.empty:
@@ -815,7 +815,7 @@ async def get_hk_stock_info_akshare_async(symbol: str) -> Dict[str, Any]:
                             if value is None or value == '' or (isinstance(value, float) and value != value):  # NaN check
                                 return None
                             return float(value)
-                        except:
+                        except Exception:
                             return None
 
                     def safe_int(value):
@@ -823,7 +823,7 @@ async def get_hk_stock_info_akshare_async(symbol: str) -> Dict[str, Any]:
                             if value is None or value == '' or (isinstance(value, float) and value != value):  # NaN check
                                 return None
                             return int(value)
-                        except:
+                        except Exception:
                             return None
 
                     return {
@@ -950,7 +950,7 @@ def get_hk_stock_info_akshare(symbol: str) -> Dict[str, Any]:
                             if value is None or value == '' or (isinstance(value, float) and value != value):  # NaN check
                                 return None
                             return float(value)
-                        except:
+                        except Exception:
                             return None
 
                     def safe_int(value):
@@ -958,7 +958,7 @@ def get_hk_stock_info_akshare(symbol: str) -> Dict[str, Any]:
                             if value is None or value == '' or (isinstance(value, float) and value != value):  # NaN check
                                 return None
                             return int(value)
-                        except:
+                        except Exception:
                             return None
 
                     return {

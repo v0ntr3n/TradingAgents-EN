@@ -125,7 +125,7 @@ def get_china_market_overview(
 ---
 *数据来源: Tushare Pro*
 """
-        logger.info(f"✅ [China market overview] get success")
+        logger.info("✅ [China market overview] get success")
         return report
         
     except Exception as e:

@@ -29,7 +29,7 @@ def create_neutral_debator(llm):
         trader_decision = state.get("trader_investment_plan", "")
 
         # 📊 Record the length of all input data for performance analysis
-        logger.info(f"📊 [Neutral Analyst] Input data length statistics:")
+        logger.info("📊 [Neutral Analyst] Input data length statistics:")
         logger.info(f"  - market_report: {len(market_research_report):,} character (~{len(market_research_report)//4:,} tokens)")
         logger.info(f"  - sentiment_report: {len(sentiment_report):,} character (~{len(sentiment_report)//4:,} tokens)")
         logger.info(f"  - news_report: {len(news_report):,} character (~{len(news_report)//4:,} tokens)")
@@ -117,7 +117,7 @@ Security Analyst s final response:{current_safe_response}
 
 {build_research_only_closing(["Please present your neutral research perspective, emphasizing scenario differences and constraints, but do not formulate a compromise trading proposal."])}"""
 
-        logger.info(f"⏱️ [Neutral Analyst] Start calling LLM...")
+        logger.info("⏱️ [Neutral Analyst] Start calling LLM...")
         llm_start_time = time.time()
 
         response = llm.invoke(prompt)

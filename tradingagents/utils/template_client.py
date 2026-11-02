@@ -110,7 +110,7 @@ class TemplateClient:
             effective_node_id = node_id or ctx_node_id
 
             # 🔥 Debug log: record context parsing results
-            logger.info(f"🔍 [get_effective_template] Context Parse results:")
+            logger.info("🔍 [get_effective_template] Context Parse results:")
             logger.info(f"   - context Type: {type(context)}")
             logger.info(f"   - is_debug_mode: {is_debug_mode}")
             logger.info(f"   - debug_template_id: {debug_template_id}")
@@ -168,7 +168,7 @@ class TemplateClient:
                         content["template_id"] = str(debug_template.get("_id"))
                         content["version"] = debug_template.get("version", 1)
                         content["is_debug"] = True
-                        logger.info(f"🔍 [debug mode] The debugging template has the highest priority and will be returned directly, skipping subsequent agent configuration checks.")
+                        logger.info("🔍 [debug mode] The debugging template has the highest priority and will be returned directly, skipping subsequent agent configuration checks.")
                         return content
                     else:
                         logger.warning(f"⚠️ [debug mode] Debug template does not exist: {debug_template_id}, Downgrade to normal process")
@@ -177,7 +177,7 @@ class TemplateClient:
             
             # 🔥 If debug mode is enabled but there is no debug template ID, log a warning but do not prevent continuing
             if is_debug_mode and not debug_template_id:
-                logger.warning(f"⚠️ [debug mode] Debug mode is enabled but debug_template_id is not provided, normal process will be used")
+                logger.warning("⚠️ [debug mode] Debug mode is enabled but debug_template_id is not provided, normal process will be used")
 
             # The default preference is neutral
             # Compatible context is dict or AgentContext object
@@ -411,7 +411,7 @@ class TemplateClient:
             # Print input variables (for debugging)
             logger.info(f"🔧 [format_template] input variables (total {len(variables)} a):")
             if not variables:
-                logger.warning(f"⚠️ [format_template] The variable dictionary is empty!")
+                logger.warning("⚠️ [format_template] The variable dictionary is empty!")
             else:
                 for k, v in variables.items():
                     if isinstance(v, str) and len(v) > 100:
@@ -553,7 +553,7 @@ def get_agent_prompt(
             # Format template
             formatted = client.format_template(template_content, variables)
 
-            logger.info(f"📝 [template rendering] Formatting completed, check rendering results...")
+            logger.info("📝 [template rendering] Formatting completed, check rendering results...")
             # Check if there are any unrendered variables
             for key, value in formatted.items():
                 if isinstance(value, str) and ('{{' in value or '{' in value):
@@ -634,7 +634,7 @@ def get_user_prompt(
         # 🔍 Debugging: Print received variables
         logger.info(f"🔍 [get_user_prompt] received variable (total {len(variables)} a):")
         if not variables:
-            logger.warning(f"⚠️ [get_user_prompt] The variable dictionary is empty!")
+            logger.warning("⚠️ [get_user_prompt] The variable dictionary is empty!")
         else:
             for k, v in variables.items():
                 if isinstance(v, str) and len(v) > 100:

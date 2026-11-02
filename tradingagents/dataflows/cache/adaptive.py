@@ -368,7 +368,7 @@ class AdaptiveCacheSystem:
                             coll_stats = db.command("collStats", collection_name)
                             size = coll_stats.get("size", 0)
                             total_size_bytes += size
-                        except:
+                        except Exception:
                             pass
 
                         stats['total_files'] += count
@@ -382,7 +382,7 @@ class AdaptiveCacheSystem:
                             stats['fundamentals_count'] += count
 
                 backend_info['mongodb_cache_count'] = stats['total_files']
-            except:
+            except Exception:
                 backend_info['mongodb_status'] = 'Error'
 
         # Redis statistics
@@ -392,7 +392,7 @@ class AdaptiveCacheSystem:
                 redis_info = redis_client.info()
                 backend_info['redis_memory_used'] = redis_info.get('used_memory_human', 'N/A')
                 backend_info['redis_keys'] = redis_client.dbsize()
-            except:
+            except Exception:
                 backend_info['redis_status'] = 'Error'
 
         # File cache statistics
@@ -400,7 +400,7 @@ class AdaptiveCacheSystem:
             for pkl_file in self.cache_dir.glob("*.pkl"):
                 try:
                     total_size_bytes += pkl_file.stat().st_size
-                except:
+                except Exception:
                     pass
 
         # Set total size

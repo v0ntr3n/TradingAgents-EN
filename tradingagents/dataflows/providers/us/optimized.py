@@ -48,12 +48,12 @@ class OptimizedUSDataProvider:
         try:
             from tradingagents.dataflows.data_source_manager import USDataSourceManager
             self.us_manager = USDataSourceManager()
-            logger.info(f"✅ US stock data source manager initialized successfully")
+            logger.info("✅ US stock data source manager initialized successfully")
         except Exception as e:
             logger.warning(f"⚠️ US stock data source manager initialization failed: {e}, Default order will be used")
             self.us_manager = None
 
-        logger.info(f"📊 Optimization of US stock data provider initialization completed")
+        logger.info("📊 Optimization of US stock data provider initialization completed")
 
     def get_daily_data(self, symbol: str, start_date: str, end_date: str) -> Optional[pd.DataFrame]:
         """
@@ -446,7 +446,7 @@ class OptimizedUSDataProvider:
         """Try to get expired cached data as backup"""
         try:
             # Find any relevant caches, regardless of TTL
-            for metadata_file in self.cache.metadata_dir.glob(f"*_meta.json"):
+            for metadata_file in self.cache.metadata_dir.glob("*_meta.json"):
                 try:
                     import json
                     with open(metadata_file, 'r', encoding='utf-8') as f:
@@ -558,7 +558,7 @@ class OptimizedUSDataProvider:
                 return None
 
             # call Alpha Vantage API (TIME_SERIES_DAILY)
-            url = f"https://www.alphavantage.co/query"
+            url = "https://www.alphavantage.co/query"
             params = {
                 "function": "TIME_SERIES_DAILY",
                 "symbol": symbol.upper(),
@@ -598,7 +598,7 @@ class OptimizedUSDataProvider:
             df = df[(df.index >= start_date) & (df.index <= end_date)]
 
             if df.empty:
-                logger.error(f"❌ Alpha Vantage Data is empty within the specified date range")
+                logger.error("❌ Alpha Vantage Data is empty within the specified date range")
                 return None
 
             # Format data

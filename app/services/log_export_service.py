@@ -26,7 +26,7 @@ class LogExportService:
             log_dir: Log file directory
         """
         self.log_dir = Path(log_dir)
-        logger.info(f"🔍 [LogExportService] Initialize log export service")
+        logger.info("🔍 [LogExportService] Initialize log export service")
         logger.info(f"🔍 [LogExportService] Configured log directory: {log_dir}")
         logger.info(f"🔍 [LogExportService] Parsed log directory: {self.log_dir}")
         logger.info(f"🔍 [LogExportService] absolute path: {self.log_dir.absolute()}")
@@ -40,7 +40,7 @@ class LogExportService:
             except Exception as e:
                 logger.error(f"❌ [LogExportService] Failed to create log directory: {e}")
         else:
-            logger.info(f"✅ [LogExportService] Log directory exists")
+            logger.info("✅ [LogExportService] Log directory exists")
 
     def list_log_files(self) -> List[Dict[str, Any]]:
         """
@@ -52,7 +52,7 @@ class LogExportService:
         log_files = []
 
         try:
-            logger.info(f"🔍 [list_log_files] Start listing log files")
+            logger.info("🔍 [list_log_files] Start listing log files")
             logger.info(f"🔍 [list_log_files] Search catalog: {self.log_dir}")
             logger.info(f"🔍 [list_log_files] absolute path: {self.log_dir.absolute()}")
             logger.info(f"🔍 [list_log_files] Does the directory exist?: {self.log_dir.exists()}")
@@ -76,7 +76,7 @@ class LogExportService:
                 logger.error(f"❌ [list_log_files] Failed to list directory contents: {e}")
 
             # Search log files
-            logger.info(f"🔍 [list_log_files] Search mode: *.log*")
+            logger.info("🔍 [list_log_files] Search mode: *.log*")
             for file_path in self.log_dir.glob("*.log*"):
                 logger.info(f"🔍 [list_log_files] find file: {file_path.name}")
                 if file_path.is_file():
@@ -400,7 +400,7 @@ def _get_log_directory() -> str:
     from pathlib import Path
 
     try:
-        logger.info(f"🔍 [_get_log_directory] Start getting the log directory")
+        logger.info("🔍 [_get_log_directory] Start getting the log directory")
 
         # Check if it is a Docker environment
         docker_env = os.environ.get("DOCKER", "")
@@ -414,14 +414,14 @@ def _get_log_directory() -> str:
         # Try reading from log configuration file
         try:
             import tomllib as toml_loader
-            logger.info(f"🔍 [_get_log_directory] Load using tomllib TOML")
+            logger.info("🔍 [_get_log_directory] Load using tomllib TOML")
         except ImportError:
             try:
                 import tomli as toml_loader
-                logger.info(f"🔍 [_get_log_directory] Load using tomli TOML")
+                logger.info("🔍 [_get_log_directory] Load using tomli TOML")
             except ImportError:
                 toml_loader = None
-                logger.warning(f"⚠️ [_get_log_directory] Unable to import TOML loader")
+                logger.warning("⚠️ [_get_log_directory] Unable to import TOML loader")
 
         if toml_loader:
             # Choose a configuration file based on your environment
@@ -437,7 +437,7 @@ def _get_log_directory() -> str:
                     with cfg_path.open("rb") as f:
                         toml_data = toml_loader.load(f)
 
-                    logger.info(f"🔍 [_get_log_directory] Configuration file loaded successfully")
+                    logger.info("🔍 [_get_log_directory] Configuration file loaded successfully")
 
                     # Read log directory from configuration file
                     handlers_cfg = toml_data.get("logging", {}).get("handlers", {})
