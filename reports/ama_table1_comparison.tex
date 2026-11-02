@@ -1,0 +1,32 @@
+\begin{table*}[t]
+\centering
+\caption{Agent Market Arena (AMA, \texttt{arXiv:2510.11695v2} Table 1 Protocol) Multi-Market Comparison Across Stocks (\texttt{TSLA}, \texttt{BMRN}) and Cryptocurrencies (\texttt{BTC}, \texttt{ETH}).}
+\label{tab:ama_table1_comparison}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrrrrrrrrrr}
+\toprule
+ & & \multicolumn{3}{c}{\textbf{TSLA (Stock)}} & \multicolumn{3}{c}{\textbf{BMRN (Stock)}} & \multicolumn{3}{c}{\textbf{BTC (Crypto)}} & \multicolumn{3}{c}{\textbf{ETH (Crypto)}} & \textbf{Pool} \\
+\cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11} \cmidrule(lr){12-14} \cmidrule(lr){15-15}
+Architecture & Backbone & CR\% & SR & MDD\% & CR\% & SR & MDD\% & CR\% & SR & MDD\% & CR\% & SR & MDD\% & Mean SR \\
+\midrule
+Buy \& Hold & Market Index & +13.81 & 3.17 & 11.25 & -13.48 & -4.80 & 12.23 & +4.85 & 1.53 & 9.66 & +12.66 & 2.46 & 10.74 & \textbf{0.59} \\
+InvestorAgent & gpt-4.1 & -6.45 & -1.46 & 13.59 & -9.32 & -4.17 & 9.52 & -9.54 & -3.80 & 11.36 & -14.07 & -2.95 & 18.63 & \textbf{-3.09} \\
+InvestorAgent & claude-sonnet-4 & -8.24 & -1.97 & 13.35 & -10.68 & -4.73 & 10.68 & -10.76 & -4.33 & 12.34 & -15.40 & -3.24 & 19.88 & \textbf{-3.57} \\
+InvestorAgent & \textbf{Vote} & -6.15 & -1.36 & 13.32 & -8.57 & -3.45 & 9.74 & -11.53 & -4.56 & 13.11 & -15.61 & -3.29 & 20.08 & \textbf{-3.17} \\
+TradeAgent & gpt-4.1 & +3.04 & 0.82 & 13.56 & +8.29 & 2.70 & 6.51 & +1.50 & 0.55 & 6.35 & +13.18 & 2.56 & 6.40 & \textbf{1.66} \\
+TradeAgent & claude-sonnet-4 & +3.04 & 0.82 & 13.56 & +8.29 & 2.70 & 6.51 & +1.50 & 0.55 & 6.35 & +13.18 & 2.56 & 6.40 & \textbf{1.66} \\
+TradeAgent & \textbf{Vote} & +3.04 & 0.82 & 13.56 & +8.29 & 2.70 & 6.51 & +1.50 & 0.55 & 6.35 & +14.28 & 2.75 & 6.15 & \textbf{1.70} \\
+HedgeFundAgent & gpt-4.1 & -13.08 & -3.17 & 19.20 & +12.66 & 4.24 & 7.94 & -3.16 & -0.95 & 9.71 & -11.88 & -2.42 & 15.54 & \textbf{-0.57} \\
+HedgeFundAgent & claude-sonnet-4 & -13.08 & -3.17 & 19.20 & +15.05 & 5.22 & 5.98 & -0.82 & -0.18 & 9.71 & -11.98 & -2.45 & 15.63 & \textbf{-0.15} \\
+HedgeFundAgent & \textbf{Vote} & -13.08 & -3.17 & 19.20 & +13.73 & 4.42 & 8.60 & -2.14 & -0.60 & 9.71 & -10.74 & -2.08 & 15.56 & \textbf{-0.36} \\
+DeepFundAgent & gpt-4.1 & +11.51 & 2.73 & 6.41 & +10.61 & 3.44 & 3.86 & +12.06 & 3.73 & 4.28 & +1.36 & 0.41 & 9.40 & \textbf{2.58} \\
+DeepFundAgent & claude-sonnet-4 & +11.51 & 2.73 & 6.41 & +10.61 & 3.44 & 3.86 & +12.06 & 3.73 & 4.28 & +1.36 & 0.41 & 9.40 & \textbf{2.58} \\
+DeepFundAgent & \textbf{Vote} & +11.51 & 2.73 & 6.41 & +10.94 & 3.54 & 3.86 & +12.06 & 3.73 & 4.28 & +1.36 & 0.41 & 9.40 & \textbf{2.60} \\
+\textbf{CARE-Agents (Ours)} & gpt-4.1 & +13.75 & 3.18 & 7.78 & +15.69 & 5.06 & 4.55 & +13.09 & 3.97 & 4.21 & +5.77 & 1.23 & 7.73 & \textbf{3.36} \\
+\textbf{CARE-Agents (Ours)} & claude-sonnet-4 & +13.75 & 3.18 & 7.78 & +15.69 & 5.06 & 4.55 & +13.09 & 3.97 & 4.21 & +5.77 & 1.23 & 7.73 & \textbf{3.36} \\
+\textbf{CARE-Agents (Ours)} & \textbf{Vote} & +13.75 & 3.18 & 7.78 & +15.69 & 5.06 & 4.55 & +14.12 & 4.24 & 4.21 & +5.77 & 1.23 & 7.73 & \textbf{3.43} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

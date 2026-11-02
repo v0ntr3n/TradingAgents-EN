@@ -116,33 +116,33 @@
       "Sharpe_Ratio": -2.349,
       "Max_Drawdown_Pct": 32.26,
       "Paired_Delta_Utility_Bps": -16.57,
-      "Beneficial_Flip_Rate_Pct": 9.68,
-      "Harmful_Flip_Rate_Pct": 19.35,
-      "Verification_Rate_Pct": 22.96
+      "Beneficial_Flip_Rate_Pct": 10.0,
+      "Harmful_Flip_Rate_Pct": 20.0,
+      "Verification_Rate_Pct": 22.22
     },
     {
       "Regime": "bear",
       "Method": "B10_Empirical_VOI",
       "Step_Count": 187,
-      "Net_Return_Pct": -4.16,
-      "Sharpe_Ratio": -2.371,
-      "Max_Drawdown_Pct": 4.16,
-      "Paired_Delta_Utility_Bps": -0.57,
-      "Beneficial_Flip_Rate_Pct": 0.0,
-      "Harmful_Flip_Rate_Pct": 3.33,
-      "Verification_Rate_Pct": 16.04
+      "Net_Return_Pct": -1.93,
+      "Sharpe_Ratio": -2.021,
+      "Max_Drawdown_Pct": 1.93,
+      "Paired_Delta_Utility_Bps": 0.9,
+      "Beneficial_Flip_Rate_Pct": 3.03,
+      "Harmful_Flip_Rate_Pct": 0.0,
+      "Verification_Rate_Pct": 17.65
     },
     {
       "Regime": "sideways",
       "Method": "B10_Empirical_VOI",
       "Step_Count": 139,
-      "Net_Return_Pct": 13.24,
-      "Sharpe_Ratio": 1.145,
+      "Net_Return_Pct": 11.79,
+      "Sharpe_Ratio": 1.038,
       "Max_Drawdown_Pct": 6.8,
-      "Paired_Delta_Utility_Bps": 2.4,
-      "Beneficial_Flip_Rate_Pct": 9.26,
-      "Harmful_Flip_Rate_Pct": 5.56,
-      "Verification_Rate_Pct": 38.85
+      "Paired_Delta_Utility_Bps": -1.68,
+      "Beneficial_Flip_Rate_Pct": 7.69,
+      "Harmful_Flip_Rate_Pct": 7.69,
+      "Verification_Rate_Pct": 37.41
     },
     {
       "Regime": "bull",
@@ -184,37 +184,37 @@
       "Regime": "bull",
       "Method": "Ours",
       "Step_Count": 135,
-      "Net_Return_Pct": -26.6,
-      "Sharpe_Ratio": -1.87,
-      "Max_Drawdown_Pct": 28.16,
-      "Paired_Delta_Utility_Bps": 2.27,
-      "Beneficial_Flip_Rate_Pct": 2.63,
+      "Net_Return_Pct": -27.33,
+      "Sharpe_Ratio": -1.931,
+      "Max_Drawdown_Pct": 28.87,
+      "Paired_Delta_Utility_Bps": -0.0,
+      "Beneficial_Flip_Rate_Pct": 0.0,
       "Harmful_Flip_Rate_Pct": 0.0,
-      "Verification_Rate_Pct": 28.15
+      "Verification_Rate_Pct": 27.41
     },
     {
       "Regime": "bear",
       "Method": "Ours",
       "Step_Count": 187,
-      "Net_Return_Pct": 0.76,
-      "Sharpe_Ratio": 0.234,
-      "Max_Drawdown_Pct": 2.47,
-      "Paired_Delta_Utility_Bps": 3.72,
-      "Beneficial_Flip_Rate_Pct": 2.86,
-      "Harmful_Flip_Rate_Pct": 2.86,
-      "Verification_Rate_Pct": 18.72
+      "Net_Return_Pct": -3.75,
+      "Sharpe_Ratio": -2.189,
+      "Max_Drawdown_Pct": 3.75,
+      "Paired_Delta_Utility_Bps": 1.57,
+      "Beneficial_Flip_Rate_Pct": 6.12,
+      "Harmful_Flip_Rate_Pct": 8.16,
+      "Verification_Rate_Pct": 26.2
     },
     {
       "Regime": "sideways",
       "Method": "Ours",
       "Step_Count": 139,
-      "Net_Return_Pct": 15.31,
-      "Sharpe_Ratio": 1.344,
-      "Max_Drawdown_Pct": 7.37,
-      "Paired_Delta_Utility_Bps": 12.31,
-      "Beneficial_Flip_Rate_Pct": 11.9,
+      "Net_Return_Pct": 11.55,
+      "Sharpe_Ratio": 1.0,
+      "Max_Drawdown_Pct": 8.08,
+      "Paired_Delta_Utility_Bps": 1.34,
+      "Beneficial_Flip_Rate_Pct": 6.9,
       "Harmful_Flip_Rate_Pct": 0.0,
-      "Verification_Rate_Pct": 30.22
+      "Verification_Rate_Pct": 20.86
     }
   ]
 }

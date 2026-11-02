@@ -1126,3 +1126,236 @@ class ProtocolAuditEvaluator:
                 avg_acc = sum(accuracies[i] for i in idxs) / len(idxs)
                 ece += (len(idxs) / n) * abs(avg_acc - avg_conf)
         return ece
+
+    @staticmethod
+    def evaluate_ama_metrics(
+        daily_returns: Optional[List[float]] = None,
+        signals: Optional[List[float]] = None,
+        prices: Optional[List[float]] = None,
+        asset_returns: Optional[List[float]] = None,
+        fee_bps: float = 0.0,
+        initial_signal: float = 0.0,
+        trading_days_per_year: int = 252,
+        ddof: int = 0,
+    ) -> Dict[str, Any]:
+        return evaluate_ama_metrics(
+            daily_returns=daily_returns,
+            signals=signals,
+            prices=prices,
+            asset_returns=asset_returns,
+            fee_bps=fee_bps,
+            initial_signal=initial_signal,
+            trading_days_per_year=trading_days_per_year,
+            ddof=ddof,
+        )
+
+    @staticmethod
+    def evaluate_finben_metrics(
+        daily_returns: Optional[List[float]] = None,
+        signals: Optional[List[float]] = None,
+        prices: Optional[List[float]] = None,
+        asset_returns: Optional[List[float]] = None,
+        fee_bps: float = 0.0,
+        trading_days_per_year: int = 252,
+        n_boot: int = 250,
+        seed: int = 42,
+    ) -> Dict[str, Any]:
+        return evaluate_finben_metrics(
+            daily_returns=daily_returns,
+            signals=signals,
+            prices=prices,
+            asset_returns=asset_returns,
+            fee_bps=fee_bps,
+            trading_days_per_year=trading_days_per_year,
+            n_boot=n_boot,
+            seed=seed,
+        )
+
+
+def evaluate_ama_metrics(
+    daily_returns: Optional[List[float]] = None,
+    signals: Optional[List[float]] = None,
+    prices: Optional[List[float]] = None,
+    asset_returns: Optional[List[float]] = None,
+    fee_bps: float = 0.0,
+    initial_signal: float = 0.0,
+    trading_days_per_year: int = 252,
+    ddof: int = 0,
+) -> Dict[str, Any]:
+    """
+    Exact Agent Market Arena (AMA, arXiv:2510.11695v2 Section 3.3) metric evaluator.
+
+    Given daily signal w_t in {1, -1, 0} and daily return:
+      r_t = w_t * ((P_t - P_{t-1}) / P_{t-1}) - c_fee * |w_t - w_{t-1}|
+    computes:
+      - CR% (↑): R_T = (prod_{t=1}^T (1 + r_t) - 1) * 100%
+      - AR% (↑): R_annual = ((1 + R_T)^(252 / T) - 1) * 100%
+      - AV% (↓): sigma_annual = sqrt(252) * std(r_t) * 100%
+      - SR  (↑): S = (mean(r_t) * 252) / sigma_annual  (where sigma_annual is in decimal, r_f = 0)
+      - MDD% (↓): D_max = max_{1 <= t <= T} ((max_{i <= t} E_i - E_t) / max_{i <= t} E_i) * 100%
+                  where E_t = prod_{i=1}^t (1 + r_i)
+    """
+    import numpy as np
+
+    c_fee = float(fee_bps) * 1e-4
+
+    if daily_returns is not None:
+        r_arr = np.asarray(daily_returns, dtype=np.float64)
+    else:
+        if asset_returns is None:
+            if prices is None or len(prices) < 2:
+                raise ValueError("Provide `daily_returns`, `asset_returns`, or `prices` with len >= 2.")
+            p_arr = np.asarray(prices, dtype=np.float64)
+            asset_ret_arr = (p_arr[1:] - p_arr[:-1]) / np.maximum(1e-12, p_arr[:-1])
+        else:
+            asset_ret_arr = np.asarray(asset_returns, dtype=np.float64)
+
+        if signals is None:
+            w_arr = np.ones_like(asset_ret_arr, dtype=np.float64)
+        else:
+            w_arr = np.asarray(signals, dtype=np.float64)
+            if len(w_arr) == len(asset_ret_arr) + 1:
+                w_arr = w_arr[1:]
+
+        if len(w_arr) != len(asset_ret_arr):
+            m = min(len(w_arr), len(asset_ret_arr))
+            w_arr = w_arr[:m]
+            asset_ret_arr = asset_ret_arr[:m]
+
+        w_prev = np.concatenate([[float(initial_signal)], w_arr[:-1]])
+        turnover = np.abs(w_arr - w_prev)
+        r_arr = w_arr * asset_ret_arr - c_fee * turnover
+
+    T = len(r_arr)
+    if T == 0:
+        return {
+            "CR%": 0.0,
+            "AR%": 0.0,
+            "AV%": 0.0,
+            "SR": 0.0,
+            "MDD%": 0.0,
+            "CR_pct": 0.0,
+            "AR_pct": 0.0,
+            "AV_pct": 0.0,
+            "MDD_pct": 0.0,
+            "equity_curve": [],
+            "daily_returns": [],
+        }
+
+    equity = np.cumprod(1.0 + r_arr)
+    r_T = float(equity[-1] - 1.0)
+    cr_pct = r_T * 100.0
+
+    ann_days = float(trading_days_per_year)
+    if 1.0 + r_T > 0.0:
+        ar_pct = (((1.0 + r_T) ** (ann_days / float(T))) - 1.0) * 100.0
+    else:
+        ar_pct = -100.0
+
+    eff_ddof = ddof if T > ddof else 0
+    std_r = float(np.std(r_arr, ddof=eff_ddof))
+    sigma_annual_dec = math.sqrt(ann_days) * std_r
+    av_pct = sigma_annual_dec * 100.0
+
+    mean_r = float(np.mean(r_arr))
+    if sigma_annual_dec > 1e-12:
+        sr = (mean_r * ann_days) / sigma_annual_dec
+    else:
+        sr = 0.0
+
+    peaks = np.maximum.accumulate(equity)
+    drawdowns = (peaks - equity) / np.maximum(1e-12, peaks)
+    mdd_pct = float(np.max(drawdowns)) * 100.0
+
+    return {
+        "CR%": round(cr_pct, 4),
+        "AR%": round(ar_pct, 4),
+        "AV%": round(av_pct, 4),
+        "SR": round(sr, 4),
+        "MDD%": round(mdd_pct, 4),
+        "CR_pct": round(cr_pct, 4),
+        "AR_pct": round(ar_pct, 4),
+        "AV_pct": round(av_pct, 4),
+        "MDD_pct": round(mdd_pct, 4),
+        "equity_curve": [round(float(x), 6) for x in equity],
+        "daily_returns": [round(float(x), 6) for x in r_arr],
+    }
+
+
+def evaluate_finben_metrics(
+    daily_returns: Optional[List[float]] = None,
+    signals: Optional[List[float]] = None,
+    prices: Optional[List[float]] = None,
+    asset_returns: Optional[List[float]] = None,
+    fee_bps: float = 0.0,
+    trading_days_per_year: int = 252,
+    n_boot: int = 250,
+    seed: int = 42,
+) -> Dict[str, Any]:
+    """
+    FinBen FinTrade (`arXiv:2402.12659v2`, Table 8 / Section 4) metric evaluator.
+    Computes `CR%`, `SR`, `DV%` (daily volatility %), `AV%` (annualized volatility %),
+    and `MD%` (maximum drawdown %) together with 95% bootstrap confidence intervals.
+    """
+    import numpy as np
+
+    ama = evaluate_ama_metrics(
+        daily_returns=daily_returns,
+        signals=signals,
+        prices=prices,
+        asset_returns=asset_returns,
+        fee_bps=fee_bps,
+        trading_days_per_year=trading_days_per_year,
+        ddof=0,
+    )
+    r_arr = np.asarray(ama["daily_returns"], dtype=np.float64)
+    T = len(r_arr)
+    dv_pct = float(np.std(r_arr, ddof=0) * 100.0) if T > 0 else 0.0
+
+    rng = np.random.default_rng(seed)
+    boot_cr, boot_sr, boot_dv, boot_av, boot_md = [], [], [], [], []
+    if T >= 3 and n_boot > 0:
+        for _ in range(n_boot):
+            idx = rng.integers(0, T, size=T)
+            sub_r = r_arr[idx]
+            sub_m = evaluate_ama_metrics(daily_returns=sub_r.tolist(), trading_days_per_year=trading_days_per_year)
+            boot_cr.append(float(sub_m["CR%"]))
+            boot_sr.append(float(sub_m["SR"]))
+            boot_dv.append(float(np.std(sub_r, ddof=0) * 100.0))
+            boot_av.append(float(sub_m["AV%"]))
+            boot_md.append(float(sub_m["MDD%"]))
+    else:
+        boot_cr = [float(ama["CR%"])]
+        boot_sr = [float(ama["SR"])]
+        boot_dv = [dv_pct]
+        boot_av = [float(ama["AV%"])]
+        boot_md = [float(ama["MDD%"])]
+
+    def _ci(vals: List[float]) -> Tuple[float, float]:
+        low, high = np.quantile(np.asarray(vals, dtype=np.float64), [0.025, 0.975])
+        return (round(float(low), 4), round(float(high), 4))
+
+    ci95 = {
+        "CR%": _ci(boot_cr),
+        "SR": _ci(boot_sr),
+        "DV%": _ci(boot_dv),
+        "AV%": _ci(boot_av),
+        "MD%": _ci(boot_md),
+    }
+
+    return {
+        "CR%": round(float(ama["CR%"]), 4),
+        "AR%": round(float(ama["AR%"]), 4),
+        "SR": round(float(ama["SR"]), 4),
+        "DV%": round(dv_pct, 4),
+        "AV%": round(float(ama["AV%"]), 4),
+        "MD%": round(float(ama["MDD%"]), 4),
+        "MDD%": round(float(ama["MDD%"]), 4),
+        "ci95": ci95,
+        "CR%_ci95": ci95["CR%"],
+        "SR_ci95": ci95["SR"],
+        "DV%_ci95": ci95["DV%"],
+        "AV%_ci95": ci95["AV%"],
+        "MD%_ci95": ci95["MD%"],
+    }
+

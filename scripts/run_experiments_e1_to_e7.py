@@ -160,7 +160,7 @@ class SevenExperimentsSuiteRunner:
         rows: List[Dict[str, Any]] = []
         stats_payload: Dict[str, Any] = {"iso_budget": self.iso_budget, "splits": {}}
 
-        for split_name in ("TEST_2023", "EXTERNAL_TEST_2025"):
+        for split_name in ("TEST_2023", "EXTERNAL_TEST_2025", "AMA_2025", "FINBEN_FINTRADE"):
             steps = self.splits[split_name]
             f_map = self.loader.build_fama_french_6_factors(steps)
 
@@ -426,7 +426,10 @@ class SevenExperimentsSuiteRunner:
             "Ours_Full",
             "Ours_wo_VOI",
             "Ours_wo_Evidence_Contract",
+            "Ours_wo_Regime_MWU",
             "Ours_wo_Cost_Awareness",
+            "M1_with_Turnover_Gate",
+            "M2_C3_with_Turnover_Gate",
             "B10_Empirical_VOI_with_Turnover_Gate",
         )
         steps = self.splits["EXTERNAL_TEST_2025"]
@@ -496,10 +499,11 @@ class SevenExperimentsSuiteRunner:
         tex_lines.extend(["\\bottomrule", "\\end{tabular}%", "}", "\\end{table}"])
         _write_tex_both("tab_e3_ablation.tex", "\n".join(tex_lines) + "\n")
 
-        fig, ax = plt.subplots(figsize=(8.5, 4.2))
+        fig, ax = plt.subplots(figsize=(8.5, 4.5))
         v_labels = [r["Variant"] for r in rows]
         v_du = [r["Paired_Delta_Utility_Bps"] for r in rows]
-        ax.barh(v_labels, v_du, color=["#1b7837", "#4575b4", "#74add1", "#fdae61", "#d73027"])
+        bar_colors = ["#1b7837" if r["Variant"] == "Ours_Full" else "#4575b4" for r in rows]
+        ax.barh(v_labels, v_du, color=bar_colors)
         ax.set_xlabel("Paired $\\Delta$Utility (bps / decision)")
         ax.set_title("E3: Component Ablation Study")
         ax.invert_yaxis()

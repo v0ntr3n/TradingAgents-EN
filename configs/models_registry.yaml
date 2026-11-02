@@ -348,3 +348,56 @@ models:
     input_usd_per_1m: 15.00
     output_usd_per_1m: 60.00
     temperature: 1.0
+
+# =========================================================================
+# AGENT MARKET ARENA (AMA, arXiv:2510.11695v2) BACKBONE MODELS
+# =========================================================================
+ama_models:
+  - model_id: gpt-4.1
+    group: AMA
+    provider: openai
+    env_key: OPENAI_API_KEY
+    endpoint_model_alias: gpt-4.1
+    role: AMA Table 1 OpenAI backbone
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 2.00
+    output_usd_per_1m: 8.00
+    temperature: 0.0
+
+  - model_id: gemini-2.0-flash
+    group: AMA
+    provider: google
+    env_key: GEMINI_API_KEY
+    endpoint_model_alias: gemini-2.0-flash
+    role: AMA Table 1 Google backbone
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.10
+    output_usd_per_1m: 0.40
+    temperature: 0.0
+
+  - model_id: claude-3.5-haiku
+    group: AMA
+    provider: anthropic
+    env_key: ANTHROPIC_API_KEY
+    endpoint_model_alias: claude-3-5-haiku-latest
+    role: AMA Table 1 Anthropic fast backbone
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 0.80
+    output_usd_per_1m: 4.00
+    temperature: 0.0
+
+  - model_id: claude-sonnet-4
+    group: AMA
+    provider: anthropic
+    env_key: ANTHROPIC_API_KEY
+    endpoint_model_alias: claude-sonnet-4-20250514
+    role: AMA Table 1 Anthropic frontier backbone
+    full_ablation: false
+    main_15: false
+    input_usd_per_1m: 3.00
+    output_usd_per_1m: 15.00
+    temperature: 0.0
+

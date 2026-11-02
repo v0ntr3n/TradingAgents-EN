@@ -641,9 +641,9 @@ class UnifiedBenchmarkPolicyRunner:
         # ---------------------------------------------------------------------
         # 3. Determine Verification Trigger Mask G_{i,t} for the chosen method
         # ---------------------------------------------------------------------
-        if method_id == "B05_Static_LLM":
+        if method_id in ("B05_Static_LLM", "M1_with_Turnover_Gate"):
             verify_mask = [False] * n
-        elif method_id in ("B07_Always_Verify", "B11_TradingAgents"):
+        elif method_id in ("B07_Always_Verify", "B11_TradingAgents", "M2_C3_with_Turnover_Gate"):
             verify_mask = [True] * n
         elif method_id == "B06_Static_Tool_LLM":
             scores = [m["react_score"] for m in step_meta]
@@ -667,6 +667,11 @@ class UnifiedBenchmarkPolicyRunner:
             # E3 Ablation 1: Replace Decision-Flip VOI with entropy gate at matched budget B
             scores = [m["ent_mwu"] for m in step_meta]
             verify_mask = _select_iso_budget_mask(scores, val_threshold=0.92, iso_budget_rate=iso_budget_rate)
+        elif method_id == "Ours_wo_Regime_MWU":
+            # E3 Ablation: Equal-weight unverified pooling instead of Regime-MWU
+            scores = [m["voi_eval"]["net_voi_bps"] - 0.15 * m["ent_eq"] for m in step_meta]
+            tau_val = self.voi_estimator.iso_budget_thresholds.get(round(float(iso_budget_rate or 0.25), 4), 0.0)
+            verify_mask = _select_iso_budget_mask(scores, val_threshold=tau_val, iso_budget_rate=iso_budget_rate)
         elif method_id == "Ours_wo_Cost_Awareness":
             # E3 Ablation 3: Ignore c_verify and Delta_c_trade, trigger whenever gross VOI_Ours > 2.5 bps
             scores = [m["voi_eval"]["voi_ours_bps"] for m in step_meta]
@@ -706,12 +711,15 @@ class UnifiedBenchmarkPolicyRunner:
                 unv_post = meta["eq_post"]
 
             # Cost-Aware Turnover Gate: enabled for Ours, Ours_Full, Ours_wo_VOI,
-            # Ours_wo_Evidence_Contract, and B10_Empirical_VOI_with_Turnover_Gate
+            # Ours_wo_Evidence_Contract, Ours_wo_Regime_MWU, and symmetric controls
             use_turnover_gate = method_id in (
                 "Ours",
                 "Ours_Full",
                 "Ours_wo_VOI",
                 "Ours_wo_Evidence_Contract",
+                "Ours_wo_Regime_MWU",
+                "M1_with_Turnover_Gate",
+                "M2_C3_with_Turnover_Gate",
                 "B10_Empirical_VOI_with_Turnover_Gate",
             )
             raw_a0 = action_from_posterior(unv_post, binary_long_only=True)
@@ -742,7 +750,10 @@ class UnifiedBenchmarkPolicyRunner:
                 tool_calls = 1
 
                 # Select appropriate cached deliberation trace
-                if uses_mwu and method_id not in ("Ours_wo_Evidence_Contract", "Ours_wo_Cost_Awareness"):
+                if (uses_mwu or method_id == "Ours_wo_Regime_MWU") and method_id not in (
+                    "Ours_wo_Evidence_Contract",
+                    "Ours_wo_Cost_Awareness",
+                ):
                     deb_entry = s.get("m4_cbs_debate") or s.get("m2_debate") or unv_post
                     ver_res = adjudicate_with_evidence_contract(
                         contract=contract,

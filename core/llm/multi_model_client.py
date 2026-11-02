@@ -66,14 +66,20 @@ class MultiModelRegistryClient:
         self.cache_path = Path(cache_path or DEFAULT_CACHE_PATH)
         raw = yaml.safe_load(self.registry_path.read_text(encoding="utf-8"))
         self.models_list: List[Dict[str, Any]] = list(raw.get("models", []))
+        self.ama_models_list: List[Dict[str, Any]] = list(raw.get("ama_models", []))
         self.models_by_id: Dict[str, Dict[str, Any]] = {
-            str(m["model_id"]): dict(m) for m in self.models_list
+            str(m["model_id"]): dict(m) for m in (self.models_list + self.ama_models_list)
         }
         self._dotenv = _load_dotenv_into_dict()
         self._cache: Optional[Dict[str, Any]] = None
 
     def list_all_models(self) -> List[Dict[str, Any]]:
         return list(self.models_list)
+
+    def list_ama_models(self) -> List[Dict[str, Any]]:
+        """Return the 5 Agent Market Arena (AMA) Table 1 backbones."""
+        base = [self.models_by_id["gpt-4o"]] if "gpt-4o" in self.models_by_id else []
+        return base + list(self.ama_models_list)
 
     def list_group_models(self, group: str) -> List[Dict[str, Any]]:
         g = group.upper().strip()
