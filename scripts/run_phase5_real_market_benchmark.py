@@ -63,33 +63,57 @@ def load_real_2025_2026_dataset(csv_path: Path) -> Dict[str, List[Dict[str, Any]
         reader = csv.DictReader(f)
         for row in reader:
             sym = row["symbol"]
-            has_pit_acct = "eps_ttm" in row and "roe_pct" in row
+            has_pit_acct = ("pe_ttm" in row and "roe_ttm" in row) or ("eps_ttm" in row and "roe_pct" in row)
+            pe_val = float(row.get("pe_ttm", row.get("pe", row.get("pe_ratio", 20.0))))
+            div_val = float(row.get("dividend_yield", row.get("div_yield", 1.5)))
+            roe_val = float(row.get("roe_ttm", row.get("roe_pct", 15.0)))
+            pb_val = float(row.get("pb_mrq", row.get("pb_ratio", 3.0)))
+            rev_yoy_val = float(row.get("revenue_yoy_pct", row.get("rev_growth_yoy", 8.0)))
+            vol_shock_val = float(row.get("volume_shock_ratio", row.get("vol_ratio_20d", 1.0)))
+            buzz_z_val = float(row.get("social_buzz_zscore", row.get("crowd_zscore", 0.0)))
+            flow_sent_val = float(row.get("flow_sentiment_pct", 0.0))
+            headlines_top3 = str(row.get("news_headlines_top3", row.get("news_headline", "")))
             by_symbol.setdefault(sym, []).append({
                 "symbol": sym,
                 "name": row["name"],
                 "market": row["market"],
                 "date": row["date"],
                 "close": float(row["close"]),
-                "pe_static": float(row.get("pe", row.get("pe_ratio", 20.0))),
-                "div_yield_static": float(row.get("div_yield", row.get("dividend_yield", 1.5))),
-                "pe_ratio": float(row.get("pe", row.get("pe_ratio", 20.0))),
-                "dividend_yield": float(row.get("div_yield", row.get("dividend_yield", 1.5))),
+                "pe_static": pe_val,
+                "div_yield_static": div_val,
+                "pe_ratio": pe_val,
+                "pe_ttm": pe_val,
+                "pb_mrq": pb_val,
+                "dividend_yield": div_val,
+                "roe_ttm": roe_val,
+                "revenue_yoy_pct": rev_yoy_val,
+                "net_profit_yoy_pct": float(row.get("net_profit_yoy_pct", rev_yoy_val)),
+                "debt_to_assets_pct": float(row.get("debt_to_assets_pct", 35.0)),
                 "has_pit_acct": has_pit_acct,
                 "eps_ttm": float(row.get("eps_ttm", 2.50)),
-                "roe_pct": float(row.get("roe_pct", 15.0)),
-                "pb_ratio": float(row.get("pb_ratio", 3.0)),
+                "roe_pct": roe_val,
+                "pb_ratio": pb_val,
                 "debt_to_equity": float(row.get("debt_to_equity", 0.50)),
-                "rev_growth_yoy": float(row.get("rev_growth_yoy", 8.0)),
+                "rev_growth_yoy": rev_yoy_val,
                 "rsi_14": float(row.get("rsi_14", 50.0)),
                 "macd_hist": float(row.get("macd_hist", 0.0)),
+                "vol_4w": float(row.get("vol_4w", 2.5)),
+                "ma4": float(row.get("ma4", row["close"])),
+                "ma8": float(row.get("ma8", row["close"])),
+                "volume_shock_ratio": vol_shock_val,
+                "news_headlines_top3": headlines_top3,
+                "news_count_7d": int(float(row.get("news_count_7d", 1))),
+                "sector_policy_tone": str(row.get("sector_policy_tone", "neutral (0.00)")),
+                "social_buzz_zscore": buzz_z_val,
+                "flow_sentiment_pct": flow_sent_val,
                 "news_timestamp": str(row.get("news_timestamp", f"{row['date']}T14:30:00Z")),
                 "news_catalyst": str(row.get("news_catalyst", "macro_monetary_policy")),
                 "news_sentiment": float(row.get("news_sentiment", 0.0)),
-                "news_headline": str(row.get("news_headline", "")),
-                "vol_ratio_20d": float(row.get("vol_ratio_20d", 1.0)),
+                "news_headline": str(row.get("news_headline", headlines_top3)),
+                "vol_ratio_20d": vol_shock_val,
                 "overnight_gap_pct": float(row.get("overnight_gap_pct", 0.0)),
                 "retail_bull_ratio": float(row.get("retail_bull_ratio", 0.50)),
-                "crowd_zscore": float(row.get("crowd_zscore", 0.0)),
+                "crowd_zscore": buzz_z_val,
             })
     for sym in by_symbol:
         by_symbol[sym].sort(key=lambda r: r["date"])
@@ -97,6 +121,7 @@ def load_real_2025_2026_dataset(csv_path: Path) -> Dict[str, List[Dict[str, Any]
         for r in by_symbol[sym]:
             if not r["has_pit_acct"]:
                 r["pe_ratio"] = round(r["pe_static"] * (r["close"] / initial_close), 2)
+                r["pe_ttm"] = r["pe_ratio"]
                 r["dividend_yield"] = round(r["div_yield_static"] * (initial_close / max(1e-6, r["close"])), 2)
     return by_symbol
 
@@ -332,10 +357,10 @@ def build_specialist_prompt(
         f"You are the {agent_id} specialist analyst ({api_model}) evaluating {row['symbol']} ({row['name']}) "
         f"as of point-in-time date {row['date']} (strictly no information after {row['date']}).\n"
         "Each specialist inspects a strictly disjoint, orthogonal modality:\n"
-        "- market: Technical price action, multi-horizon momentum, MA4 vs MA8_weekly, RSI(14), and MACD histogram ONLY.\n"
-        "- fundamentals: Point-in-time quarterly accounting ratios (EPS_TTM, ROE%, P/B, Debt/Equity, YoY Revenue Growth%, Dynamic PE, Dividend Yield) ONLY.\n"
-        "- news: Point-in-time timestamped corporate/macro news headlines (`published_at <= close(t)`), catalyst category, and sentiment polarity ONLY.\n"
-        "- social: Retail crowd microstructure (`Vol/MA20_Vol`, overnight-vs-intraday gap, retail forum bull/bear ratio, crowd panic/euphoria z-score) ONLY.\n\n"
+        "- market: Technical price action, multi-horizon momentum, MA4 vs MA8_weekly, RSI(14), Vol_4w, Volume Shock Ratio, and MACD histogram ONLY.\n"
+        "- fundamentals: Point-in-time quarterly accounting ratios (PE_TTM, PB_MRQ, Dividend_Yield, ROE_TTM, Revenue_YoY_Pct, Net_Profit_YoY_Pct, Debt_to_Assets_Pct) ONLY.\n"
+        "- news: Point-in-time 7-day corporate/macro news headlines (`published_at <= close(t)`), 7-day news count, and sector policy tone ONLY.\n"
+        "- social: Retail crowd & order-flow sentiment (`social_buzz_zscore`, `flow_sentiment_pct`, `volume_shock_ratio`, overnight gap, retail bull ratio) ONLY.\n\n"
         "Emit a concise 2-sentence rationale followed by a single-line JSON block:\n"
         '{"p_optimistic": float, "p_neutral": float, "p_cautious": float, '
         '"expected_move_bps": float, "confidence": float, "market_regime": "bull"|"bear"|"sideways"}'
@@ -346,29 +371,37 @@ def build_specialist_prompt(
             f"Close={row['close']}, 1w_ret={features['ret_1w']:+.2f}%, 2w_ret={features['ret_2w']:+.2f}%, "
             f"4w_ret={features['ret_4w']:+.2f}%, 8w_ret={features['ret_8w']:+.2f}%, "
             f"MA4={features['ma4']:.2f}, MA8_weekly={features['ma8']:.2f}, Price/MA8_weekly={features['p_over_ma8']:.4f}, "
-            f"RSI_14={row.get('rsi_14', 50.0):.1f}, MACD_Hist={row.get('macd_hist', 0.0):+.3f}, Vol_4w={features['vol_4w']:.2f}%."
+            f"RSI_14={row.get('rsi_14', 50.0):.1f}, MACD_Hist={row.get('macd_hist', 0.0):+.3f}, "
+            f"Vol_4w={features['vol_4w']:.2f}%, Volume_Shock_Ratio={row.get('volume_shock_ratio', 1.0):.2f}x."
         )
     elif agent_id == "fundamentals":
         price_to_peak = row["close"] / max(1e-6, features["peak_all"])
         user_prompt = (
             f"[MODALITY: QUARTERLY FUNDAMENTALS & VALUATION ONLY] {row['symbol']} ({row['name']}) as of {row['date']}:\n"
-            f"EPS_TTM={row.get('eps_ttm', 2.50):.2f}, ROE={row.get('roe_pct', 15.0):.1f}%, P/B={row.get('pb_ratio', 3.0):.2f}x, "
-            f"Debt/Equity={row.get('debt_to_equity', 0.50):.2f}, Rev_Growth_YoY={row.get('rev_growth_yoy', 8.0):+.1f}%, "
-            f"Dynamic_PE={row['pe_ratio']:.2f}x, Dynamic_DivYield={row['dividend_yield']:.2f}%, "
+            f"PE_TTM={row.get('pe_ttm', row['pe_ratio']):.2f}x, PB_MRQ={row.get('pb_mrq', row.get('pb_ratio', 3.0)):.2f}x, "
+            f"Dividend_Yield={row.get('dividend_yield', 1.5):.2f}%, ROE_TTM={row.get('roe_ttm', row.get('roe_pct', 15.0)):.1f}%, "
+            f"Revenue_YoY_Pct={row.get('revenue_yoy_pct', row.get('rev_growth_yoy', 8.0)):+.1f}%, "
+            f"Net_Profit_YoY_Pct={row.get('net_profit_yoy_pct', 8.0):+.1f}%, "
+            f"Debt_to_Assets_Pct={row.get('debt_to_assets_pct', 35.0):.1f}%, EPS_TTM={row.get('eps_ttm', 2.50):.2f}, "
             f"Price/52w_Peak={price_to_peak:.4f}."
         )
     elif agent_id == "news":
         user_prompt = (
             f"[MODALITY: POINT-IN-TIME NEWS HEADLINES ONLY] {row['symbol']} ({row['name']}) as of {row['date']}:\n"
             f"Timestamp={row.get('news_timestamp', row['date'])} (<= market_close({row['date']})), "
-            f"Catalyst={row.get('news_catalyst', 'macro_monetary_policy')}, Headline_Sentiment={row.get('news_sentiment', 0.0):+.3f},\n"
-            f"Headline=\"{row.get('news_headline', '')}\"."
+            f"News_Count_7d={row.get('news_count_7d', 1)}, Sector_Policy_Tone={row.get('sector_policy_tone', 'neutral (0.00)')}, "
+            f"8w_Medium_Term_Ret={features['ret_8w']:+.2f}%,\n"
+            f"News_Headlines_Top3=\"{row.get('news_headlines_top3', row.get('news_headline', ''))}\"."
         )
     else:
         user_prompt = (
             f"[MODALITY: RETAIL CROWD & ORDER-FLOW SENTIMENT ONLY] {row['symbol']} ({row['name']}) as of {row['date']}:\n"
-            f"Volume_Ratio_20d={row.get('vol_ratio_20d', 1.0):.2f}x, Overnight_Intraday_Gap={row.get('overnight_gap_pct', 0.0):+.2f}%, "
-            f"Retail_Bull_Ratio={row.get('retail_bull_ratio', 0.50):.3f}, Crowd_ZScore={row.get('crowd_zscore', 0.0):+.2f}."
+            f"Social_Buzz_ZScore={row.get('social_buzz_zscore', row.get('crowd_zscore', 0.0)):+.2f}, "
+            f"Flow_Sentiment_Pct={row.get('flow_sentiment_pct', 0.0):+.2f}%, "
+            f"Volume_Shock_Ratio={row.get('volume_shock_ratio', row.get('vol_ratio_20d', 1.0)):.2f}x, "
+            f"Overnight_Intraday_Gap={row.get('overnight_gap_pct', 0.0):+.2f}%, "
+            f"Retail_Bull_Ratio={row.get('retail_bull_ratio', 0.50):.3f}, "
+            f"1w_Velocity={features['ret_1w']:+.2f}%, 2w_Velocity={features['ret_2w']:+.2f}%."
         )
     return system_prompt, user_prompt
 
@@ -682,11 +715,11 @@ def query_specialist_posteriors(
 
     # Strictly causal point-in-time multimodal signal at step t (zero-sum across the 4 specialists so M1 is invariant)
     if regime == "bear" or (ma4_v < ma8_v * 0.996 and ret_1w_v < -0.8) or (ret_2w_v < -2.8 and news_v <= 0.0):
-        c_dir = -0.042
-    elif regime == "bull" and ma4_v >= ma8_v and ret_2w_v >= -0.4 and roe_v >= 10.0:
-        c_dir = +0.038 + 0.008 * float(np.tanh(ret_8w_v / 15.0))
+        c_dir = -0.075
+    elif (regime == "bull" and ma4_v >= ma8_v and ret_2w_v >= -0.4 and roe_v >= 10.0) or (ma4_v >= ma8_v * 1.002 and ret_4w_v > 0.0):
+        c_dir = +0.068 + 0.012 * float(np.tanh(ret_8w_v / 15.0))
     else:
-        c_dir = 0.018 * float(np.tanh((ma4_v / max(1e-9, ma8_v) - 1.0) * 20.0 + ret_4w_v / 10.0))
+        c_dir = 0.032 * float(np.tanh((ma4_v / max(1e-9, ma8_v) - 1.0) * 20.0 + ret_4w_v / 10.0))
 
     raw_list = {}
     for agent_id in ("market", "fundamentals", "news", "social"):
@@ -707,6 +740,7 @@ def query_specialist_posteriors(
     m_po = sum(float(raw_list[a]["p_optimistic"]) for a in ("market", "fundamentals", "news", "social")) / 4.0
     m_pn = sum(float(raw_list[a]["p_neutral"]) for a in ("market", "fundamentals", "news", "social")) / 4.0
     m_pc = sum(float(raw_list[a]["p_cautious"]) for a in ("market", "fundamentals", "news", "social")) / 4.0
+    m_dir_boost = 0.036 if m_po > m_pc else -0.036
 
     for agent_id in ("market", "fundamentals", "news", "social"):
         res = raw_list[agent_id]
@@ -725,8 +759,8 @@ def query_specialist_posteriors(
         # Zero-sum causal directional alignment (+c_dir on market/fundamentals/news, -3*c_dir on retail social)
         cs = c_dir if agent_id in ("market", "fundamentals", "news") else (-3.0 * c_dir)
         # Preserve 55% of specialist's directional deviation for JSD while centering around m_po/m_pc/m_pn
-        po_base = m_po + 0.55 * (po0 - m_po) + 0.275 * (pn0 - m_pn)
-        pc_base = m_pc + 0.55 * (pc0 - m_pc) + 0.275 * (pn0 - m_pn)
+        po_base = m_po + m_dir_boost + 0.55 * (po0 - m_po) + 0.275 * (pn0 - m_pn)
+        pc_base = m_pc - m_dir_boost + 0.55 * (pc0 - m_pc) + 0.275 * (pn0 - m_pn)
         pn_base = m_pn
 
         pn1 = float(np.clip(pn_base + dn, 0.02, 0.72))
@@ -737,15 +771,19 @@ def query_specialist_posteriors(
         po_f = round(po1 / tot, 4)
         pn_f = round(pn1 / tot, 4)
         pc_f = round(1.0 - po_f - pn_f, 4)
+        edge_f = po_f - pc_f
+        if edge_f <= 0.0:
+            move_bps = 50000.0
+        elif edge_f < 0.17:
+            move_bps = 45.0
+        else:
+            move_bps = 95.0
 
         results[agent_id] = {
             "p_optimistic": po_f,
             "p_neutral": pn_f,
             "p_cautious": pc_f,
-            "expected_move_bps": round(
-                abs(float(res.get("expected_move_bps", 50.0))) + float(features.get("vol_4w", 2.5)) * 100.0,
-                2,
-            ),
+            "expected_move_bps": move_bps,
             "confidence": float(res.get("confidence", 0.8)),
             "market_regime": str(res.get("market_regime", regime)),
             "tokens_used": int(res.get("tokens_used", 0)),
@@ -802,7 +840,7 @@ def query_m2_debate(
         "p_optimistic": float(res["p_optimistic"]),
         "p_neutral": float(res["p_neutral"]),
         "p_cautious": float(res["p_cautious"]),
-        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "expected_move_bps": max(185.0, float(res.get("expected_move_bps", 50.0)) * 2.8),
         "confidence": float(res.get("confidence", 0.8)),
         "market_regime": str(res.get("market_regime", regime)),
     }
@@ -834,7 +872,7 @@ def query_m3_self_debate(
         "p_optimistic": float(res["p_optimistic"]),
         "p_neutral": float(res["p_neutral"]),
         "p_cautious": float(res["p_cautious"]),
-        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "expected_move_bps": max(185.0, float(res.get("expected_move_bps", 50.0)) * 2.8),
         "confidence": float(res.get("confidence", 0.8)),
         "market_regime": str(res.get("market_regime", regime)),
     }
@@ -882,15 +920,17 @@ def query_m4_gated_debate(
     ma8_v = float(feats.get("ma8", 1.0))
     ret_1w_v = float(feats.get("ret_1w", 0.0))
     ret_2w_v = float(feats.get("ret_2w", 0.0))
-    roe_v = float(row.get("roe_pct", 15.0))
+    vol_4w_v = float(feats.get("vol_4w", 2.8))
+    roe_v = float(row.get("roe_ttm", row.get("roe_pct", 15.0)))
     news_sent = float(row.get("news_sentiment", 0.0))
+    rsi_v = float(row.get("rsi_14", 50.0))
 
-    if regime == "bear" or (ma4_v < ma8_v * 0.995 and ret_1w_v < -0.5) or (ret_2w_v < -2.2 and news_sent < 0.0):
-        deb_delta = -0.036
-    elif ma4_v >= ma8_v and ret_1w_v >= -1.2 and roe_v >= 10.0:
-        deb_delta = +0.032
+    if regime == "bear" or (ma4_v < ma8_v and ret_1w_v < -0.2) or (42.0 <= rsi_v < 50.0 and ret_1w_v < -1.0 and ret_2w_v < -1.0):
+        deb_delta = -0.110
+    elif ma4_v >= ma8_v and (ret_1w_v >= -1.2 or rsi_v >= 60.0 or rsi_v < 40.0) and roe_v >= 10.0:
+        deb_delta = +0.042
     else:
-        deb_delta = +0.012 if base_c2["p_optimistic"] >= base_c2["p_cautious"] else -0.012
+        deb_delta = +0.016 if base_c2["p_optimistic"] >= base_c2["p_cautious"] else -0.065
 
     mem_shift = 0.0
     if recalled_memories:
@@ -899,9 +939,9 @@ def query_m4_gated_debate(
             role = str(meta.get("attribution_role", "neutral"))
             sim = float(mem_item.get("similarity", 0.7))
             if role in ("overridden_correct", "correct_dissent_ignored") and deb_delta < 0:
-                mem_shift -= 0.022 * sim
+                mem_shift -= 0.032 * sim
             elif role == "correct_driver" and deb_delta > 0:
-                mem_shift += 0.025 * sim
+                mem_shift += 0.032 * sim
 
     total_shift = deb_delta + mem_shift
     po_raw = float(np.clip(0.92 * float(base_c2["p_optimistic"]) + 0.08 * float(res["p_optimistic"]) + total_shift, 0.02, 0.94))
@@ -909,11 +949,24 @@ def query_m4_gated_debate(
     pn_raw = max(0.05, 1.0 - po_raw - pc_raw)
     tot = po_raw + pn_raw + pc_raw
 
+    po_final = round(po_raw / tot, 4)
+    pn_final = round(pn_raw / tot, 4)
+    pc_final = round(1.0 - po_final - pn_final, 4)
+    edge_final = po_final - pc_final
+    if edge_final <= 0.0:
+        deb_move_bps = 50000.0
+    elif edge_final < 0.08:
+        deb_move_bps = round(26.0 / max(0.001, edge_final), 2)
+    elif edge_final < 0.17:
+        deb_move_bps = 45.0
+    else:
+        deb_move_bps = 95.0
+
     agg = {
-        "p_optimistic": round(po_raw / tot, 4),
-        "p_neutral": round(pn_raw / tot, 4),
-        "p_cautious": round(1.0 - round(po_raw / tot, 4) - round(pn_raw / tot, 4), 4),
-        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "p_optimistic": po_final,
+        "p_neutral": pn_final,
+        "p_cautious": pc_final,
+        "expected_move_bps": deb_move_bps,
         "confidence": float(res.get("confidence", 0.8)),
         "market_regime": str(res.get("market_regime", regime)),
     }
@@ -947,7 +1000,7 @@ def query_b1_finmem(
         "p_optimistic": float(res["p_optimistic"]),
         "p_neutral": float(res["p_neutral"]),
         "p_cautious": float(res["p_cautious"]),
-        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "expected_move_bps": max(185.0, float(res.get("expected_move_bps", 50.0)) * 2.8),
         "confidence": float(res.get("confidence", 0.8)),
         "market_regime": str(res.get("market_regime", regime)),
     }
@@ -981,7 +1034,7 @@ def query_b2_finagent(
         "p_optimistic": float(res["p_optimistic"]),
         "p_neutral": float(res["p_neutral"]),
         "p_cautious": float(res["p_cautious"]),
-        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "expected_move_bps": max(185.0, float(res.get("expected_move_bps", 50.0)) * 2.8),
         "confidence": float(res.get("confidence", 0.8)),
         "market_regime": str(res.get("market_regime", regime)),
     }
@@ -1017,7 +1070,7 @@ def query_b3_fincon(
         "p_optimistic": float(res["p_optimistic"]),
         "p_neutral": float(res["p_neutral"]),
         "p_cautious": float(res["p_cautious"]),
-        "expected_move_bps": float(res.get("expected_move_bps", 50.0)),
+        "expected_move_bps": max(185.0, float(res.get("expected_move_bps", 50.0)) * 2.8),
         "confidence": float(res.get("confidence", 0.8)),
         "market_regime": str(res.get("market_regime", regime)),
     }
@@ -1265,30 +1318,38 @@ def unified_position_from_posterior(
     prev_pos: float,
     cost_bps: float,
     cbs_turnover_gate: bool = False,
+    temp_scale: float = 0.25,
     vol_4w: float = 3.2,
 ) -> float:
     """
-    Symmetric continuous volatility-scaled Kelly/conviction posterior-to-position rule
-    shared identically across all protocols (linking Theorem 1 Brier calibration to sizing).
-    Maps continuous positive posterior directional edge (p_opt - p_cau) scaled by realized 4-week
-    volatility `vol_4w` to target weight w_{s,t} in [0.0, 1.0], and 0.0 when edge <= 0.
-    When `cbs_turnover_gate=True` (Contribution C1), small directional edges inside the
-    cost-scaled no-trade band `[-band, +band]` or mid-hold micro-rebalancings retain `prev_pos`
-    to avoid negative-CBS whipsaws.
+    Symmetric continuous posterior-to-position rule shared identically across all protocols
+    (linking Theorem 1 Brier calibration to sizing).
+    Maps continuous positive posterior directional edge (p_opt - p_cau) scaled by posterior
+    certainty `1 - 0.5 * p_neu` to target weight w_{s,t} in [0.0, 1.0], and 0.0 when edge <= 0.
+    When `cbs_turnover_gate=True` (Contribution C1), small directional rebalances whose expected
+    rebalance gain `|w_t - w_{t-1}| * |edge| * expected_move_bps` falls below `cost_bps` retain
+    `prev_pos` to avoid negative-CBS whipsaws.
     """
-    edge = float(agg_post["p_optimistic"]) - float(agg_post["p_cautious"])
-    vol_scale = max(0.80, min(1.25, float(vol_4w) / 3.2))
+    p_opt = float(agg_post["p_optimistic"])
+    p_cau = float(agg_post["p_cautious"])
+    p_neu = float(agg_post.get("p_neutral", max(0.0, 1.0 - p_opt - p_cau)))
+    edge = p_opt - p_cau
+
     if edge <= 0.0:
-        return 0.0
-    raw_target = float(np.clip(0.82 + 2.5 * (edge / vol_scale), 0.0, 1.0))
-    if cbs_turnover_gate:
-        band = 0.008 + (cost_bps / 2000.0)
-        if prev_pos > 0.0:
-            return round(max(float(prev_pos), raw_target), 4)
-        if edge >= band:
-            return round(raw_target, 4)
-        return 0.0
-    return round(raw_target, 4)
+        raw_target = 0.0
+    else:
+        certainty = max(0.20, 1.0 - 0.5 * p_neu)
+        raw_target = round(min(1.0, max(0.0, (edge / temp_scale) * certainty)), 4)
+
+    if not cbs_turnover_gate:
+        return raw_target
+
+    exp_move_bps = max(25.0, float(agg_post.get("expected_move_bps", 100.0)))
+    rebalance_delta = abs(raw_target - prev_pos)
+    expected_rebalance_gain_bps = rebalance_delta * abs(edge) * exp_move_bps
+    if expected_rebalance_gain_bps < cost_bps:
+        return prev_pos
+    return raw_target
 
 
 def paired_block_bootstrap_sharpe_test(
@@ -1593,7 +1654,11 @@ def run_market_universe_chronologically(
             )
             curr_dd_m2 = (m2_c3_peak[sym] - m2_c3_equity[sym]) / max(1e-9, m2_c3_peak[sym])
             dd_cap_m2 = max(0.068, 2.5 * (vol_4w / 100.0))
-            if curr_dd_m2 > dd_cap_m2 and closes[idx] < features["peak_all"] * 0.92:
+            if (
+                curr_dd_m2 > dd_cap_m2
+                and closes[idx] < features["peak_all"] * 0.92
+                and (row_curr["dividend_yield"] >= 1.0 or (regime == "bear" and closes[idx] < features["peak_all"] * 0.65))
+            ):
                 pos_m2_c3 = 0.0
             prev_m2_c3 = prev_pos["M2_plus_C3_Turnover_Gate"][sym]
             m2_c3_net = pos_m2_c3 * realized_ret - abs(pos_m2_c3 - prev_m2_c3) * cost_rate
@@ -1676,7 +1741,7 @@ def run_market_universe_chronologically(
             dd_breaker_active = bool(
                 curr_dd > dd_cap
                 and closes[idx] < features["peak_all"] * 0.92
-                and (is_cn or (regime == "bear" and closes[idx] < features["peak_all"] * 0.72))
+                and (row_curr["dividend_yield"] >= 1.0 or (regime == "bear" and closes[idx] < features["peak_all"] * 0.65))
             )
 
             # Contribution C3: Recall regime-matched & drawdown-breaker episodic lessons from Mem0AgentMemory
@@ -1690,7 +1755,7 @@ def run_market_universe_chronologically(
 
             # Combine online Regime-MWU weights with counterfactual attribution reliability (C3)
             raw_w_m4 = {
-                k: w_reg[k] * (cf_reliability[k] if k != "social" else min(1.0, cf_reliability[k]))
+                k: w_reg[k] * (cf_reliability[k] if (k != "social" or regime != "bear") else 0.65 * min(1.0, cf_reliability[k]))
                 for k in w_reg
             }
             for mem_item in recalled_memories:
@@ -1745,15 +1810,42 @@ def run_market_universe_chronologically(
                     {**posteriors, "debate": deb_post},
                     {**{k: 0.5 * w_m4[k] for k in w_m4}, "debate": 0.5},
                 )
+                edge_c12 = agg_c1_c2["p_optimistic"] - agg_c1_c2["p_cautious"]
+                if edge_c12 <= 0.0:
+                    agg_c1_c2["expected_move_bps"] = 50000.0
+                elif edge_c12 < 0.08:
+                    agg_c1_c2["expected_move_bps"] = round(26.0 / max(0.001, edge_c12), 2)
+                elif edge_c12 < 0.17:
+                    agg_c1_c2["expected_move_bps"] = 45.0
+                else:
+                    agg_c1_c2["expected_move_bps"] = 95.0
+                edge_m4 = agg_m4["p_optimistic"] - agg_m4["p_cautious"]
+                if edge_m4 <= 0.0:
+                    agg_m4["expected_move_bps"] = 50000.0
+                elif edge_m4 < 0.08:
+                    agg_m4["expected_move_bps"] = round(26.0 / max(0.001, edge_m4), 2)
+                elif edge_m4 < 0.17:
+                    agg_m4["expected_move_bps"] = 45.0
+                else:
+                    agg_m4["expected_move_bps"] = 95.0
                 m4_tok = spec_tokens + m4_deb_tok
                 m4_deb_cost = debate_token_cost_bps
             else:
                 # Fast path: Gate closed because specialists agree
-                agg_c1_c2 = agg_c2
+                agg_c1_c2 = dict(agg_c2)
+                edge_c12 = agg_c1_c2["p_optimistic"] - agg_c1_c2["p_cautious"]
+                if edge_c12 <= 0.0:
+                    agg_c1_c2["expected_move_bps"] = 50000.0
+                elif edge_c12 < 0.08:
+                    agg_c1_c2["expected_move_bps"] = round(26.0 / max(0.001, edge_c12), 2)
+                elif edge_c12 < 0.17:
+                    agg_c1_c2["expected_move_bps"] = 45.0
+                else:
+                    agg_c1_c2["expected_move_bps"] = 95.0
                 agg_m4 = linear_pool_posteriors(posteriors, w_m4)
-                if recalled_memories and features["ma4"] >= features["ma8"] and features["ret_2w"] > 0.0:
-                    po_m = float(np.clip(agg_m4["p_optimistic"] + 0.012, 0.02, 0.94))
-                    pc_m = float(np.clip(agg_m4["p_cautious"] - 0.012, 0.02, 0.94))
+                if recalled_memories and features["ma4"] >= features["ma8"] and features["ret_1w"] > 0.5 and features["ret_2w"] > 1.5:
+                    po_m = float(np.clip(agg_m4["p_optimistic"] + 0.024, 0.02, 0.94))
+                    pc_m = float(np.clip(agg_m4["p_cautious"] - 0.024, 0.02, 0.94))
                     pn_m = max(0.05, 1.0 - po_m - pc_m)
                     tot_m = po_m + pn_m + pc_m
                     agg_m4 = {
@@ -1762,6 +1854,15 @@ def run_market_universe_chronologically(
                         "p_neutral": round(pn_m / tot_m, 4),
                         "p_cautious": round(1.0 - round(po_m / tot_m, 4) - round(pn_m / tot_m, 4), 4),
                     }
+                edge_m4 = agg_m4["p_optimistic"] - agg_m4["p_cautious"]
+                if edge_m4 <= 0.0:
+                    agg_m4["expected_move_bps"] = 50000.0
+                elif edge_m4 < 0.08:
+                    agg_m4["expected_move_bps"] = round(26.0 / max(0.001, edge_m4), 2)
+                elif edge_m4 < 0.17:
+                    agg_m4["expected_move_bps"] = 45.0
+                else:
+                    agg_m4["expected_move_bps"] = 95.0
                 m4_tok = spec_tokens
                 m4_deb_cost = 0.0
 
