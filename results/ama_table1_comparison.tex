@@ -1,0 +1,32 @@
+\begin{table*}[t]
+\centering
+\caption{Agent Market Arena (AMA, \texttt{arXiv:2510.11695v2} Table 1 Protocol) Real US Equities Comparison Across \texttt{NVDA}, \texttt{AAPL}, \texttt{GOOGL}, and \texttt{AMZN} with \texttt{deepseek-flash} and \texttt{deepseek-v4-pro}.}
+\label{tab:ama_table1_comparison}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrrrrrrrrrr}
+\toprule
+ & & \multicolumn{3}{c}{\textbf{NVDA}} & \multicolumn{3}{c}{\textbf{AAPL}} & \multicolumn{3}{c}{\textbf{GOOGL}} & \multicolumn{3}{c}{\textbf{AMZN}} & \textbf{US Pool} \\
+\cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11} \cmidrule(lr){12-14} \cmidrule(lr){15-15}
+Architecture & Backbone & CR\% & SR & MDD\% & CR\% & SR & MDD\% & CR\% & SR & MDD\% & CR\% & SR & MDD\% & Mean SR \\
+\midrule
+Buy \& Hold & Market Index & +68.88 & 2.22 & 22.49 & +43.79 & 1.98 & 21.20 & +88.05 & 2.90 & 20.22 & +16.83 & 0.97 & 19.64 & \textbf{2.02} \\
+InvestorAgent & deepseek-flash & -28.46 & -0.88 & 35.39 & +29.63 & 1.55 & 20.75 & +21.52 & 1.19 & 28.56 & -3.60 & 0.22 & 44.67 & \textbf{0.52} \\
+InvestorAgent & deepseek-v4-pro & +34.73 & 1.57 & 24.59 & +19.55 & 1.21 & 26.64 & -11.82 & -0.21 & 38.59 & -31.43 & -1.28 & 43.89 & \textbf{0.32} \\
+InvestorAgent & \textbf{Vote} & -5.72 & 0.17 & 36.60 & +19.19 & 1.25 & 21.49 & -7.07 & -0.01 & 35.57 & -26.73 & -1.04 & 50.93 & \textbf{0.09} \\
+TradeAgent & deepseek-flash & -30.41 & -0.84 & 50.91 & -30.43 & -1.33 & 51.89 & -5.03 & 0.14 & 40.52 & -29.54 & -1.25 & 39.53 & \textbf{-0.82} \\
+TradeAgent & deepseek-v4-pro & +17.32 & 0.99 & 31.80 & -14.13 & -0.37 & 36.48 & -11.36 & -0.15 & 34.50 & +2.11 & 0.46 & 48.70 & \textbf{0.23} \\
+TradeAgent & \textbf{Vote} & -16.54 & -0.27 & 35.46 & -16.26 & -0.64 & 35.36 & -21.36 & -0.64 & 32.11 & -28.14 & -1.02 & 45.91 & \textbf{-0.64} \\
+HedgeFundAgent & deepseek-flash & +12.99 & 0.85 & 37.29 & -40.55 & -2.08 & 44.71 & +46.47 & 1.89 & 28.92 & -43.30 & -1.82 & 57.34 & \textbf{-0.29} \\
+HedgeFundAgent & deepseek-v4-pro & -14.26 & -0.11 & 39.30 & -38.85 & -1.95 & 43.58 & +55.51 & 2.13 & 28.92 & -41.78 & -1.76 & 56.42 & \textbf{-0.42} \\
+HedgeFundAgent & \textbf{Vote} & -2.28 & 0.33 & 38.54 & -40.56 & -2.09 & 44.72 & +53.15 & 2.09 & 28.92 & -45.03 & -1.94 & 58.86 & \textbf{-0.40} \\
+DeepFundAgent & deepseek-flash & -18.23 & -0.28 & 50.27 & -36.18 & -1.72 & 42.95 & +39.66 & 1.71 & 26.97 & -51.79 & -2.45 & 63.54 & \textbf{-0.69} \\
+DeepFundAgent & deepseek-v4-pro & -16.66 & -0.22 & 47.79 & -46.88 & -2.62 & 48.69 & +39.87 & 1.74 & 23.66 & -43.53 & -1.98 & 57.29 & \textbf{-0.77} \\
+DeepFundAgent & \textbf{Vote} & -21.95 & -0.43 & 51.10 & -39.70 & -2.03 & 43.92 & +44.88 & 1.87 & 25.20 & -53.24 & -2.57 & 64.64 & \textbf{-0.79} \\
+\textbf{CARE-Agents (Ours)} & deepseek-flash & +53.04 & 2.27 & 20.85 & -7.09 & -0.23 & 23.42 & +81.20 & 3.50 & 17.34 & -3.59 & 0.09 & 23.11 & \textbf{1.41} \\
+\textbf{CARE-Agents (Ours)} & deepseek-v4-pro & +56.74 & 2.39 & 20.85 & -11.59 & -0.56 & 23.42 & +69.13 & 3.18 & 17.34 & -9.00 & -0.22 & 26.26 & \textbf{1.20} \\
+\textbf{CARE-Agents (Ours)} & \textbf{Vote} & +53.04 & 2.27 & 20.85 & -7.09 & -0.23 & 23.42 & +81.20 & 3.50 & 17.34 & -4.74 & 0.02 & 24.03 & \textbf{1.39} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

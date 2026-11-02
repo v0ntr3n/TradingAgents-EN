@@ -56,7 +56,7 @@ def test_point_in_time_zero_leakage():
 
     # Clean causal step at t_idx
     dt_str = str(sym_df.iloc[t_idx]["date"])
-    cached_info = loader._extract_cached_posteriors_for_bar("Frontier_LLM_DeepSeek_V3", "AAPL", dt_str)
+    cached_info = loader._extract_cached_posteriors_for_bar("deepseek-v4-pro", "AAPL", dt_str)
     clean_rec = build_causal_step_record_at_index(sym_df, t_idx, cached_step_posteriors=cached_info)
 
     # Corrupt all future rows >= t_idx + 1 with extreme garbage / NaNs

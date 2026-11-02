@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sys as _sys
 _self_mod = _sys.modules[__name__]
-for _sub in ['hk_data_service', 'hk_sync_service', 'us_data_service', 'us_sync_service', 'qmt_sync_service', 'example_sdk_sync_service']:
+for _sub in ['hk_data_service', 'hk_sync_service', 'us_data_service', 'us_sync_service', 'qmt_sync_service', 'example_sdk_sync_service', 'base_market_sync', 'akshare_init_service', 'akshare_sync_service', 'tushare_init_service', 'tushare_sync_service', 'baostock_init_service', 'baostock_sync_service']:
     _sys.modules[f"app.worker.{_sub}"] = _self_mod
     setattr(_self_mod, _sub.split(".")[0], _self_mod)
 
@@ -2308,3 +2308,36 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+# === US-Focused Compatibility Shims for Removed CN Sync Workers ===
+AKShareSyncService = USSyncService
+TushareSyncService = USSyncService
+BaoStockSyncService = USSyncService
+
+async def get_akshare_sync_service():
+    return get_us_sync_service()
+
+async def get_tushare_sync_service():
+    return get_us_sync_service()
+
+async def get_baostock_sync_service():
+    return get_us_sync_service()
+
+async def _check_task_running(*args, **kwargs):
+    return False
+
+async def run_akshare_basic_info_sync(*args, **kwargs): pass
+async def run_akshare_financial_sync(*args, **kwargs): pass
+async def run_akshare_historical_sync(*args, **kwargs): pass
+async def run_akshare_quotes_sync(*args, **kwargs): pass
+async def run_akshare_status_check(*args, **kwargs): pass
+async def run_baostock_basic_info_sync(*args, **kwargs): pass
+async def run_baostock_daily_quotes_sync(*args, **kwargs): pass
+async def run_baostock_historical_sync(*args, **kwargs): pass
+async def run_baostock_status_check(*args, **kwargs): pass
+async def run_tushare_basic_info_sync(*args, **kwargs): pass
+async def run_tushare_financial_sync(*args, **kwargs): pass
+async def run_tushare_historical_sync(*args, **kwargs): pass
+async def run_tushare_realtime_quotes_hourly(*args, **kwargs): pass
+async def run_tushare_status_check(*args, **kwargs): pass

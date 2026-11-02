@@ -12,7 +12,7 @@ multimodal columns across `data/phase5_real_2025_2026_prices.csv` and
    `net_profit_yoy_pct`, `debt_to_assets_pct` (plus `eps_ttm`, `roe_pct`,
    `pb_ratio`, `debt_to_equity`, `rev_growth_yoy`)
 3. 7-day point-in-time news window `[date - 7d, date]`:
-   Uses `core.tools.implementations.news.stock_news._build_a_share_news_window` (CN, AKShare/local)
+   Uses point-in-time weekly sliding news windows
    and `tradingagents.dataflows.news.realtime_news.RealtimeNewsAggregator` /
    `tradingagents.dataflows.news.google_news.getNewsData` (US) with deterministic point-in-time
    historical archive fallback when external keys/MongoDB are offline:
@@ -31,15 +31,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
-try:
-    from core.tools.implementations.news.stock_news import _build_a_share_news_window
-except Exception:
-    def _build_a_share_news_window(curr_date: str) -> Tuple[datetime, datetime, str, str]:
-        analysis_date_str = curr_date.split()[0] if " " in curr_date else curr_date
-        analysis_date = datetime.strptime(analysis_date_str, "%Y-%m-%d")
-        start_date = datetime.combine((analysis_date - timedelta(days=6)).date(), time.min)
-        end_date = datetime.combine(analysis_date.date(), time.max)
-        return start_date, end_date, start_date.strftime("%Y-%m-%d"), analysis_date_str
+def _build_news_window(curr_date: str) -> Tuple[datetime, datetime, str, str]:
+    analysis_date_str = curr_date.split()[0] if " " in curr_date else curr_date
+    analysis_date = datetime.strptime(analysis_date_str, "%Y-%m-%d")
+    start_date = datetime.combine((analysis_date - timedelta(days=6)).date(), time.min)
+    end_date = datetime.combine(analysis_date.date(), time.max)
+    return start_date, end_date, start_date.strftime("%Y-%m-%d"), analysis_date_str
 
 try:
     from tradingagents.dataflows.news.realtime_news import RealtimeNewsAggregator
@@ -55,106 +52,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # 30-Stock Universe Metadata + Point-in-Time Quarterly Accounting Anchors
 UNIVERSE_30_METADATA: Dict[str, Dict[str, Any]] = {
-    "ASHR": {
-        "name": "CSI 300 Index ETF (ASHR)", "market": "CN", "cik": None,
-        "eps_base": 1.88, "roe_base": 11.4, "pb_base": 1.42, "de_base": 0.68, "rev_g_base": 4.8,
-        "np_g_base": 5.4, "da_base": 40.5, "pe_base": 13.5, "div_base": 2.8, "sector": "Index ETF",
-    },
-    "600519.SH": {
-        "name": "Kweichow Moutai", "market": "CN", "cik": None,
-        "eps_base": 68.50, "roe_base": 33.8, "pb_base": 7.65, "de_base": 0.04, "rev_g_base": 15.6,
-        "np_g_base": 16.8, "da_base": 18.2, "pe_base": 22.8, "div_base": 3.1, "sector": "Consumer Staples",
-    },
-    "000858.SZ": {
-        "name": "Wuliangye Yibin", "market": "CN", "cik": None,
-        "eps_base": 8.15, "roe_base": 23.9, "pb_base": 4.10, "de_base": 0.06, "rev_g_base": 10.2,
-        "np_g_base": 11.4, "da_base": 21.5, "pe_base": 16.4, "div_base": 3.6, "sector": "Consumer Staples",
-    },
-    "300750.SZ": {
-        "name": "CATL (Contemporary Amperex)", "market": "CN", "cik": None,
-        "eps_base": 11.40, "roe_base": 22.4, "pb_base": 4.65, "de_base": 0.72, "rev_g_base": 8.4,
-        "np_g_base": 14.2, "da_base": 64.8, "pe_base": 19.5, "div_base": 2.2, "sector": "EV Batteries",
-    },
-    "002594.SZ": {
-        "name": "BYD Company", "market": "CN", "cik": None,
-        "eps_base": 12.80, "roe_base": 24.1, "pb_base": 5.30, "de_base": 0.58, "rev_g_base": 22.5,
-        "np_g_base": 26.4, "da_base": 71.2, "pe_base": 21.6, "div_base": 1.3, "sector": "Electric Vehicles",
-    },
-    "600036.SH": {
-        "name": "China Merchants Bank", "market": "CN", "cik": None,
-        "eps_base": 5.65, "roe_base": 15.2, "pb_base": 0.94, "de_base": 1.85, "rev_g_base": -1.2,
-        "np_g_base": 1.8, "da_base": 89.4, "pe_base": 6.2, "div_base": 5.4, "sector": "Financials",
-    },
-    "601318.SH": {
-        "name": "Ping An Insurance", "market": "CN", "cik": None,
-        "eps_base": 6.40, "roe_base": 12.8, "pb_base": 0.92, "de_base": 1.60, "rev_g_base": 6.8,
-        "np_g_base": 9.5, "da_base": 88.6, "pe_base": 7.8, "div_base": 5.1, "sector": "Insurance",
-    },
-    "000333.SZ": {
-        "name": "Midea Group", "market": "CN", "cik": None,
-        "eps_base": 5.30, "roe_base": 21.6, "pb_base": 2.85, "de_base": 0.64, "rev_g_base": 9.8,
-        "np_g_base": 12.6, "da_base": 63.4, "pe_base": 13.2, "div_base": 4.3, "sector": "Appliances & Robotics",
-    },
-    "600900.SH": {
-        "name": "China Yangtze Power", "market": "CN", "cik": None,
-        "eps_base": 1.36, "roe_base": 15.8, "pb_base": 3.25, "de_base": 1.42, "rev_g_base": 11.4,
-        "np_g_base": 14.1, "da_base": 61.2, "pe_base": 20.5, "div_base": 3.4, "sector": "Hydro Utilities",
-    },
-    "601899.SH": {
-        "name": "Zijin Mining Group", "market": "CN", "cik": None,
-        "eps_base": 1.18, "roe_base": 24.6, "pb_base": 3.70, "de_base": 0.95, "rev_g_base": 18.9,
-        "np_g_base": 24.2, "da_base": 56.8, "pe_base": 14.8, "div_base": 2.4, "sector": "Metals & Gold",
-    },
-    "601398.SH": {
-        "name": "ICBC", "market": "CN", "cik": None,
-        "eps_base": 0.98, "roe_base": 10.4, "pb_base": 0.62, "de_base": 2.10, "rev_g_base": -2.1,
-        "np_g_base": 0.6, "da_base": 91.5, "pe_base": 5.9, "div_base": 5.3, "sector": "Banking",
-    },
-    "600276.SH": {
-        "name": "Jiangsu Hengrui Medicine", "market": "CN", "cik": None,
-        "eps_base": 0.88, "roe_base": 13.2, "pb_base": 6.80, "de_base": 0.08, "rev_g_base": 16.4,
-        "np_g_base": 18.9, "da_base": 11.4, "pe_base": 51.5, "div_base": 0.5, "sector": "Biopharma",
-    },
-    "601012.SH": {
-        "name": "LONGi Green Energy", "market": "CN", "cik": None,
-        "eps_base": -0.65, "roe_base": -8.4, "pb_base": 1.85, "de_base": 0.88, "rev_g_base": -28.5,
-        "np_g_base": -35.0, "da_base": 58.9, "pe_base": 28.0, "div_base": 1.1, "sector": "Solar Photovoltaics",
-    },
-    "600030.SH": {
-        "name": "CITIC Securities", "market": "CN", "cik": None,
-        "eps_base": 1.42, "roe_base": 8.1, "pb_base": 1.28, "de_base": 3.20, "rev_g_base": 4.2,
-        "np_g_base": 5.8, "da_base": 81.2, "pe_base": 15.8, "div_base": 2.3, "sector": "Capital Markets",
-    },
-    "002415.SZ": {
-        "name": "Hangzhou Hikvision", "market": "CN", "cik": None,
-        "eps_base": 1.52, "roe_base": 17.9, "pb_base": 3.60, "de_base": 0.34, "rev_g_base": 5.6,
-        "np_g_base": 6.4, "da_base": 38.4, "pe_base": 19.6, "div_base": 2.9, "sector": "AI Vision & IoT",
-    },
-    "600887.SH": {
-        "name": "Inner Mongolia Yili", "market": "CN", "cik": None,
-        "eps_base": 1.78, "roe_base": 20.4, "pb_base": 3.30, "de_base": 0.76, "rev_g_base": -3.4,
-        "np_g_base": 2.1, "da_base": 61.5, "pe_base": 15.2, "div_base": 4.4, "sector": "Dairy & Consumer",
-    },
-    "603288.SH": {
-        "name": "Foshan Haitian Flavouring", "market": "CN", "cik": None,
-        "eps_base": 1.14, "roe_base": 21.0, "pb_base": 7.40, "de_base": 0.05, "rev_g_base": 9.1,
-        "np_g_base": 10.4, "da_base": 17.6, "pe_base": 35.4, "div_base": 1.9, "sector": "Condiments",
-    },
-    "601668.SH": {
-        "name": "China State Construction", "market": "CN", "cik": None,
-        "eps_base": 1.28, "roe_base": 12.6, "pb_base": 0.56, "de_base": 2.65, "rev_g_base": 2.3,
-        "np_g_base": 1.9, "da_base": 74.8, "pe_base": 4.5, "div_base": 4.8, "sector": "Infrastructure",
-    },
-    "601166.SH": {
-        "name": "Industrial Bank", "market": "CN", "cik": None,
-        "eps_base": 3.52, "roe_base": 10.2, "pb_base": 0.54, "de_base": 2.20, "rev_g_base": 0.8,
-        "np_g_base": 1.2, "da_base": 91.8, "pe_base": 5.3, "div_base": 5.8, "sector": "Commercial Banking",
-    },
-    "600309.SH": {
-        "name": "Wanhua Chemical Group", "market": "CN", "cik": None,
-        "eps_base": 5.45, "roe_base": 19.2, "pb_base": 2.65, "de_base": 1.15, "rev_g_base": 7.4,
-        "np_g_base": 6.2, "da_base": 63.1, "pe_base": 13.8, "div_base": 2.2, "sector": "Specialty Chemicals",
-    },
     "NVDA": {
         "name": "NVIDIA Corp.", "market": "US", "cik": "0001045810",
         "eps_base": 2.95, "roe_base": 91.5, "pb_base": 42.0, "de_base": 0.18, "rev_g_base": 94.0,
@@ -331,10 +228,10 @@ def _fetch_point_in_time_news_window(
 ) -> Tuple[str, str, List[str]]:
     """
     Construct the 7-day point-in-time news window `[date - 7d, date]` using
-    `_build_a_share_news_window` (CN) or `RealtimeNewsAggregator` / `getNewsData` (US)
+    `_build_news_window` or `RealtimeNewsAggregator` / `getNewsData` (US)
     without requiring external paid API tokens.
     """
-    _, _, start_date_str, end_date_str = _build_a_share_news_window(bar_date)
+    _, _, start_date_str, end_date_str = _build_news_window(bar_date)
     headlines: List[str] = []
     if not enable_live_scraping:
         return start_date_str, end_date_str, headlines

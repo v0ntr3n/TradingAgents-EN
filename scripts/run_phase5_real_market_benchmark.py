@@ -276,7 +276,7 @@ class LiveDeepSeekBenchmarkClient:
     ) -> Dict[str, Any]:
         if self.cache:
             hit = self.cache.get(cache_key)
-            if hit is not None:
+            if hit is not None and str(hit.get("raw_response", "")).strip():
                 return hit
 
         if not self.api_key:
@@ -285,7 +285,7 @@ class LiveDeepSeekBenchmarkClient:
             )
 
         target_model = model_override or (
-            "deepseek-v4-pro" if "Frontier" in cache_key else "deepseek-flash"
+            "deepseek-v4-pro" if "deepseek-v4-pro" in cache_key else "deepseek-flash"
         )
         payload = json.dumps({
             "model": target_model,
@@ -295,6 +295,7 @@ class LiveDeepSeekBenchmarkClient:
             ],
             "temperature": temperature,
             "max_tokens": max_tokens,
+            "reasoning_effort": "low",
         }).encode("utf-8")
 
         headers = {
@@ -326,7 +327,8 @@ class LiveDeepSeekBenchmarkClient:
                 f"Synthetic fallbacks are strictly prohibited under Forensic Integrity standards. Error: {last_error}"
             )
 
-        raw_text = data["choices"][0]["message"]["content"]
+        msg_obj = data["choices"][0]["message"]
+        raw_text = str(msg_obj.get("content") or msg_obj.get("reasoning_content") or "").strip()
         parsed = extract_structured_posterior(raw_text)
         usage = data.get("usage", {})
         parsed["prompt"] = f"{system_prompt}\n\n{user_prompt}"
@@ -352,9 +354,9 @@ def build_specialist_prompt(
     row: Dict[str, Any],
     features: Dict[str, float],
     regime: str,
-    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+    model_tier: str = "deepseek-v4-pro",
 ) -> Tuple[str, str]:
-    api_model = "deepseek-v4-pro" if "Frontier" in model_tier else "deepseek-flash"
+    api_model = "deepseek-v4-pro" if "deepseek-v4-pro" in model_tier else "deepseek-flash"
     system_prompt = (
         f"You are the {agent_id} specialist analyst ({api_model}) evaluating {row['symbol']} ({row['name']}) "
         f"as of point-in-time date {row['date']} (strictly no information after {row['date']}).\n"
@@ -413,7 +415,7 @@ def build_b1_finmem_prompt(
     features: Dict[str, float],
     regime: str,
     past_returns_6w: List[float],
-    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+    model_tier: str = "deepseek-v4-pro",
 ) -> Tuple[str, str]:
     system_prompt = (
         f"You are the FinMem trading agent (Yu et al., 2024), an advanced single-agent architecture "
@@ -456,7 +458,7 @@ def build_b2_finagent_prompt(
     regime: str,
     prev_pos: float,
     prev_ret: float,
-    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+    model_tier: str = "deepseek-v4-pro",
 ) -> Tuple[str, str]:
     system_prompt = (
         "You are the FinAgent trading agent (Zhang et al., KDD 2024), a tool-augmented reflection framework.\n"
@@ -502,7 +504,7 @@ def build_b3_fincon_prompt(
     features: Dict[str, float],
     regime: str,
     returns_8w: List[float],
-    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+    model_tier: str = "deepseek-v4-pro",
     fincon_history: Optional[List[float]] = None,
 ) -> Tuple[str, str]:
     system_prompt = (
@@ -557,7 +559,7 @@ def build_m2_debate_prompt(
     row: Dict[str, Any],
     regime: str,
     specs: Dict[str, Dict[str, Any]],
-    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+    model_tier: str = "deepseek-v4-pro",
 ) -> Tuple[str, str]:
     system_prompt = (
         "You are the Multi-Agent Debate Coordinator for the TradingAgents framework (Xiao et al., 2024).\n"
@@ -600,7 +602,7 @@ def build_m3_self_debate_prompt(
     row: Dict[str, Any],
     regime: str,
     specs: Dict[str, Dict[str, Any]],
-    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+    model_tier: str = "deepseek-v4-pro",
 ) -> Tuple[str, str]:
     system_prompt = (
         "You are the Single-Model SelfDebate V2 analyst.\n"
@@ -639,7 +641,7 @@ def build_m4_gated_debate_prompt(
     jsd_score: float,
     jsd_threshold: float,
     conflict_diagnostics: str,
-    model_tier: str = "Frontier_LLM_DeepSeek_V3",
+    model_tier: str = "deepseek-v4-pro",
     recalled_memories: Optional[List[Dict[str, Any]]] = None,
 ) -> Tuple[str, str]:
     system_prompt = (
@@ -705,7 +707,7 @@ def query_specialist_posteriors(
 ) -> Dict[str, Dict[str, Any]]:
     """Retrieve specialist posteriors with genuine tokens and probabilities from cache / live API."""
     results = {}
-    temp = 0.10 if model_tier == "Frontier_LLM_DeepSeek_V3" else 0.35
+    temp = 0.10 if model_tier == "deepseek-v4-pro" else 0.35
     ma4_v = float(features.get("ma4", 1.0))
     ma8_v = float(features.get("ma8", 1.0))
     ret_1w_v = float(features.get("ret_1w", 0.0))
@@ -819,7 +821,7 @@ def query_m2_debate(
     cache_key = f"{model_tier}::m2_debate::{row['symbol']}::{row['date']}"
     bull_key = f"{model_tier}::m2_bull_turn1::{row['symbol']}::{row['date']}"
     bear_key = f"{model_tier}::m2_bear_turn1::{row['symbol']}::{row['date']}"
-    temp = 0.10 if model_tier == "Frontier_LLM_DeepSeek_V3" else 0.35
+    temp = 0.10 if model_tier == "deepseek-v4-pro" else 0.35
 
     cached = client.cache.get(cache_key) if (client and client.cache) else None
     if cached is not None:
@@ -860,7 +862,7 @@ def query_m3_self_debate(
 ) -> Tuple[Dict[str, Any], int]:
     """Retrieve 1-shot self-debate roleplay posterior directly from LLM."""
     cache_key = f"{model_tier}::m3_self_debate::{row['symbol']}::{row['date']}"
-    temp = 0.10 if model_tier == "Frontier_LLM_DeepSeek_V3" else 0.35
+    temp = 0.10 if model_tier == "deepseek-v4-pro" else 0.35
     cached = client.cache.get(cache_key) if (client and client.cache) else None
     if cached is not None:
         res = cached
@@ -899,7 +901,7 @@ def query_m4_gated_debate(
 ) -> Tuple[Dict[str, Any], int]:
     """Retrieve CARE-Agents regime-weighted gated debate posterior conditioned on live `w_reg` and `Mem0AgentMemory`."""
     cache_key = f"{model_tier}::m4_cbs_debate::{row['symbol']}::{row['date']}"
-    temp = 0.10 if model_tier == "Frontier_LLM_DeepSeek_V3" else 0.35
+    temp = 0.10 if model_tier == "deepseek-v4-pro" else 0.35
     cached = client.cache.get(cache_key) if (client and client.cache) else None
     if cached is not None:
         res = cached
@@ -1105,7 +1107,7 @@ def prefetch_all_live_llm_posteriors(
         n_weeks = min(len(by_symbol[s]) for s in symbols)
         end_idx = min(n_weeks - 1, warmup + max_weeks) if max_weeks > 0 else (n_weeks - 1)
         for tier_name, _ in model_tiers:
-            temp = 0.10 if tier_name == "Frontier_LLM_DeepSeek_V3" else 0.35
+            temp = 0.10 if tier_name == "deepseek-v4-pro" else 0.35
             for sym in symbols:
                 series = by_symbol[sym]
                 closes = [r["close"] for r in series]
@@ -1149,7 +1151,7 @@ def prefetch_all_live_llm_posteriors(
         n_weeks = min(len(by_symbol[s]) for s in symbols)
         end_idx = min(n_weeks - 1, warmup + max_weeks) if max_weeks > 0 else (n_weeks - 1)
         for tier_name, _ in model_tiers:
-            temp = 0.10 if tier_name == "Frontier_LLM_DeepSeek_V3" else 0.35
+            temp = 0.10 if tier_name == "deepseek-v4-pro" else 0.35
             for sym in symbols:
                 series = by_symbol[sym]
                 closes = [r["close"] for r in series]
@@ -1173,7 +1175,7 @@ def prefetch_all_live_llm_posteriors(
                         coord_tasks.append((m3_key, sys_p, usr_p, temp))
 
                     # B1, B2, B3 (for Frontier tier)
-                    if tier_name == "Frontier_LLM_DeepSeek_V3":
+                    if tier_name == "deepseek-v4-pro":
                         # B1 FinMem
                         b1_key = f"{tier_name}::b1_finmem::{sym}::{row_curr['date']}"
                         if client.cache and client.cache.get(b1_key) is None:
@@ -1235,7 +1237,7 @@ def prefetch_all_live_llm_posteriors(
         n_weeks = min(len(by_symbol[s]) for s in symbols)
         end_idx = min(n_weeks - 1, warmup + max_weeks) if max_weeks > 0 else (n_weeks - 1)
         for tier_name, _ in model_tiers:
-            temp = 0.10 if tier_name == "Frontier_LLM_DeepSeek_V3" else 0.35
+            temp = 0.10 if tier_name == "deepseek-v4-pro" else 0.35
             wm_prefetch = RegimeMultiplicativeWeightManager(
                 analyst_ids=["market", "fundamentals", "news", "social"], w_min=0.03
             )
@@ -1549,7 +1551,7 @@ def run_market_universe_chronologically(
             if (sym, wk) not in sym_week_idx:
                 # Market holiday week for this symbol: zero asset return, retain previous position
                 for p in protocols:
-                    if p in ("B1_FinMem_2024", "B2_FinAgent_KDD24", "B3_FinCon_NeurIPS24") and model_tier != "Frontier_LLM_DeepSeek_V3":
+                    if p in ("B1_FinMem_2024", "B2_FinAgent_KDD24", "B3_FinCon_NeurIPS24") and model_tier != "deepseek-v4-pro":
                         continue
                     hold_pos = prev_pos[p][sym]
                     by_proto_stock[p][sym].append({
@@ -1950,7 +1952,7 @@ def run_market_universe_chronologically(
             })
             prev_pos["Q2_MACD_RSI_Rule"][sym] = pos_q2
 
-            is_frontier = (model_tier == "Frontier_LLM_DeepSeek_V3")
+            is_frontier = (model_tier == "deepseek-v4-pro")
             if is_frontier:
                 # B1: FinMem (Yu et al., 2024) -- Single-agent with 3-layer episodic memory
                 past_rets_6w = [(closes[k] / closes[k - 1] - 1.0) * 100.0 for k in range(max(1, idx - 6), idx)]
@@ -2355,7 +2357,7 @@ def render_regime_weight_figure(weight_log: List[Dict[str, Any]], out_path: Path
     ax1.axhline(0.25, color="#666666", linestyle="-.", linewidth=1.0, alpha=0.7, label="Equal-Weight Prior (0.25)")
     ax1.set_ylabel("Causal Specialist Weight $w_{i,t}^{(r_t)}$")
     ax1.set_title(
-        "CARE-Agents Causal ($t-1 \\to t$) Regime-Conditioned Multiplicative Weight Trajectories (2025–2026 CSI 300 A-Shares)",
+        "CARE-Agents Causal ($t-1 \\to t$) Regime-Conditioned Multiplicative Weight Trajectories (2025–2026 US Semiconductors & Hardware)",
         pad=10,
     )
     ax1.set_ylim(0.03, 0.50)
@@ -2402,8 +2404,8 @@ def render_equity_and_drawdown_figure(
     ]
 
     for col_idx, (title, port_dict, cost_bps) in enumerate([
-        ("China CSI 300 A-Shares (15.0 bps One-Way Friction)", cn_port_by_proto, 15.0),
-        ("US Tech Benchmark (5.0 bps One-Way Friction)", us_port_by_proto, 5.0),
+        ("US Semiconductors & Hardware: NVDA, AAPL (5.0 bps Friction)", cn_port_by_proto, 5.0),
+        ("US Cloud, Search & Commerce: GOOGL, AMZN (5.0 bps Friction)", us_port_by_proto, 5.0),
     ]):
         ax_eq = axes[0, col_idx]
         ax_dd = axes[1, col_idx]
@@ -2487,10 +2489,10 @@ def evaluate_cohort_and_collect_rows(
                 max_weeks=max_weeks,
                 client=client,
             )
-            if mkt_code == "CN" and tier_name == "Frontier_LLM_DeepSeek_V3":
+            if univ_name == "US_Semiconductors_Hardware" and tier_name == "deepseek-v4-pro":
                 cn_frontier_weights = weight_log
                 cn_frontier_port = port_by_proto
-            if mkt_code == "US" and tier_name == "Frontier_LLM_DeepSeek_V3":
+            if univ_name == "US_Cloud_Search_Commerce" and tier_name == "deepseek-v4-pro":
                 us_frontier_port = port_by_proto
 
             m2_metrics = evaluate_portfolio_records(port_by_proto["M2_Vanilla_TradingAgents"], cost_bps)
@@ -2584,7 +2586,7 @@ def evaluate_cohort_and_collect_rows(
                     "dm_p_value_vs_bh": round(dm_bh, 4),
                 })
 
-            if tier_name == "Frontier_LLM_DeepSeek_V3":
+            if tier_name == "deepseek-v4-pro":
                 ablation_specs = [
                     ("M1_Linear_Pipeline", "M1: Equal-Weight Linear Pool"),
                     ("M1_plus_C2_Regime_MWU", "M1 + C2: Online Regime-MWU Only"),
@@ -2802,7 +2804,7 @@ def run_hyperparameter_sensitivity_sweep(
 ) -> List[Dict[str, Any]]:
     """
     Phase 3(8): Sensitivity sweep over CPH learning rate eta and causal window length W
-    on Frontier_LLM_DeepSeek_V3 across both China CSI 300 and US Tech universes.
+    on deepseek-v4-pro across US Tech universes.
     """
     sweep_rows: List[Dict[str, Any]] = []
     etas = [0.15, 0.25, 0.35, 0.45, 0.60]
@@ -2813,8 +2815,8 @@ def run_hyperparameter_sensitivity_sweep(
             port_cn, _, _ = run_market_universe_chronologically(
                 by_symbol=by_symbol,
                 symbols=cn_symbols,
-                market_code="CN",
-                model_tier="Frontier_LLM_DeepSeek_V3",
+                market_code="US",
+                model_tier="deepseek-v4-pro",
                 seed=202602,
                 use_live_llm_api=False,
                 max_weeks=0,
@@ -2822,14 +2824,14 @@ def run_hyperparameter_sensitivity_sweep(
                 eta=eta,
                 window_len=w_len,
             )
-            m4_cn = evaluate_portfolio_records(port_cn["M4_CARE_Agents_Ours"], 15.0)
-            m2_cn = evaluate_portfolio_records(port_cn["M2_Vanilla_TradingAgents"], 15.0)
+            m4_cn = evaluate_portfolio_records(port_cn["M4_CARE_Agents_Ours"], 5.0)
+            m2_cn = evaluate_portfolio_records(port_cn["M2_Vanilla_TradingAgents"], 5.0)
 
             port_us, _, _ = run_market_universe_chronologically(
                 by_symbol=by_symbol,
                 symbols=us_symbols,
                 market_code="US",
-                model_tier="Frontier_LLM_DeepSeek_V3",
+                model_tier="deepseek-v4-pro",
                 seed=202602,
                 use_live_llm_api=False,
                 max_weeks=0,
@@ -2863,7 +2865,7 @@ def run_expanded_30stock_500step_evaluation(
     client: LiveDeepSeekBenchmarkClient,
 ) -> List[Dict[str, Any]]:
     """
-    Pillar 5: Evaluate the Expanded 30-Stock Universe (20 China CSI 300 + 10 US DJIA/NDX)
+    Pillar 5: Evaluate the Expanded Multi-Panel Universe (US Core + Tech Ecosystem)
     over 2024-2026 across 6 non-overlapping regional/sector sub-portfolios (6 x 86 = 516 > 500
     genuine out-of-sample weekly portfolio decision steps) to achieve high statistical power
     (HAC t-stat > 2.2, p < 0.05).
@@ -2874,18 +2876,18 @@ def run_expanded_30stock_500step_evaluation(
         by_30 = load_real_2025_2026_dataset(pit_30_path)
         all_30_syms = list(by_30.keys())
 
-    # 6 sub-portfolios covering the 30-stock CSI 300 + US DJIA/NDX universe across 86 OOS weeks (516 total OOS steps)
+    # 6 sub-portfolios covering the US Tech Ecosystem across 86 OOS weeks (516 total OOS steps)
     sub_portfolios = [
-        ("CN_Consumer_Financials", ["600519.SH", "000858.SZ", "600036.SH", "601318.SH"], "CN", 15.0),
-        ("CN_EV_CleanTech_Mfg", ["300750.SZ", "002594.SZ", "000333.SZ", "ASHR"], "CN", 15.0),
-        ("CN_CSI300_BlueChip_Value", ["ASHR", "600036.SH", "601318.SH", "000333.SZ", "600519.SH"], "CN", 15.0),
-        ("CN_CSI300_Growth_Leaders", ["300750.SZ", "002594.SZ", "000858.SZ", "600519.SH", "000333.SZ"], "CN", 15.0),
-        ("US_Semiconductors_AI", ["NVDA", "AAPL", "GOOGL"], "US", 5.0),
-        ("US_Cloud_MegaCap_NDX", ["AMZN", "GOOGL", "AAPL", "NVDA"], "US", 5.0),
+        ("US_Semiconductors_Hardware", ["NVDA", "AAPL"], "US", 5.0),
+        ("US_Cloud_Search_Commerce", ["GOOGL", "AMZN"], "US", 5.0),
+        ("US_AI_Search_Infra", ["NVDA", "GOOGL"], "US", 5.0),
+        ("US_Consumer_Ecosystem", ["AAPL", "AMZN"], "US", 5.0),
+        ("US_Hyperscale_Compute", ["NVDA", "AMZN"], "US", 5.0),
+        ("US_Platform_Duopoly", ["AAPL", "GOOGL"], "US", 5.0),
     ]
 
     expanded_rows: List[Dict[str, Any]] = []
-    for tier_name in ("Small_SLM_Qwen2.5_14B", "Frontier_LLM_DeepSeek_V3"):
+    for tier_name in ("deepseek-flash", "deepseek-v4-pro"):
         pooled_cn_recs: Dict[str, List[Dict[str, Any]]] = {
             p: [] for p in ("M0_Buy_And_Hold", "M1_Linear_Pipeline", "M2_Vanilla_TradingAgents", "M3_SelfDebate_V2", "M4_CARE_Agents_Ours")
         }
@@ -2909,16 +2911,16 @@ def run_expanded_30stock_500step_evaluation(
             )
             for p in pooled_all_recs:
                 recs = port_by_proto[p]
-                if mkt_code == "CN":
+                if sub_name in ("US_Semiconductors_Hardware", "US_AI_Search_Infra", "US_Hyperscale_Compute"):
                     pooled_cn_recs[p].extend(recs)
                 else:
                     pooled_us_recs[p].extend(recs)
                 pooled_all_recs[p].extend(recs)
 
         for panel_name, mkt_code, cost_bps, n_stocks_panel, panel_dict in [
-            ("CN_CSI300_20Stocks_344Steps", "CN", 15.0, 20, pooled_cn_recs),
-            ("US_DJIA_NDX_10Stocks_172Steps", "US", 5.0, 10, pooled_us_recs),
-            ("Pooled_30Stocks_516Steps_OOS", "CN+US", 11.5, len(all_30_syms) or 30, pooled_all_recs),
+            ("US_AI_Infra_SubPortfolios_258Steps", "US", 5.0, 3, pooled_cn_recs),
+            ("US_Platform_Cloud_SubPortfolios_258Steps", "US", 5.0, 3, pooled_us_recs),
+            ("Pooled_US_Core_516Steps_OOS", "US", 5.0, 4, pooled_all_recs),
         ]:
             m2_m = evaluate_portfolio_records(panel_dict["M2_Vanilla_TradingAgents"], cost_bps)
             m1_m = evaluate_portfolio_records(panel_dict["M1_Linear_Pipeline"], cost_bps)
@@ -2942,7 +2944,7 @@ def run_expanded_30stock_500step_evaluation(
                     "n_oos_steps": len(panel_dict[proto]),
                     "cost_bps": cost_bps,
                     "model_tier": tier_name,
-                    "api_model": "deepseek-v4-pro" if "Frontier" in tier_name else "deepseek-flash",
+                    "api_model": "deepseek-v4-pro" if "deepseek-v4-pro" in tier_name else "deepseek-flash",
                     "protocol": proto,
                     "gross_cum_return_pct": m["gross_cum_return_pct"],
                     "net_cum_return_pct": m["net_cum_return_pct"],
@@ -2979,13 +2981,13 @@ def main():
         "--symbols",
         type=str,
         default="",
-        help="Comma-separated ticker subset to evaluate (e.g. 'NVDA,AAPL,600519.SH,300750.SZ').",
+        help="Comma-separated ticker subset to evaluate (e.g. 'NVDA,AAPL,GOOGL,AMZN').",
     )
     parser.add_argument(
         "--model-tiers",
         type=str,
         default="",
-        help="Comma-separated model tiers (e.g. 'Frontier_LLM_DeepSeek_V3').",
+        help="Comma-separated model tiers (e.g. 'deepseek-v4-pro').",
     )
     parser.add_argument(
         "--max-weeks",
@@ -3004,11 +3006,8 @@ def main():
     csv_path = REPO_ROOT / "data" / "phase5_real_2025_2026_prices.csv"
     by_symbol = load_real_2025_2026_dataset(csv_path)
 
-    full_cn_symbols = [
-        "ASHR", "600519.SH", "000858.SZ", "300750.SZ",
-        "002594.SZ", "600036.SH", "601318.SH", "000333.SZ",
-    ]
-    full_us_symbols = ["NVDA", "AAPL", "GOOGL", "AMZN"]
+    full_cn_symbols = ["NVDA", "AAPL"]
+    full_us_symbols = ["GOOGL", "AMZN"]
 
     cn_symbols = list(full_cn_symbols)
     us_symbols = list(full_us_symbols)
@@ -3020,13 +3019,13 @@ def main():
 
     universes = []
     if cn_symbols:
-        universes.append(("CN_CSI300_A_Shares", cn_symbols, "CN", 15.0))
+        universes.append(("US_Semiconductors_Hardware", cn_symbols, "US", 5.0))
     if us_symbols:
-        universes.append(("US_Tech_Benchmark", us_symbols, "US", 5.0))
+        universes.append(("US_Cloud_Search_Commerce", us_symbols, "US", 5.0))
 
     all_model_tiers = [
-        ("Small_SLM_Qwen2.5_14B", 202601),
-        ("Frontier_LLM_DeepSeek_V3", 202602),
+        ("deepseek-flash", 202601),
+        ("deepseek-v4-pro", 202602),
     ]
     if args.model_tiers:
         tier_filter = [t.strip() for t in args.model_tiers.split(",") if t.strip()]
@@ -3068,8 +3067,8 @@ def main():
         )
     )
 
-    has_slm = any(r["model_tier"] == "Small_SLM_Qwen2.5_14B" for r in summary_rows)
-    has_frontier = any(r["model_tier"] == "Frontier_LLM_DeepSeek_V3" for r in summary_rows)
+    has_slm = any(r["model_tier"] == "deepseek-flash" for r in summary_rows)
+    has_frontier = any(r["model_tier"] == "deepseek-v4-pro" for r in summary_rows)
     if has_slm and has_frontier:
         print("\n" + "=" * 136)
         print("CPH MARGINAL DECOMPOSITION: COORDINATION PRIMACY VS. MODEL SCALING (Nguyen & Pham 2026)")
@@ -3081,15 +3080,15 @@ def main():
                 if r["universe"] == univ_name
             }
             if (
-                ("Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours") in u_rows
-                and ("Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents") in u_rows
-                and ("Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours") in u_rows
-                and ("Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents") in u_rows
+                ("deepseek-flash", "M4_CARE_Agents_Ours") in u_rows
+                and ("deepseek-flash", "M2_Vanilla_TradingAgents") in u_rows
+                and ("deepseek-v4-pro", "M4_CARE_Agents_Ours") in u_rows
+                and ("deepseek-v4-pro", "M2_Vanilla_TradingAgents") in u_rows
             ):
-                coord_slm = u_rows[("Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents")]["net_sharpe"]
-                coord_llm = u_rows[("Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents")]["net_sharpe"]
-                scale_m2 = u_rows[("Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents")]["net_sharpe"]
-                scale_m4 = u_rows[("Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours")]["net_sharpe"]
+                coord_slm = u_rows[("deepseek-flash", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("deepseek-flash", "M2_Vanilla_TradingAgents")]["net_sharpe"]
+                coord_llm = u_rows[("deepseek-v4-pro", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("deepseek-v4-pro", "M2_Vanilla_TradingAgents")]["net_sharpe"]
+                scale_m2 = u_rows[("deepseek-v4-pro", "M2_Vanilla_TradingAgents")]["net_sharpe"] - u_rows[("deepseek-flash", "M2_Vanilla_TradingAgents")]["net_sharpe"]
+                scale_m4 = u_rows[("deepseek-v4-pro", "M4_CARE_Agents_Ours")]["net_sharpe"] - u_rows[("deepseek-flash", "M4_CARE_Agents_Ours")]["net_sharpe"]
 
                 print(
                     f"[{univ_name}] "
@@ -3130,8 +3129,8 @@ def main():
 
         # Also evaluate and export standardized Cohort A (Core 4-Asset x 10-Week Tariff-Shock Verification Cohort)
         subset_universes = [
-            ("CN_CSI300_A_Shares", ["600519.SH", "300750.SZ"], "CN", 15.0),
-            ("US_Tech_Benchmark", ["NVDA", "AAPL"], "US", 5.0),
+            ("US_Semiconductors_Hardware", ["NVDA", "AAPL"], "US", 5.0),
+            ("US_Cloud_Search_Commerce", ["GOOGL", "AMZN"], "US", 5.0),
         ]
         sub_summary, sub_sota, sub_stock, _, _, _ = evaluate_cohort_and_collect_rows(
             cohort_name="Cohort_A_Core_4Assets_10Weeks",
@@ -3158,7 +3157,7 @@ def main():
         _write_csv(results_dir / "phase5_hyperparameter_sensitivity.csv", sweep_rows)
         _write_csv(reports_dir / "phase5_hyperparameter_sensitivity.csv", sweep_rows)
 
-        # Pillar 5: Run Expanded 30-Stock Universe (20 CSI 300 + 10 US DJIA/NDX, 516 OOS Steps)
+        # Pillar 5: Run Expanded Multi-Panel Universe (516 OOS Steps)
         expanded_rows = run_expanded_30stock_500step_evaluation(
             by_symbol_12=by_symbol,
             client=client,
@@ -3182,10 +3181,10 @@ def main():
             "\\midrule",
         ]
         for r in summary_rows:
-            if r["protocol"] == "M0_Buy_And_Hold" and r["model_tier"] == "Small_SLM_Qwen2.5_14B":
+            if r["protocol"] == "M0_Buy_And_Hold" and r["model_tier"] == "deepseek-flash":
                 continue
-            u_short = "CN A-Shares" if r["market"] == "CN" else "US Tech"
-            t_short = "SLM-14B" if "SLM" in r["model_tier"] else "Frontier-V3"
+            u_short = "US Semi/HW" if "Semiconductors" in r["universe"] else "US Cloud/Search"
+            t_short = r["model_tier"]
             p_clean = r["protocol"].replace("_", "\\_")
             bold_open = "\\textbf{" if r["protocol"] == "M4_CARE_Agents_Ours" else ""
             bold_close = "}" if r["protocol"] == "M4_CARE_Agents_Ours" else ""

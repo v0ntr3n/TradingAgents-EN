@@ -41,7 +41,7 @@ def test_calibrated_signal_processor():
     }
     res = proc.process_calibrated_signal(
         full_signal="Strong institutional accumulation and breakout.",
-        stock_symbol="000858.SZ",
+        stock_symbol="NVDA",
         analyst_posteriors=posteriors,
         regime="bull",
         current_price=100.0,

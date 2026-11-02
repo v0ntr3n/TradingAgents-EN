@@ -1,17 +1,14 @@
 """
 Build Multimodal Point-in-Time (PIT) Dataset for CARE-Agents (2024-2026, 30 Equities)
 =====================================================================================
-Constructs a strictly causal, point-in-time multimodal dataset across 30 index constituents:
-  - 20 China CSI 300 A-Shares (`ASHR`, `600519.SH`, `000858.SZ`, `300750.SZ`, `002594.SZ`,
-    `600036.SH`, `601318.SH`, `000333.SZ`, `600900.SH`, `601899.SH`, `601398.SH`, `600276.SH`,
-    `601012.SH`, `600030.SH`, `002415.SZ`, `600887.SH`, `603288.SH`, `601668.SH`, `601166.SH`, `600309.SH`)
+Constructs a strictly causal, point-in-time multimodal dataset across US index constituents:
   - 10 US DJIA / NASDAQ-100 Constituents (`NVDA`, `AAPL`, `GOOGL`, `AMZN`, `MSFT`, `META`,
     `TSLA`, `JPM`, `UNH`, `XOM`)
 
 Four Strictly Disjoint Specialist Modalities (Zero Look-Ahead: `published_at <= close(t)`):
   1. `market` (Technical & Price Action):
      `close`, `ret_1w..8w`, `ma4`, `ma8`, `rsi_14`, `macd_hist`, `vol_4w`
-  2. `fundamentals` (Point-in-Time Quarterly Accounting aligned by SEC EDGAR `filed` / CSRC statutory dates):
+  2. `fundamentals` (Point-in-Time Quarterly Accounting aligned by SEC EDGAR `filed` statutory dates):
      `eps_ttm`, `roe_pct`, `pb_ratio`, `debt_to_equity`, `rev_growth_yoy`, `pe`, `div_yield`
   3. `news` (Point-in-Time Timestamped Corporate & Macro Headlines):
      `news_timestamp`, `news_catalyst`, `news_sentiment`, `news_headline`
@@ -33,108 +30,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # 30-Stock Universe Metadata + True Baseline Quarterly Accounting Anchor
 UNIVERSE_30_METADATA: Dict[str, Dict[str, Any]] = {
-    # --- Core 8 China CSI 300 Constituents ---
-    "ASHR": {
-        "name": "CSI 300 Index ETF (ASHR)", "market": "CN", "cik": None,
-        "eps_base": 1.88, "roe_base": 11.4, "pb_base": 1.42, "de_base": 0.68, "rev_g_base": 4.8,
-        "pe_base": 13.5, "div_base": 2.8, "sector": "Index ETF",
-    },
-    "600519.SH": {
-        "name": "Kweichow Moutai", "market": "CN", "cik": None,
-        "eps_base": 68.50, "roe_base": 33.8, "pb_base": 7.65, "de_base": 0.04, "rev_g_base": 15.6,
-        "pe_base": 22.8, "div_base": 3.1, "sector": "Consumer Staples",
-    },
-    "000858.SZ": {
-        "name": "Wuliangye Yibin", "market": "CN", "cik": None,
-        "eps_base": 8.15, "roe_base": 23.9, "pb_base": 4.10, "de_base": 0.06, "rev_g_base": 10.2,
-        "pe_base": 16.4, "div_base": 3.6, "sector": "Consumer Staples",
-    },
-    "300750.SZ": {
-        "name": "CATL (Contemporary Amperex)", "market": "CN", "cik": None,
-        "eps_base": 11.40, "roe_base": 22.4, "pb_base": 4.65, "de_base": 0.72, "rev_g_base": 8.4,
-        "pe_base": 19.5, "div_base": 2.2, "sector": "EV Batteries",
-    },
-    "002594.SZ": {
-        "name": "BYD Company", "market": "CN", "cik": None,
-        "eps_base": 12.80, "roe_base": 24.1, "pb_base": 5.30, "de_base": 0.58, "rev_g_base": 22.5,
-        "pe_base": 21.6, "div_base": 1.3, "sector": "Electric Vehicles",
-    },
-    "600036.SH": {
-        "name": "China Merchants Bank", "market": "CN", "cik": None,
-        "eps_base": 5.65, "roe_base": 15.2, "pb_base": 0.94, "de_base": 1.85, "rev_g_base": -1.2,
-        "pe_base": 6.2, "div_base": 5.4, "sector": "Financials",
-    },
-    "601318.SH": {
-        "name": "Ping An Insurance", "market": "CN", "cik": None,
-        "eps_base": 6.40, "roe_base": 12.8, "pb_base": 0.92, "de_base": 1.60, "rev_g_base": 6.8,
-        "pe_base": 7.8, "div_base": 5.1, "sector": "Insurance",
-    },
-    "000333.SZ": {
-        "name": "Midea Group", "market": "CN", "cik": None,
-        "eps_base": 5.30, "roe_base": 21.6, "pb_base": 2.85, "de_base": 0.64, "rev_g_base": 9.8,
-        "pe_base": 13.2, "div_base": 4.3, "sector": "Appliances & Robotics",
-    },
-    # --- Additional 12 China CSI 300 Constituents ---
-    "600900.SH": {
-        "name": "China Yangtze Power", "market": "CN", "cik": None,
-        "eps_base": 1.36, "roe_base": 15.8, "pb_base": 3.25, "de_base": 1.42, "rev_g_base": 11.4,
-        "pe_base": 20.5, "div_base": 3.4, "sector": "Hydro Utilities",
-    },
-    "601899.SH": {
-        "name": "Zijin Mining Group", "market": "CN", "cik": None,
-        "eps_base": 1.18, "roe_base": 24.6, "pb_base": 3.70, "de_base": 0.95, "rev_g_base": 18.9,
-        "pe_base": 14.8, "div_base": 2.4, "sector": "Metals & Gold",
-    },
-    "601398.SH": {
-        "name": "ICBC", "market": "CN", "cik": None,
-        "eps_base": 0.98, "roe_base": 10.4, "pb_base": 0.62, "de_base": 2.10, "rev_g_base": -2.1,
-        "pe_base": 5.9, "div_base": 5.3, "sector": "Banking",
-    },
-    "600276.SH": {
-        "name": "Jiangsu Hengrui Medicine", "market": "CN", "cik": None,
-        "eps_base": 0.88, "roe_base": 13.2, "pb_base": 6.80, "de_base": 0.08, "rev_g_base": 16.4,
-        "pe_base": 51.5, "div_base": 0.5, "sector": "Biopharma",
-    },
-    "601012.SH": {
-        "name": "LONGi Green Energy", "market": "CN", "cik": None,
-        "eps_base": -0.65, "roe_base": -8.4, "pb_base": 1.85, "de_base": 0.88, "rev_g_base": -28.5,
-        "pe_base": 28.0, "div_base": 1.1, "sector": "Solar Photovoltaics",
-    },
-    "600030.SH": {
-        "name": "CITIC Securities", "market": "CN", "cik": None,
-        "eps_base": 1.42, "roe_base": 8.1, "pb_base": 1.28, "de_base": 3.20, "rev_g_base": 4.2,
-        "pe_base": 15.8, "div_base": 2.3, "sector": "Capital Markets",
-    },
-    "002415.SZ": {
-        "name": "Hangzhou Hikvision", "market": "CN", "cik": None,
-        "eps_base": 1.52, "roe_base": 17.9, "pb_base": 3.60, "de_base": 0.34, "rev_g_base": 5.6,
-        "pe_base": 19.6, "div_base": 2.9, "sector": "AI Vision & IoT",
-    },
-    "600887.SH": {
-        "name": "Inner Mongolia Yili", "market": "CN", "cik": None,
-        "eps_base": 1.78, "roe_base": 20.4, "pb_base": 3.30, "de_base": 0.76, "rev_g_base": -3.4,
-        "pe_base": 15.2, "div_base": 4.4, "sector": "Dairy & Consumer",
-    },
-    "603288.SH": {
-        "name": "Foshan Haitian Flavouring", "market": "CN", "cik": None,
-        "eps_base": 1.14, "roe_base": 21.0, "pb_base": 7.40, "de_base": 0.05, "rev_g_base": 9.1,
-        "pe_base": 35.4, "div_base": 1.9, "sector": "Condiments",
-    },
-    "601668.SH": {
-        "name": "China State Construction", "market": "CN", "cik": None,
-        "eps_base": 1.28, "roe_base": 12.6, "pb_base": 0.56, "de_base": 2.65, "rev_g_base": 2.3,
-        "pe_base": 4.5, "div_base": 4.8, "sector": "Infrastructure",
-    },
-    "601166.SH": {
-        "name": "Industrial Bank", "market": "CN", "cik": None,
-        "eps_base": 3.52, "roe_base": 10.2, "pb_base": 0.54, "de_base": 2.20, "rev_g_base": 0.8,
-        "pe_base": 5.3, "div_base": 5.8, "sector": "Commercial Banking",
-    },
-    "600309.SH": {
-        "name": "Wanhua Chemical Group", "market": "CN", "cik": None,
-        "eps_base": 5.45, "roe_base": 19.2, "pb_base": 2.65, "de_base": 1.15, "rev_g_base": 7.4,
-        "pe_base": 13.8, "div_base": 2.2, "sector": "Specialty Chemicals",
-    },
     # --- Core 4 US Tech Benchmark Constituents ---
     "NVDA": {
         "name": "NVIDIA Corp.", "market": "US", "cik": "0001045810",
@@ -239,7 +134,7 @@ def compute_pit_quarterly_fundamentals(
 ) -> Dict[str, float]:
     """
     Compute point-in-time quarterly fundamental metrics as of `bar_date` (`filed <= bar_date`).
-    Updates strictly on quarterly reporting boundaries (CSRC / SEC statutory filing dates),
+    Updates strictly on quarterly reporting boundaries (SEC statutory filing dates),
     NOT via `pe_static * close / initial_close` alone.
     """
     meta = UNIVERSE_30_METADATA[sym]

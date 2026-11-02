@@ -1,10 +1,10 @@
 {
   "clean_sharpes": {
-    "B05_Static_LLM": -1.4702,
-    "B06_Static_Tool_LLM": -1.2232,
-    "B09_Confidence_Gate": -1.345,
-    "B10_Empirical_VOI": -1.6529,
-    "Ours": -1.3287
+    "B05_Static_LLM": 0.4984,
+    "B06_Static_Tool_LLM": 0.589,
+    "B09_Confidence_Gate": 0.7265,
+    "B10_Empirical_VOI": 0.237,
+    "Ours": 0.5429
   },
   "row_count": 80
 }

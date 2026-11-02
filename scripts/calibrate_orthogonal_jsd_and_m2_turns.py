@@ -1,8 +1,7 @@
 """
 Calibrate Orthogonal Multimodal Posteriors & Synchronize Dual-Model Cache
 =========================================================================
-1. Preserves all live `deepseek-v4-pro` (`Frontier_LLM_DeepSeek_V3`) and
-   `deepseek-flash` (`Small_SLM_Qwen2.5_14B`) API traces and 2-turn Bull/Bear
+1. Preserves all live `deepseek-v4-pro` and `deepseek-flash` API traces and 2-turn Bull/Bear
    (`m2_bull_turn1`, `m2_bear_turn1`) debate calls.
 2. Projects `market`, `fundamentals`, `news`, and `social` onto their strictly
    orthogonal point-in-time modalities (technical momentum, quarterly accounting
@@ -59,9 +58,9 @@ def main() -> None:
     for k, v in cache.items():
         if not isinstance(v, dict):
             continue
-        if k.startswith("Frontier_LLM_DeepSeek_V3::"):
+        if k.startswith("deepseek-v4-pro::"):
             v["model"] = "deepseek-v4-pro"
-        elif k.startswith("Small_SLM_Qwen2.5_14B::"):
+        elif k.startswith("deepseek-flash::"):
             v["model"] = "deepseek-flash"
 
     aids = ("market", "fundamentals", "news", "social")
@@ -69,8 +68,8 @@ def main() -> None:
 
     for sym, series in by_sym.items():
         closes = [r["close"] for r in series]
-        for tier_name in ("Frontier_LLM_DeepSeek_V3", "Small_SLM_Qwen2.5_14B"):
-            api_model = "deepseek-v4-pro" if "Frontier" in tier_name else "deepseek-flash"
+        for tier_name in ("deepseek-v4-pro", "deepseek-flash"):
+            api_model = "deepseek-v4-pro" if "v4-pro" in tier_name else "deepseek-flash"
             wm = RegimeMultiplicativeWeightManager(
                 analyst_ids=list(aids), w_min=0.03
             )

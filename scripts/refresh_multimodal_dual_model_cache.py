@@ -2,8 +2,8 @@
 Refresh Multimodal Dual-Model Cache (`deepseek-v4-pro` vs. `deepseek-flash`)
 ============================================================================
 1. Dispatches live API calls to `https://api.deepseek.com/chat/completions` using:
-   - `model="deepseek-v4-pro"` for `Frontier_LLM_DeepSeek_V3`
-   - `model="deepseek-flash"` for `Small_SLM_Qwen2.5_14B`
+   - `model="deepseek-v4-pro"` for DeepSeek-V4-Pro
+   - `model="deepseek-flash"` for DeepSeek-V4.1-Flash
    across the strictly orthogonal 4-modality specialist prompts (`market`, `fundamentals`,
    `news`, `social`), 2-turn Bull <-> Bear `M2` debate (`m2_bull_turn1`, `m2_bear_turn1`,
    `m2_debate`), and live `w_reg` + `Mem0AgentMemory` `M4` debate (`m4_cbs_debate`).
@@ -216,10 +216,10 @@ def main() -> None:
     by_sym = load_multimodal_rows(REPO_ROOT / "data" / "phase5_real_2025_2026_prices.csv")
 
     # 1. Execute a live batch of authentic `deepseek-v4-pro` and `deepseek-flash` API calls
-    #    on the Cohort A core verification panel (`600519.SH`, `300750.SZ`, `NVDA`, `AAPL`)
+    #    on the Cohort A core verification panel (`NVDA`, `AAPL`, `GOOGL`, `AMZN`)
     #    with the new orthogonal multimodal specialist prompts and 2-turn debate!
     live_tasks = []
-    cohort_a_syms = ["600519.SH", "300750.SZ", "NVDA", "AAPL"]
+    cohort_a_syms = ["NVDA", "AAPL", "GOOGL", "AMZN"]
     for sym in cohort_a_syms:
         series = by_sym[sym]
         closes = [r["close"] for r in series]
@@ -227,8 +227,8 @@ def main() -> None:
             row = series[idx]
             regime, feats = detect_causal_features(closes, idx)
             for tier_name, model_name, temp in [
-                ("Frontier_LLM_DeepSeek_V3", "deepseek-v4-pro", 0.10),
-                ("Small_SLM_Qwen2.5_14B", "deepseek-flash", 0.25),
+                ("deepseek-v4-pro", "deepseek-v4-pro", 0.10),
+                ("deepseek-flash", "deepseek-flash", 0.25),
             ]:
                 for aid in ("market", "fundamentals", "news", "social"):
                     key = f"{tier_name}::{aid}::{sym}::{row['date']}"
@@ -254,7 +254,7 @@ def main() -> None:
                 print(f"  -> Completed {done}/{len(live_tasks)} live dual-model calls in {time.time() - t0:.1f}s")
 
     # 2. Synchronize all cached specialist, debate, and baseline entries across the full panel so:
-    #    - Frontier_LLM_DeepSeek_V3 records `"model": "deepseek-v4-pro"` and Small_SLM_Qwen2.5_14B records `"model": "deepseek-flash"`
+    #    - deepseek-v4-pro records `"model": "deepseek-v4-pro"` and deepseek-flash records `"model": "deepseek-flash"`
     #    - Specialist prompts strictly follow the 4 orthogonal modalities (`market`, `fundamentals`, `news`, `social`)
     #    - Specialist posteriors reflect their orthogonal modality evidence so inter-specialist JSD naturally spans [0.01, 0.35]
     #    - `b2_finagent` prompts record dynamic `Previous Position` (not hardcoded 0.50)
@@ -262,9 +262,9 @@ def main() -> None:
     jsd_samples = []
     for sym, series in by_sym.items():
         closes = [r["close"] for r in series]
-        for tier_name in ("Frontier_LLM_DeepSeek_V3", "Small_SLM_Qwen2.5_14B"):
-            api_model = "deepseek-v4-pro" if "Frontier" in tier_name else "deepseek-flash"
-            is_frontier = "Frontier" in tier_name
+        for tier_name in ("deepseek-v4-pro", "deepseek-flash"):
+            api_model = "deepseek-v4-pro" if "v4-pro" in tier_name else "deepseek-flash"
+            is_frontier = "v4-pro" in tier_name
             precision = 1.0 if is_frontier else 0.68
             prev_b2_pos = 0.50
 

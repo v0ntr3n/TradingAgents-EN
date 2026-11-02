@@ -1,5 +1,5 @@
-"""Market-specific data source managers (`tradingagents/dataflows/managers/`)."""
-from .china_manager import ChinaDataSourceManager
+from .base_manager import DataSourceManager
 from .us_manager import USDataSourceManager
-
-__all__ = ["ChinaDataSourceManager", "USDataSourceManager"]
+from .hk_manager import HKDataSourceManager
+ChinaDataSourceManager = USDataSourceManager
+__all__ = ['DataSourceManager', 'USDataSourceManager', 'HKDataSourceManager', 'ChinaDataSourceManager']

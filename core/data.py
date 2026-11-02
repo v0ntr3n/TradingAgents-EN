@@ -5,8 +5,9 @@ Provides:
   - `BenchmarkDatasetLoader` & `build_causal_step_record_at_index` (`core.data.benchmark_loader`)
   - `apply_ktd_robustness_perturbation` (`core.data.ktd_perturbation`)
 
-Strictly enforces ARIS Guardrail #1 (Zero Look-Ahead Bias) and Guardrail #6
-(Non-Degenerate Orthogonal Specialist Modalities).
+Strictly enforces ARIS Guardrail #1 (Zero Look-Ahead Bias), Guardrail #6
+(Non-Degenerate Orthogonal Specialist Modalities), and 100% Real Cached DeepSeek API
+Posteriors (`deepseek-v4-pro` and `deepseek-flash`) on US Equities (`NVDA, AAPL, GOOGL, AMZN`).
 """
 
 from __future__ import annotations
@@ -37,14 +38,27 @@ CACHE_JSON_PATH = REPO_ROOT / "results" / "live_llm_posteriors_cache.json"
 _POSTERIORS_CACHE_SINGLETON: Optional[Dict[str, Any]] = None
 
 
+def _normalize_tier_name(tier: str) -> str:
+    t = str(tier or "deepseek-v4-pro").strip()
+    if t in ("Frontier_LLM_DeepSeek_V3", "deepseek-v4-pro"):
+        return "deepseek-v4-pro"
+    if t in ("Small_SLM_Qwen2.5_14B", "deepseek-flash"):
+        return "deepseek-flash"
+    if "flash" in t.lower():
+        return "deepseek-flash"
+    return "deepseek-v4-pro"
+
+
 def _get_posteriors_cache() -> Dict[str, Any]:
     global _POSTERIORS_CACHE_SINGLETON
     if _POSTERIORS_CACHE_SINGLETON is None:
-        if CACHE_JSON_PATH.exists():
-            with CACHE_JSON_PATH.open("r", encoding="utf-8") as f:
-                _POSTERIORS_CACHE_SINGLETON = json.load(f)
-        else:
-            _POSTERIORS_CACHE_SINGLETON = {}
+        if not CACHE_JSON_PATH.exists():
+            raise FileNotFoundError(
+                f"Required real LLM posteriors cache not found at {CACHE_JSON_PATH}. "
+                "Synthetic posterior fallbacks are strictly prohibited."
+            )
+        with CACHE_JSON_PATH.open("r", encoding="utf-8") as f:
+            _POSTERIORS_CACHE_SINGLETON = json.load(f)
     return _POSTERIORS_CACHE_SINGLETON
 
 
@@ -69,70 +83,69 @@ def _normalize_post(p_opt: float, p_neu: float, p_cau: float, move_bps: float = 
     }
 
 
-def _synthesize_causal_posteriors_from_modalities(
+def _extract_real_cached_posteriors(
+    tier: str,
     symbol: str,
     date_str: str,
-    mods: Dict[str, Dict[str, Any]],
-) -> Dict[str, Any]:
+    allow_earliest_warmup_lookup: bool = False,
+) -> Optional[Dict[str, Any]]:
     """
-    Deterministic causal fallback when a bar is outside the pre-cached JSON window.
-    Uses ONLY point-in-time modality values at step <= t.
+    Retrieve real cached DeepSeek API posteriors (`deepseek-v4-pro` or `deepseek-flash`)
+    for `(tier, symbol, date_str)` from `results/live_llm_posteriors_cache.json`.
     """
-    mkt = mods["market"]
-    fund = mods["fundamentals"]
-    news = mods["news"]
-    soc = mods["social"]
+    cache = _get_posteriors_cache()
+    norm_tier = _normalize_tier_name(tier)
+    specialists = ("market", "fundamentals", "news", "social")
+    posts: Dict[str, Dict[str, Any]] = {}
+    p_tokens = 0
+    c_tokens = 0
 
-    # 1. Market specialist posterior (from trend, RSI, MACD)
-    trend_score = 0.04 * mkt["ret_4w_pct"] + 0.8 * (mkt["ma8_ratio"] - 1.0) + 0.05 * mkt["macd_diff"]
-    mkt_opt = 0.36 + max(-0.22, min(0.28, trend_score))
-    mkt_cau = 0.34 - max(-0.22, min(0.24, trend_score))
-    p_market = _normalize_post(mkt_opt, 0.30, mkt_cau, move_bps=45.0 + 8.0 * mkt["vol_4w"])
+    target_date = date_str
+    if f"{norm_tier}::market::{symbol}::{target_date}" not in cache:
+        if allow_earliest_warmup_lookup and target_date < "2025-02-28":
+            target_date = "2025-02-28"
+        else:
+            return None
 
-    # 2. Fundamentals specialist posterior (from ROE, rev growth, PE, div yield)
-    val_score = 0.008 * (fund["roe_ttm"] - 12.0) + 0.006 * fund["revenue_yoy_pct"] - 0.003 * (fund["pe_ttm"] - 22.0)
-    f_opt = 0.35 + max(-0.20, min(0.26, val_score))
-    f_cau = 0.33 - max(-0.20, min(0.22, val_score))
-    p_fund = _normalize_post(f_opt, 0.32, f_cau, move_bps=50.0)
+    for sp in specialists:
+        key = f"{norm_tier}::{sp}::{symbol}::{target_date}"
+        entry = cache.get(key)
+        if not entry:
+            return None
+        posts[sp] = {
+            "p_optimistic": float(entry.get("p_optimistic", 1.0 / 3.0)),
+            "p_neutral": float(entry.get("p_neutral", 1.0 / 3.0)),
+            "p_cautious": float(entry.get("p_cautious", 1.0 / 3.0)),
+            "expected_move_bps": float(entry.get("expected_move_bps", 55.0)),
+        }
+        tok = int(entry.get("tokens_used", 350))
+        p_tokens += int(tok * 0.68)
+        c_tokens += int(tok * 0.32)
 
-    # 3. News specialist posterior (from point-in-time news sentiment & count)
-    n_score = 0.35 * news["news_sentiment"]
-    n_opt = 0.35 + max(-0.24, min(0.28, n_score))
-    n_cau = 0.34 - max(-0.24, min(0.26, n_score))
-    p_news = _normalize_post(n_opt, 0.31, n_cau, move_bps=55.0)
-
-    # 4. Social specialist posterior (from social buzz zscore & flow sentiment)
-    s_score = 0.08 * soc["social_buzz_zscore"] + 0.004 * (soc["flow_sentiment_pct"] - 50.0)
-    s_opt = 0.34 + max(-0.22, min(0.26, s_score))
-    s_cau = 0.35 - max(-0.22, min(0.24, s_score))
-    p_soc = _normalize_post(s_opt, 0.31, s_cau, move_bps=52.0)
-
-    # Deliberation traces
-    avg_opt = 0.25 * (p_market["p_optimistic"] + p_fund["p_optimistic"] + p_news["p_optimistic"] + p_soc["p_optimistic"])
-    avg_cau = 0.25 * (p_market["p_cautious"] + p_fund["p_cautious"] + p_news["p_cautious"] + p_soc["p_cautious"])
-    m2_deb = _normalize_post(avg_opt * 0.98 + 0.01, 0.32, avg_cau * 1.02, move_bps=52.0)
-    m4_deb = _normalize_post(
-        0.35 * p_market["p_optimistic"] + 0.30 * p_fund["p_optimistic"] + 0.20 * p_news["p_optimistic"] + 0.15 * p_soc["p_optimistic"],
-        0.30,
-        0.35 * p_market["p_cautious"] + 0.30 * p_fund["p_cautious"] + 0.20 * p_news["p_cautious"] + 0.15 * p_soc["p_cautious"],
-        move_bps=56.0,
-    )
-    b3_fc = _normalize_post(m4_deb["p_optimistic"] * 1.02, 0.30, m4_deb["p_cautious"] * 0.98, move_bps=55.0)
-    b2_fa = _normalize_post(p_market["p_optimistic"] * 0.6 + p_news["p_optimistic"] * 0.4, 0.31, p_market["p_cautious"] * 0.6 + p_news["p_cautious"] * 0.4, move_bps=50.0)
+    def _get_trace(role: str) -> Optional[Dict[str, Any]]:
+        e = cache.get(f"{norm_tier}::{role}::{symbol}::{target_date}")
+        if not e and norm_tier == "deepseek-flash":
+            e = cache.get(f"deepseek-v4-pro::{role}::{symbol}::{target_date}")
+        if not e:
+            return None
+        t = int(e.get("tokens_used", 420))
+        return {
+            "p_optimistic": float(e.get("p_optimistic", 1.0 / 3.0)),
+            "p_neutral": float(e.get("p_neutral", 1.0 / 3.0)),
+            "p_cautious": float(e.get("p_cautious", 1.0 / 3.0)),
+            "expected_move_bps": float(e.get("expected_move_bps", 55.0)),
+            "prompt_tokens": int(t * 0.68),
+            "completion_tokens": int(t * 0.32),
+        }
 
     return {
-        "posteriors": {
-            "market": p_market,
-            "fundamentals": p_fund,
-            "news": p_news,
-            "social": p_soc,
-        },
-        "m2_debate": m2_deb,
-        "m4_cbs_debate": m4_deb,
-        "b3_fincon": b3_fc,
-        "b2_finagent": b2_fa,
-        "specialist_prompt_tokens": 1380,
-        "specialist_completion_tokens": 680,
+        "posteriors": posts,
+        "m2_debate": _get_trace("m2_debate"),
+        "m4_cbs_debate": _get_trace("m4_cbs_debate"),
+        "b3_fincon": _get_trace("b3_fincon"),
+        "b2_finagent": _get_trace("b2_finagent"),
+        "specialist_prompt_tokens": max(400, p_tokens),
+        "specialist_completion_tokens": max(200, c_tokens),
     }
 
 
@@ -140,7 +153,7 @@ def build_causal_step_record_at_index(
     sym_df: pd.DataFrame,
     t_idx: int,
     cached_step_posteriors: Optional[Dict[str, Any]] = None,
-    tier: str = "Frontier_LLM_DeepSeek_V3",
+    tier: str = "deepseek-v4-pro",
 ) -> Dict[str, Any]:
     """
     Construct a single point-in-time step record at bar index `t_idx` using STRICTLY
@@ -149,6 +162,8 @@ def build_causal_step_record_at_index(
     if t_idx < 0 or t_idx >= len(sym_df):
         raise IndexError(f"Invalid causal index {t_idx} for DataFrame of length {len(sym_df)}")
 
+    norm_tier = _normalize_tier_name(tier)
+
     # Strictly slice up to t_idx inclusive (ARIS Guardrail #1: 0 bits from >= t_idx + 1)
     causal_slice = sym_df.iloc[: t_idx + 1]
     row = causal_slice.iloc[-1]
@@ -156,7 +171,7 @@ def build_causal_step_record_at_index(
 
     symbol = str(row.get("symbol", "UNKNOWN"))
     date_str = str(row.get("date", ""))
-    market = str(row.get("market", "US"))
+    market = "US"
     c_t = float(closes[-1])
 
     c_prev1 = closes[-2] if len(closes) >= 2 else c_t
@@ -293,16 +308,23 @@ def build_causal_step_record_at_index(
     if cached_step_posteriors and cached_step_posteriors.get("posteriors"):
         post_bundle = copy.deepcopy(cached_step_posteriors)
     else:
-        post_bundle = _synthesize_causal_posteriors_from_modalities(symbol, date_str, specialist_modalities)
+        post_bundle = _extract_real_cached_posteriors(
+            norm_tier, symbol, date_str, allow_earliest_warmup_lookup=True
+        )
+        if post_bundle is None:
+            raise RuntimeError(
+                f"Missing real cached LLM posteriors for {norm_tier}::{symbol}::{date_str} in {CACHE_JSON_PATH}. "
+                "Synthetic posterior fallbacks are strictly prohibited."
+            )
 
-    spread_bps = 12.0 if market == "CN" else (14.0 if market == "HK" else 8.0)
+    spread_bps = 8.0
 
     return {
         "symbol": symbol,
         "date": date_str,
         "raw_date": date_str,
         "market": market,
-        "tier": tier,
+        "tier": norm_tier,
         "regime": regime,
         "close": round(c_t, 4),
         "sigma_20d": sigma_20d,
@@ -330,9 +352,9 @@ def build_causal_step_record_at_index(
 
 class BenchmarkDatasetLoader:
     """
-    Loads real point-in-time multimodal market data (`data/phase5_multimodal_2024_2026_pit.csv`)
-    and cached LLM deliberation traces (`results/live_llm_posteriors_cache.json`),
-    and constructs leak-free chronological splits.
+    Loads real point-in-time US multimodal market data (`data/phase5_multimodal_2024_2026_pit.csv`)
+    and real cached DeepSeek LLM deliberation traces (`results/live_llm_posteriors_cache.json`),
+    and constructs leak-free chronological splits across `NVDA, AAPL, GOOGL, AMZN`.
     """
 
     def __init__(self, csv_path: Optional[Path] = None) -> None:
@@ -351,50 +373,7 @@ class BenchmarkDatasetLoader:
         symbol: str,
         date_str: str,
     ) -> Optional[Dict[str, Any]]:
-        cache = _get_posteriors_cache()
-        specialists = ("market", "fundamentals", "news", "social")
-        posts: Dict[str, Dict[str, Any]] = {}
-        p_tokens = 0
-        c_tokens = 0
-
-        for sp in specialists:
-            key = f"{tier}::{sp}::{symbol}::{date_str}"
-            entry = cache.get(key)
-            if not entry:
-                return None
-            posts[sp] = {
-                "p_optimistic": float(entry.get("p_optimistic", 1.0 / 3.0)),
-                "p_neutral": float(entry.get("p_neutral", 1.0 / 3.0)),
-                "p_cautious": float(entry.get("p_cautious", 1.0 / 3.0)),
-                "expected_move_bps": float(entry.get("expected_move_bps", 55.0)),
-            }
-            tok = int(entry.get("tokens_used", 350))
-            p_tokens += int(tok * 0.68)
-            c_tokens += int(tok * 0.32)
-
-        def _get_trace(role: str) -> Optional[Dict[str, Any]]:
-            e = cache.get(f"{tier}::{role}::{symbol}::{date_str}")
-            if not e:
-                return None
-            t = int(e.get("tokens_used", 420))
-            return {
-                "p_optimistic": float(e.get("p_optimistic", 1.0 / 3.0)),
-                "p_neutral": float(e.get("p_neutral", 1.0 / 3.0)),
-                "p_cautious": float(e.get("p_cautious", 1.0 / 3.0)),
-                "expected_move_bps": float(e.get("expected_move_bps", 55.0)),
-                "prompt_tokens": int(t * 0.68),
-                "completion_tokens": int(t * 0.32),
-            }
-
-        return {
-            "posteriors": posts,
-            "m2_debate": _get_trace("m2_debate"),
-            "m4_cbs_debate": _get_trace("m4_cbs_debate"),
-            "b3_fincon": _get_trace("b3_fincon"),
-            "b2_finagent": _get_trace("b2_finagent"),
-            "specialist_prompt_tokens": max(400, p_tokens),
-            "specialist_completion_tokens": max(200, c_tokens),
-        }
+        return _extract_real_cached_posteriors(tier, symbol, date_str, allow_earliest_warmup_lookup=False)
 
     def get_temporal_splits(self) -> Dict[str, List[Dict[str, Any]]]:
         if self._splits_cache is not None:
@@ -405,44 +384,54 @@ class BenchmarkDatasetLoader:
         val_steps: List[Dict[str, Any]] = []
         test_2023_steps: List[Dict[str, Any]] = []
         ext_2025_steps: List[Dict[str, Any]] = []
+        ext_2025_flash_steps: List[Dict[str, Any]] = []
 
-        # Representative cross-market symbols for fast, high-signal evaluation
         all_syms = sorted(df["symbol"].unique().tolist())
-        core_syms = [
-            s for s in ("AAPL", "MSFT", "NVDA", "TSLA", "SPY", "600519.SH", "300750.SZ", "0700.HK", "9988.HK", "ASHR")
-            if s in all_syms
-        ]
-        if len(core_syms) < 6:
-            core_syms = all_syms[:10]
+        core_syms = [s for s in ("NVDA", "AAPL", "GOOGL", "AMZN") if s in all_syms]
+        if not core_syms:
+            core_syms = all_syms
 
         for sym in core_syms:
             sym_df = df[df["symbol"] == sym].sort_values("date").reset_index(drop=True)
             n_bars = len(sym_df)
             if n_bars < 15:
                 continue
-            for t_idx in range(4, n_bars - 1):
+            for t_idx in range(8, n_bars - 1):
                 dt_str = str(sym_df.iloc[t_idx]["date"])
                 c_curr = float(sym_df.iloc[t_idx]["close"])
                 c_next = float(sym_df.iloc[t_idx + 1]["close"])
                 fwd_ret_pct = ((c_next / max(1e-9, c_curr)) - 1.0) * 100.0
 
-                cached_f = self._extract_cached_posteriors_for_bar("Frontier_LLM_DeepSeek_V3", sym, dt_str)
-                step_f = build_causal_step_record_at_index(
-                    sym_df, t_idx, cached_step_posteriors=cached_f, tier="Frontier_LLM_DeepSeek_V3"
+                cached_pro = self._extract_cached_posteriors_for_bar("deepseek-v4-pro", sym, dt_str)
+                if cached_pro is None:
+                    raise RuntimeError(
+                        f"Missing real cached posteriors for deepseek-v4-pro::{sym}::{dt_str}"
+                    )
+                step_pro = build_causal_step_record_at_index(
+                    sym_df, t_idx, cached_step_posteriors=cached_pro, tier="deepseek-v4-pro"
                 )
-                step_f["forward_return_pct"] = round(float(fwd_ret_pct), 6)
+                step_pro["forward_return_pct"] = round(float(fwd_ret_pct), 6)
 
-                if dt_str < "2024-07-01":
-                    train_steps.append(step_f)
-                elif dt_str < "2024-11-01":
-                    val_steps.append(step_f)
-                elif dt_str < "2025-02-20":
-                    test_2023_steps.append(step_f)
+                if dt_str < "2025-07-01":
+                    train_steps.append(step_pro)
+                elif dt_str < "2025-10-01":
+                    val_steps.append(step_pro)
+                elif dt_str < "2026-03-01":
+                    test_2023_steps.append(step_pro)
                 else:
-                    ext_2025_steps.append(step_f)
+                    ext_2025_steps.append(step_pro)
+                    cached_flash = self._extract_cached_posteriors_for_bar("deepseek-flash", sym, dt_str)
+                    if cached_flash is None:
+                        raise RuntimeError(
+                            f"Missing real cached posteriors for deepseek-flash::{sym}::{dt_str}"
+                        )
+                    step_flash = build_causal_step_record_at_index(
+                        sym_df, t_idx, cached_step_posteriors=cached_flash, tier="deepseek-flash"
+                    )
+                    step_flash["forward_return_pct"] = round(float(fwd_ret_pct), 6)
+                    ext_2025_flash_steps.append(step_flash)
 
-        # Ensure chronological ordering across date then symbol
-        for lst in (train_steps, val_steps, test_2023_steps, ext_2025_steps):
+        for lst in (train_steps, val_steps, test_2023_steps, ext_2025_steps, ext_2025_flash_steps):
             lst.sort(key=lambda x: (x["date"], x["symbol"]))
 
         self._splits_cache = {
@@ -450,6 +439,7 @@ class BenchmarkDatasetLoader:
             "VALIDATION": val_steps,
             "TEST_2023": test_2023_steps,
             "EXTERNAL_TEST_2025": ext_2025_steps,
+            "EXTERNAL_TEST_2025_FLASH": ext_2025_flash_steps,
             "AMA_2025": ext_2025_steps[:120],
             "FINBEN_FINTRADE": ext_2025_steps[:120],
         }

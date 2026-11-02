@@ -114,7 +114,6 @@ class SevenExperimentsSuiteRunner:
         static_llm_cost_usd: Optional[float] = None,
         factor_map: Optional[Dict[str, Dict[str, float]]] = None,
         clean_sharpe: Optional[float] = None,
-        backbone_quality_shift: float = 0.0,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         b_rate = self.iso_budget if iso_budget_rate is None else iso_budget_rate
         spec = self.registry.get_model_spec(model_id)
@@ -136,7 +135,6 @@ class SevenExperimentsSuiteRunner:
             spread_override_bps=spread_override_bps,
             cost_multiplier=cost_multiplier,
             per_stock_capital_usd=initial_capital * 0.20,
-            backbone_quality_shift=backbone_quality_shift,
         )
         sim_records = sim.simulate_trajectory(steps, decisions, model_pricing=pricing)
         base_summary = self.evaluator.evaluate_records(sim_records)
@@ -298,12 +296,8 @@ class SevenExperimentsSuiteRunner:
     # EXPERIMENT E2: CROSS-MODEL GENERALIZATION (28 LLMs x 4 Core Verification Configs)
     # =========================================================================
     def run_e2_cross_model(self) -> Dict[str, Any]:
-        steps_frontier = [s for s in self.splits["EXTERNAL_TEST_2025"] if s.get("tier") == "Frontier_LLM_DeepSeek_V3"]
-        steps_slm = [s for s in self.splits["EXTERNAL_TEST_2025"] if s.get("tier") == "Small_SLM_Qwen2.5_14B"]
-        if not steps_frontier:
-            steps_frontier = self.splits["EXTERNAL_TEST_2025"]
-        if not steps_slm:
-            steps_slm = self.splits["EXTERNAL_TEST_2025"]
+        steps_frontier = self.splits["EXTERNAL_TEST_2025"]
+        steps_slm = self.splits.get("EXTERNAL_TEST_2025_FLASH", self.splits["EXTERNAL_TEST_2025"])
 
         core_policies = (
             "B06_Static_Tool_LLM",
@@ -324,10 +318,7 @@ class SevenExperimentsSuiteRunner:
             steps = steps_slm if is_flash else steps_frontier
             f_map = self.loader.build_fama_french_6_factors(steps)
 
-            # Small deterministic family calibration offset so each of the 28 models reflects its pricing & capacity tier
-            shift = 0.008 if bool(m_spec.get("full_ablation")) else (-0.005 if is_flash else 0.002)
-            shift += ((idx_m % 5) - 2) * 0.0015
-
+            # Zero artificial shift: strictly real cached deepseek-v4-pro or deepseek-flash posteriors
             bh_sum, _ = self._evaluate_method_on_steps("B01_Buy_And_Hold", steps, model_id=model_id, factor_map=f_map)
             bh_ret = float(bh_sum["Net_Return_Pct"])
             st_sum, _ = self._evaluate_method_on_steps(
@@ -336,7 +327,6 @@ class SevenExperimentsSuiteRunner:
                 model_id=model_id,
                 buy_and_hold_ret=bh_ret,
                 factor_map=f_map,
-                backbone_quality_shift=shift,
             )
             st_pnl_usd = 100000.0 * (float(st_sum["Net_Return_Pct"]) / 100.0)
             st_cost_usd = float(st_sum["LLM_Cost_USD"]) + float(st_sum["Tool_Cost_USD"])
@@ -352,7 +342,6 @@ class SevenExperimentsSuiteRunner:
                     static_llm_pnl_usd=st_pnl_usd,
                     static_llm_cost_usd=st_cost_usd,
                     factor_map=f_map,
-                    backbone_quality_shift=shift,
                 )
                 rows.append(
                     {
@@ -360,7 +349,7 @@ class SevenExperimentsSuiteRunner:
                         "Group": group,
                         "Provider": provider,
                         "Live_API_Key_Configured": has_key,
-                        "Cached_API_Model_Provenance": "deepseek-flash",
+                        "Cached_API_Model_Provenance": "deepseek-flash" if is_flash else "deepseek-v4-pro",
                         "Policy": pol,
                         "Net_Return_Pct": round(float(m_sum["Net_Return_Pct"]), 2),
                         "Sharpe_Ratio": round(float(m_sum["Sharpe_Ratio"]), 3),

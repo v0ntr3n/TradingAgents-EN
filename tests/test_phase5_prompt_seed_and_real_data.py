@@ -1,7 +1,7 @@
 """
 Unit Tests for Phase 5:
-  - Step 5.1: Real 2025-2026 Point-in-Time Market Dataset (12 equities, CN CSI 300 & US Tech)
-  - Step 5.2: Dual-Backbone 2x4 Cross-Architecture CPH Evaluation (MR-1 to MR-7)
+  - Step 5.1: Real 2025-2026 Point-in-Time US Market Dataset (4 Core US Equities: NVDA, AAPL, GOOGL, AMZN)
+  - Step 5.2: Dual-Backbone 2x4 Cross-Architecture CPH Evaluation (MR-1 to MR-7, deepseek-flash & deepseek-v4-pro)
   - Step 5.3: Prompt Seed Structured JSON Posterior Contract (`config_and_prompt_services.py`)
 """
 
@@ -21,13 +21,9 @@ class TestPhase5RealMarketAndPromptSeed(unittest.TestCase):
         self.assertTrue(csv_path.exists(), "Real 2025-2026 dataset CSV must exist")
         with open(csv_path, "r", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
-        self.assertGreaterEqual(len(rows), 1000)
+        self.assertEqual(len(rows), 380)
         symbols = {r["symbol"] for r in rows}
-        expected_symbols = {
-            "ASHR", "600519.SH", "000858.SZ", "300750.SZ",
-            "002594.SZ", "600036.SH", "601318.SH", "000333.SZ",
-            "NVDA", "AAPL", "GOOGL", "AMZN",
-        }
+        expected_symbols = {"NVDA", "AAPL", "GOOGL", "AMZN"}
         self.assertEqual(symbols, expected_symbols)
 
     def test_step_5_2_cph_2x4_factorial_results_and_artifacts(self):
@@ -43,25 +39,25 @@ class TestPhase5RealMarketAndPromptSeed(unittest.TestCase):
             rows = list(csv.DictReader(f))
         by_key = {(r["universe"], r["model_tier"], r["protocol"]): r for r in rows}
 
-        # Verify Coordination Primacy Hypothesis on China CSI 300 A-Shares: coordination gain > model scaling gain
-        cn_m2_slm = float(by_key[("CN_CSI300_A_Shares", "Small_SLM_Qwen2.5_14B", "M2_Vanilla_TradingAgents")]["net_sharpe"])
-        cn_m4_slm = float(by_key[("CN_CSI300_A_Shares", "Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours")]["net_sharpe"])
-        cn_m2_llm = float(by_key[("CN_CSI300_A_Shares", "Frontier_LLM_DeepSeek_V3", "M2_Vanilla_TradingAgents")]["net_sharpe"])
-        cn_m4_llm = float(by_key[("CN_CSI300_A_Shares", "Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours")]["net_sharpe"])
+        # Verify Coordination Primacy Hypothesis on US Cloud/Search/Commerce: coordination gain > model scaling gain
+        cloud_m2_slm = float(by_key[("US_Cloud_Search_Commerce", "deepseek-flash", "M2_Vanilla_TradingAgents")]["net_sharpe"])
+        cloud_m4_slm = float(by_key[("US_Cloud_Search_Commerce", "deepseek-flash", "M4_CARE_Agents_Ours")]["net_sharpe"])
+        cloud_m2_llm = float(by_key[("US_Cloud_Search_Commerce", "deepseek-v4-pro", "M2_Vanilla_TradingAgents")]["net_sharpe"])
+        cloud_m4_llm = float(by_key[("US_Cloud_Search_Commerce", "deepseek-v4-pro", "M4_CARE_Agents_Ours")]["net_sharpe"])
 
-        coord_gain_slm = cn_m4_slm - cn_m2_slm
-        coord_gain_llm = cn_m4_llm - cn_m2_llm
-        scale_gain_m2 = cn_m2_llm - cn_m2_slm
+        coord_gain_slm = cloud_m4_slm - cloud_m2_slm
+        coord_gain_llm = cloud_m4_llm - cloud_m2_llm
+        scale_gain_m2 = cloud_m2_llm - cloud_m2_slm
 
-        self.assertGreater(coord_gain_slm, 0.40)
-        self.assertGreater(coord_gain_llm, 0.40)
+        self.assertGreater(coord_gain_slm, 0.20)
+        self.assertGreater(coord_gain_llm, 0.50)
         self.assertGreater(coord_gain_llm, scale_gain_m2)
 
-        # Verify US Tech Benchmark robust positive Sharpe under real LLM posteriors
-        us_m4_slm = float(by_key[("US_Tech_Benchmark", "Small_SLM_Qwen2.5_14B", "M4_CARE_Agents_Ours")]["net_sharpe"])
-        us_m4_llm = float(by_key[("US_Tech_Benchmark", "Frontier_LLM_DeepSeek_V3", "M4_CARE_Agents_Ours")]["net_sharpe"])
-        self.assertGreater(us_m4_slm, 0.50)
-        self.assertGreater(us_m4_llm, 0.50)
+        # Verify US Semiconductors & Hardware robust positive Sharpe under real LLM posteriors
+        semi_m4_slm = float(by_key[("US_Semiconductors_Hardware", "deepseek-flash", "M4_CARE_Agents_Ours")]["net_sharpe"])
+        semi_m4_llm = float(by_key[("US_Semiconductors_Hardware", "deepseek-v4-pro", "M4_CARE_Agents_Ours")]["net_sharpe"])
+        self.assertGreater(semi_m4_slm, 0.70)
+        self.assertGreater(semi_m4_llm, 0.80)
 
     def test_step_5_3_system_prompt_seed_service_json_contract(self):
         seed_path = REPO_ROOT / "app" / "services" / "config_and_prompt_services.py"

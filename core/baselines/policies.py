@@ -434,7 +434,6 @@ class UnifiedBenchmarkPolicyRunner:
         spread_override_bps: Optional[float] = None,
         cost_multiplier: float = 1.0,
         per_stock_capital_usd: float = 20000.0,
-        backbone_quality_shift: float = 0.0,
     ) -> List[Dict[str, Any]]:
         """
         Generate the step-by-step decision trajectory for `method_id` on `steps`.
@@ -449,20 +448,7 @@ class UnifiedBenchmarkPolicyRunner:
         if n == 0:
             return []
 
-        # Helper to optionally apply backbone family quality shift in E2 cross-model analysis
-        def _shift_post(post: Dict[str, Any], shift: float) -> Dict[str, Any]:
-            if abs(shift) < 1e-9:
-                return dict(post)
-            p_o = max(0.01, float(post.get("p_optimistic", 0.33)) + shift)
-            p_n = max(0.01, float(post.get("p_neutral", 0.34)))
-            p_c = max(0.01, float(post.get("p_cautious", 0.33)) - shift * 0.5)
-            s = p_o + p_n + p_c
-            return {
-                "p_optimistic": round(p_o / s, 6),
-                "p_neutral": round(p_n / s, 6),
-                "p_cautious": round(p_c / s, 6),
-                "expected_move_bps": float(post.get("expected_move_bps", 50.0)),
-            }
+        # Zero artificial shift: strictly use real cached DeepSeek posteriors without modification
 
         # ---------------------------------------------------------------------
         # 1. Traditional & ML Baselines (B01 - B04): 0 LLM tokens, 0 tool calls
@@ -539,7 +525,7 @@ class UnifiedBenchmarkPolicyRunner:
             sym = str(s.get("symbol", "UNKNOWN"))
             regime = str(s.get("regime", "sideways"))
             raw_posts = s.get("posteriors", {})
-            posts = {k: _shift_post(v, backbone_quality_shift) for k, v in raw_posts.items()}
+            posts = {k: dict(v) for k, v in raw_posts.items()}
             spread_bps = float(spread_override_bps) if spread_override_bps is not None else float(s.get("spread_bps", 10.0))
 
             eq_post = _equal_weight_posterior(posts)
@@ -759,7 +745,7 @@ class UnifiedBenchmarkPolicyRunner:
                         contract=contract,
                         unverified_agg=unv_post,
                         evidence=ev,
-                        debate_posterior=_shift_post(deb_entry, backbone_quality_shift),
+                        debate_posterior=deb_entry,
                         binary_long_only=True,
                     )
                     invalid_act = False
@@ -768,7 +754,7 @@ class UnifiedBenchmarkPolicyRunner:
                     ver_res = adjudicate_freeform_without_contract(
                         unverified_agg=unv_post,
                         evidence=ev,
-                        debate_posterior=_shift_post(deb_entry, backbone_quality_shift),
+                        debate_posterior=deb_entry,
                         binary_long_only=True,
                     )
                     invalid_act = False
@@ -777,7 +763,7 @@ class UnifiedBenchmarkPolicyRunner:
                     ver_res = adjudicate_freeform_without_contract(
                         unverified_agg=unv_post,
                         evidence=ev,
-                        debate_posterior=_shift_post(deb_entry, backbone_quality_shift),
+                        debate_posterior=deb_entry,
                         binary_long_only=True,
                     )
                     # Free-form ReAct occasionally emits malformed tool arguments (~1.8% IAR)
@@ -787,7 +773,7 @@ class UnifiedBenchmarkPolicyRunner:
                     ver_res = adjudicate_freeform_without_contract(
                         unverified_agg=unv_post,
                         evidence=ev,
-                        debate_posterior=_shift_post(deb_entry, backbone_quality_shift),
+                        debate_posterior=deb_entry,
                         binary_long_only=True,
                     )
                     invalid_act = (idx % 85 == 11)
@@ -797,7 +783,7 @@ class UnifiedBenchmarkPolicyRunner:
                     ver_res = adjudicate_freeform_without_contract(
                         unverified_agg=unv_post,
                         evidence=ev,
-                        debate_posterior=_shift_post(deb_entry, backbone_quality_shift),
+                        debate_posterior=deb_entry,
                         binary_long_only=True,
                     )
                     invalid_act = (idx % 70 == 13) if method_id != "Ours_wo_Evidence_Contract" else (idx % 95 == 19)

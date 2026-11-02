@@ -3,7 +3,7 @@
 Evaluates 500 multi-regime trading bars constructed from real cached LLM
 posteriors (`results/live_llm_posteriors_cache.json`) aligned with historical
 market returns (`data/phase5_real_2025_2026_prices.csv`) under the 2026
-Five-Criteria Protocol Audit Standard (Net of A-share stamp duty, commissions,
+Five-Criteria Protocol Audit Standard (Net of commissions,
 and slippage).
 """
 import csv
@@ -88,7 +88,7 @@ def _load_real_cache_and_bars(
         by_symbol[sym].sort(key=lambda r: r["date"])
 
     regime_bars: Dict[str, List[Dict[str, Any]]] = {"bull": [], "bear": [], "sideways": []}
-    for tier in ("Frontier_LLM_DeepSeek_V3", "Small_SLM_Qwen2.5_14B"):
+    for tier in ("deepseek-v4-pro", "deepseek-flash"):
         for sym in sorted(by_symbol.keys()):
             rows = by_symbol[sym]
             closes = [r["close"] for r in rows]
@@ -359,7 +359,7 @@ def plot_cph_ablation_brier_mae(results, reports_dir: Path, results_dir: Path) -
     for b in bars_mae:
         ax1.text(b.get_x() + b.get_width() / 2, b.get_height() + 0.006, f"{b.get_height():.4f}", ha="center", va="bottom", fontsize=7.0)
 
-    bars_sr15 = ax2.bar(x - width / 2, net_sharpes, width, label="Net Sharpe (15 bps A-Share)", color="#8b0000", edgecolor="black", linewidth=0.6)
+    bars_sr15 = ax2.bar(x - width / 2, net_sharpes, width, label="Net Sharpe (15 bps Friction)", color="#8b0000", edgecolor="black", linewidth=0.6)
     bars_sr10 = ax2.bar(x + width / 2, sharpes_10bps, width, label="Net Sharpe (10 bps Institutional)", color="#d95f02", edgecolor="black", linewidth=0.6)
     ax2.axhline(0.0, color="black", linewidth=0.8, linestyle="-")
     ax2.set_xticks(x)
@@ -724,7 +724,7 @@ def run_ablation():
         tex_lines = [
             r"\begin{table*}[t]",
             r"\centering",
-            r"\caption{Factorial Ablation across 500 Multi-Regime Trading Bars Constructed from Point-in-Time Cached Live LLM Posteriors and Historical Market Returns (Net of A-Share Stamp Duty, Commissions, and 7.5 bps Slippage).}",
+            r"\caption{Factorial Ablation across 500 Multi-Regime Trading Bars Constructed from Point-in-Time Cached Live LLM Posteriors and Historical Market Returns (Net of Commissions and 7.5 bps Slippage).}",
             r"\label{tab:cph_ablation}",
             r"\begin{tabular}{lrrrrrrrrrrr}",
             r"\toprule",

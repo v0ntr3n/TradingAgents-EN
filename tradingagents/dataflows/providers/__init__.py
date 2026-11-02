@@ -125,3 +125,25 @@ __all__ = [
     'FinnhubProvider',
     # 'TDXProvider'  # Removed
 ]
+
+import sys as _sys
+_self_prov = _sys.modules[__name__]
+for _cn_mod in (
+    'tradingagents.dataflows.providers.china',
+    'tradingagents.dataflows.providers.china.akshare',
+    'tradingagents.dataflows.providers.china.tushare',
+    'tradingagents.dataflows.providers.china.baostock',
+    'tradingagents.dataflows.providers.china.fundamentals_snapshot',
+    'tradingagents.dataflows.optimized_china_data',
+    'tradingagents.config.tushare_config',
+):
+    _sys.modules[_cn_mod] = _self_prov
+
+OptimizedChinaDataProvider = OptimizedUSDataProvider
+BaostockProvider = BaoStockProvider
+def get_akshare_provider(*args, **kwargs): return None
+def get_tushare_provider(*args, **kwargs): return None
+def get_tushare_adapter(*args, **kwargs): return None
+def get_baostock_provider(*args, **kwargs): return None
+def get_cn_fund_snapshot(*args, **kwargs): return {}
+def get_tushare_config(*args, **kwargs): return None

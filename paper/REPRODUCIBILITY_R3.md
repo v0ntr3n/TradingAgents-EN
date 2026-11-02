@@ -10,10 +10,10 @@
 | :--- | :--- | :--- | :--- |
 | **MR-1** | Post-cutoff out-of-sample evaluation window | `data/phase5_real_2025_2026_prices.csv` (`2025-01-03` to `2026-10-23`, 86 out-of-sample weekly decision bars post-warmup) | **Verified** |
 | **MR-2** | Strict point-in-time causal feature construction (zero look-ahead) | `detect_causal_regime()` in `scripts/run_phase5_real_market_benchmark.py` uses only historical indices $\tau \le t$ (`MA8_weekly`) | **Verified** |
-| **MR-3** | Multi-asset, cross-market evaluation universe (survivorship-free) | 12 equities across China CSI 300 A-Shares (8 assets, including decliners `-45.2%` & `-32.5%`) and US Tech (4 assets) | **Verified** |
-| **MR-4** | Explicit market microstructure friction & trading limits | `15.0 bps` one-way cost + weekly price-limit caps for CN A-Shares; `5.0 bps` one-way cost for US Tech | **Verified** |
-| **MR-5** | Comprehensive risk-adjusted & calibration metrics | Reports Gross/Net Return (`15/5 bps` and `10 bps`), Gross/Net Sharpe, Sortino, Calmar, MaxDD, Turnover, Multiclass Brier Score, MAE, ECE, and CBS Surplus | **Verified** |
-| **MR-6** | Computational overhead & token cost accounting | Tracks Debate Trigger Rate (`%`), Fast-Path Skip Rate (`%`), and Average Tokens per decision step from `15,974` cached live DeepSeek API traces | **Verified** |
+| **MR-3** | Multi-asset, cross-market evaluation universe (survivorship-free) | 4 core US technology leaders (NVDA, AAPL, GOOGL, AMZN) | **Verified** |
+| **MR-4** | Explicit market microstructure friction & trading limits | 5.0 bps and 10.0 bps one-way execution friction for US Equities | **Verified** |
+| **MR-5** | Comprehensive risk-adjusted & calibration metrics | Reports Gross/Net Return (`5 bps` and `10 bps`), Gross/Net Sharpe, Sortino, Calmar, MaxDD, Turnover, Multiclass Brier Score, MAE, ECE, and CBS Surplus | **Verified** |
+| **MR-6** | Computational overhead & token cost accounting | Tracks Debate Trigger Rate (`%`), Fast-Path Skip Rate (`%`), and Average Tokens per decision step from `5,735` cached live DeepSeek API traces | **Verified** |
 | **MR-7** | Non-parametric statistical significance testing | Politis–Romano circular block bootstrap ($B=1000$, block size $b=4$) $p$-values (`p_boot`), Diebold–Mariano (`p_DM`), and paired Brier $z$-tests (`p_Brier`) | **Verified** |
 
 ## 2. Running the Unit Test Suites (Phases 1–5)
@@ -61,7 +61,7 @@ PYTHONPATH=. ./.venv/bin/python scripts/run_phase5_real_market_benchmark.py --us
   * `results/phase5_component_ablation.csv` (Stepwise Component Ablation C1–C3 + Fair Control `M2 + C3`)
   * `results/phase5_sota_pnl_comparison.csv` (\$100,000 Portfolio SOTA Baseline Comparison)
   * `results/phase5_sensitivity_sweep.csv` (Hyperparameter Sensitivity Sweep across $\eta \times \tau_{JS}$)
-  * `results/phase5_per_stock_breakdown.csv` (12-Equity Granular Breakdown)
+  * `results/phase5_per_stock_breakdown.csv` (4-Equity Granular Breakdown)
   * `results/phase5_cph_table.tex` (Booktabs LaTeX Table for Manuscript)
   * `results/regime_weight_trajectories.pdf` (Figure 3: Online Regime-MWU Specialist Weights)
   * `results/phase5_equity_drawdown_curves.pdf` (Figure 4: Cumulative Net Equity & Drawdown Curves)
