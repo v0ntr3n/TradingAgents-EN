@@ -629,7 +629,7 @@ import {
   cancelExecution,
   type JobStatus,
   type JobProgress
-} from '@/api/scheduler'
+} from '@/api/system'
 import {
   getDataSourcesStatus,
   type DataSourceStatus
@@ -1176,7 +1176,7 @@ const calculateRemainingTime = (startedAt: string, progress: number): string => 
 // Resume a suspended task
 const handleResumeSuspendedTask = async (jobId: string, executionId: string) => {
   try {
-    const { resumeSuspendedExecution } = await import('@/api/scheduler')
+    const { resumeSuspendedExecution } = await import('@/api/system')
     const response = await resumeSuspendedExecution(executionId)
     
     if (response.success) {
@@ -1298,7 +1298,7 @@ const handleTriggerTask = async (jobId: string, fullSync: boolean = false) => {
           // The user chooses to start over, clearing pending tasks first
           if (suspendedExec.execution_id) {
             try {
-              const { cancelExecution } = await import('@/api/scheduler')
+              const { cancelExecution } = await import('@/api/system')
               await cancelExecution(suspendedExec.execution_id)
               ElMessage.success('Pending tasks have been cleared and execution will resume')
               

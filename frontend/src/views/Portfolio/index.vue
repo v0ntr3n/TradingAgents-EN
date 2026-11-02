@@ -540,7 +540,7 @@ import PositionDetailsDialog from './components/PositionDetailsDialog.vue'
 import PositionOperationDialog from './components/PositionOperationDialog.vue'
 import StockOperationHistoryDialog from './components/StockOperationHistoryDialog.vue'
 import AccountCard from './components/AccountCard.vue'
-import { getMarketByStockCode } from '@/utils/market'
+import { getMarketByStockCode } from '@/utils/stock'
 
 // Router
 const router = useRouter()

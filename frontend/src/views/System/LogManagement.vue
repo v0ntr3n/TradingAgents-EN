@@ -197,7 +197,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh, Download, Search, View, Delete } from '@element-plus/icons-vue'
-import { LogsApi, type LogFileInfo, type LogContentResponse, type LogStatistics } from '@/api/logs'
+import { LogsApi, type LogFileInfo, type LogContentResponse, type LogStatistics } from '@/api/system'
 
 // data
 const loading = ref(false)

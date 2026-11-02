@@ -222,7 +222,7 @@
 import { ref, watch, computed, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { CircleCheck, Warning, Pointer, Document, Loading, InfoFilled, Clock } from '@element-plus/icons-vue'
-import { reviewApi, type TradeReviewReport } from '@/api/review'
+import { reviewApi, type TradeReviewReport } from '@/api/portfolio'
 import { renderMarkdown as safeMarkdown } from '@/utils/markdown'
 import TaskGrowthPanel from '@/components/growth/TaskGrowthPanel.vue'
 import SaveAsCaseDialog from './SaveAsCaseDialog.vue'

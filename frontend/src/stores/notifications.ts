@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { notificationsApi, type NotificationItem } from '@/api/notifications'
+import { notificationsApi, type NotificationItem } from '@/api/system'
 import { useAuthStore } from '@/stores/auth'
 import { isJdyunMode } from '@/utils/config'
 

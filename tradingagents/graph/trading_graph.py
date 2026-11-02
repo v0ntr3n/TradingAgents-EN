@@ -8,9 +8,18 @@ from typing import Dict, Any, Tuple, List, Optional
 import time
 import threading
 
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain_google_genai import ChatGoogleGenerativeAI
+try:
+    from langchain_openai import ChatOpenAI
+except ImportError:
+    ChatOpenAI = None
+try:
+    from langchain_anthropic import ChatAnthropic
+except ImportError:
+    ChatAnthropic = None
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:
+    ChatGoogleGenerativeAI = None
 from tradingagents.llm_adapters import ChatDashScopeOpenAI, ChatGoogleOpenAI
 
 from langgraph.prebuilt import ToolNode

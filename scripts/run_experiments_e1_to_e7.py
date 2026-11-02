@@ -6,7 +6,7 @@ Unified 7-Experiment (`E1` to `E7`) Research Benchmark Suite Runner
 Evaluates Upgraded CARE-Agents (`Ours`: Decision-Flip VOI + Evidence Contract +
 Causal Regime-MWU + Cost-Aware Execution) against 12 Baselines across 6 Metric Groups,
 3 Benchmark Suites (`FNSPID + SEC EDGAR 2018-2023`, `StockBench 2025`, `KTD-Style Robustness`),
-and the 28-LLM Model Registry (`configs/models_registry.yaml`).
+and the 28-LLM Model Registry (`config/models_registry.yaml`).
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ from core.llm.multi_model_client import MultiModelRegistryClient
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = REPO_ROOT / "results"
-REPORTS_DIR = REPO_ROOT / "reports"
+REPORTS_DIR = REPO_ROOT / "results"
 
 
 def _write_csv_both(filename: str, rows: List[Dict[str, Any]], fieldnames: Optional[List[str]] = None) -> None:
@@ -42,7 +42,7 @@ def _write_csv_both(filename: str, rows: List[Dict[str, Any]], fieldnames: Optio
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     cols = fieldnames or list(rows[0].keys())
-    for folder in (RESULTS_DIR, REPORTS_DIR):
+    for folder in (RESULTS_DIR,):
         out_path = folder / filename
         with out_path.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
@@ -58,7 +58,7 @@ def _write_json(filename: str, payload: Dict[str, Any]) -> None:
 def _write_tex_both(filename: str, content: str) -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    for folder in (RESULTS_DIR, REPORTS_DIR):
+    for folder in (RESULTS_DIR,):
         (folder / filename).write_text(content, encoding="utf-8")
 
 
@@ -69,7 +69,7 @@ def _tex_escape(text: str) -> str:
 def _save_fig_both(fig: plt.Figure, stem: str) -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    for folder in (RESULTS_DIR, REPORTS_DIR):
+    for folder in (RESULTS_DIR,):
         fig.savefig(folder / f"{stem}.pdf", bbox_inches="tight", dpi=300)
         fig.savefig(folder / f"{stem}.png", bbox_inches="tight", dpi=220)
     plt.close(fig)

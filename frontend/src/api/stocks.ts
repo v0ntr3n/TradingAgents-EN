@@ -1,5 +1,10 @@
 import { ApiClient } from './request'
 import type { FactorDiagnosticPayload, FactorWarningPayload } from './screening'
+import request from './request'
+
+// ============================================================================
+// Module: stocks.ts
+// ============================================================================
 
 export interface QuoteResponse {
   symbol: string  // Main field: 6-digit stock code
@@ -276,3 +281,213 @@ export const stocksApi = {
   }
 }
 
+// ============================================================================
+// Module: multiMarket.ts
+// ============================================================================
+
+/**
+ * multi-market stocks API
+ * Supports unified query interface for A-shares
+ */
+
+
+export interface Market {
+  code: string
+  name: string
+  name_en: string
+  currency: string
+  timezone: string
+  trading_hours?: string
+}
+
+export interface StockInfo {
+  code: string
+  name: string
+  name_en?: string
+  market: string
+  source: string
+  total_mv?: number
+  pe?: number
+  pb?: number
+  lot_size?: number
+  currency?: string
+  industry?: string
+  sector?: string
+  list_date?: string
+  updated_at?: string
+}
+
+export interface StockQuote {
+  code: string
+  close?: number
+  pct_chg?: number
+  open?: number
+  high?: number
+  low?: number
+  volume?: number
+  amount?: number
+  trade_date?: string
+  currency?: string
+  turnover_rate?: number
+  amplitude?: number
+}
+
+export interface DailyQuote {
+  trade_date: string
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+  amount?: number
+}
+
+/**
+ * Get a list of supported markets
+ */
+export function getSupportedMarkets() {
+  return request<{ markets: Market[] }>({
+    url: '/api/markets',
+    method: 'get'
+  })
+}
+
+/**
+ * Search for stocks (multi-market supported)
+ */
+export function searchStocks(market: string, query: string, limit: number = 20) {
+  return request<{ stocks: StockInfo[]; total: number }>({
+    url: `/api/markets/${market}/stocks/search`,
+    method: 'get',
+    params: { q: query, limit }
+  })
+}
+
+/**
+ * Get basic stock information
+ */
+export function getStockInfo(market: string, code: string, source?: string) {
+  return request<StockInfo>({
+    url: `/api/markets/${market}/stocks/${code}/info`,
+    method: 'get',
+    params: source ? { source } : undefined
+  })
+}
+
+/**
+ * Get real-time stock quotes
+ */
+export function getStockQuote(market: string, code: string) {
+  return request<StockQuote>({
+    url: `/api/markets/${market}/stocks/${code}/quote`,
+    method: 'get'
+  })
+}
+
+/**
+ * Get stock historical K-line data
+ */
+export function getStockDailyQuotes(
+  market: string,
+  code: string,
+  startDate?: string,
+  endDate?: string,
+  limit: number = 100
+) {
+  return request<{ code: string; market: string; quotes: DailyQuote[]; total: number }>({
+    url: `/api/markets/${market}/stocks/${code}/daily`,
+    method: 'get',
+    params: {
+      start_date: startDate,
+      end_date: endDate,
+      limit
+    }
+  })
+}
+
+// ============================================================================
+// Module: news.ts
+// ============================================================================
+
+/**
+ * News data interface
+ */
+// NewsItem interface defined above
+
+/**
+ * Latest news response
+ */
+export interface LatestNewsResponse {
+  symbol?: string
+  limit: number
+  hours_back: number
+  total_count: number
+  news: NewsItem[]
+}
+
+/**
+ * News query response
+ */
+export interface NewsQueryResponse {
+  symbol: string
+  hours_back: number
+  total_count: number
+  news: NewsItem[]
+}
+
+/**
+ * News synchronization response
+ */
+export interface NewsSyncResponse {
+  sync_type: string
+  symbol?: string
+  data_sources?: string[]
+  hours_back: number
+  max_news_per_source: number
+}
+
+/**
+ * News API
+ */
+export const newsApi = {
+  /**
+   * Get the latest news
+   * @param symbol Stock code, if empty, get market news
+   * @param limit Return quantity limit
+   * @param hours_back Lookback hours
+   */
+  async getLatestNews(symbol?: string, limit: number = 10, hours_back: number = 24) {
+    const params: any = { limit, hours_back }
+    if (symbol) {
+      params.symbol = symbol
+    }
+    return ApiClient.get<LatestNewsResponse>('/api/news-data/latest', params)
+  },
+
+  /**
+   * Check stock news
+   * @param symbol Stock code
+   * @param hours_back Lookback hours
+   * @param limit Return quantity limit
+   */
+  async queryStockNews(symbol: string, hours_back: number = 24, limit: number = 20) {
+    return ApiClient.get<NewsQueryResponse>(`/api/news-data/query/${symbol}`, {
+      hours_back,
+      limit
+    })
+  },
+
+  /**
+   * Synchronize market news (background task)
+   * @param hours_back Lookback hours
+   * @param max_news_per_source Maximum number of news per data source
+   */
+  async syncMarketNews(hours_back: number = 24, max_news_per_source: number = 50) {
+    return ApiClient.post<NewsSyncResponse>('/api/news-data/sync/start', {
+      symbol: null,
+      data_sources: null,
+      hours_back,
+      max_news_per_source
+    })
+  }
+}

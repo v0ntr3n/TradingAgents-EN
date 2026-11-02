@@ -5,7 +5,10 @@ Provides the acquisition, processing and caching functions of Hong Kong stock da
 
 import pandas as pd
 import numpy as np
-import yfinance as yf
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
 import time
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta

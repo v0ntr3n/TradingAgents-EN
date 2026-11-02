@@ -26,7 +26,7 @@ class MissingAPIKeyError(RuntimeError):
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_REGISTRY_PATH = REPO_ROOT / "configs" / "models_registry.yaml"
+DEFAULT_REGISTRY_PATH = REPO_ROOT / "config" / "models_registry.yaml"
 DEFAULT_CACHE_PATH = REPO_ROOT / "results" / "live_llm_posteriors_cache.json"
 
 

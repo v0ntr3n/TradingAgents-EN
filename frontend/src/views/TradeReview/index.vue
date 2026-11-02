@@ -428,7 +428,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, type TabPaneName } from 'element-plus'
 import { TrendCharts, Refresh, Search, RefreshRight, Goods, Wallet } from '@element-plus/icons-vue'
-import { reviewApi, type ReviewListItem, type TradingStatistics, type ReviewableStock, type ReviewType, type PeriodicReviewListItem } from '@/api/review'
+import { reviewApi, type ReviewListItem, type TradingStatistics, type ReviewableStock, type ReviewType, type PeriodicReviewListItem } from '@/api/portfolio'
 import { portfolioApi } from '@/api/portfolio'
 
 import ReviewHistoryTable from './components/ReviewHistoryTable.vue'

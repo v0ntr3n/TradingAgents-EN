@@ -46,7 +46,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'DashboardHome',
-        component: () => import('@/views/Dashboard/index.vue'),
+        component: () => import('@/views/Dashboard.vue'),
         meta: {
           title: 'Dashboard',
           requiresAuth: true
@@ -69,7 +69,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'HelpHome',
-        component: () => import('@/views/Help/index.vue'),
+        component: () => import('@/views/Help.vue'),
         meta: {
           title: 'User Manual',
           requiresAuth: true
@@ -91,7 +91,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'GuideHome',
-        component: () => import('@/views/Guide/index.vue'),
+        component: () => import('@/views/Guide.vue'),
         meta: {
           title: 'User Guide',
           requiresAuth: true
@@ -157,7 +157,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'FavoritesHome',
-        component: () => import('@/views/Favorites/index.vue'),
+        component: () => import('@/views/Favorites.vue'),
         meta: {
           title: 'Watchlist',
           requiresAuth: true
@@ -340,7 +340,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'MemoryHome',
-        component: () => import('@/views/Memory/index.vue'),
+        component: () => import('@/views/Memory.vue'),
         meta: {
           title: 'Stock Object Memory',
           requiresAuth: true
@@ -561,7 +561,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Auth/Login.vue'),
+    component: () => import('@/views/Login.vue'),
     meta: {
       title: 'Login',
       hideInMenu: true,
@@ -572,7 +572,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/about',
     name: 'About',
-    component: () => import('@/views/About/index.vue'),
+    component: () => import('@/views/About.vue'),
     meta: {
       title: 'About',
       icon: 'InfoFilled',
@@ -594,7 +594,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'PaperTradingHome',
-        component: () => import('@/views/PaperTrading/index.vue'),
+        component: () => import('@/views/PaperTrading.vue'),
         meta: {
           title: 'Paper Trading',
           requiresAuth: true
@@ -654,7 +654,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
-    component: () => import('@/views/Error/404.vue'),
+    component: () => import('@/views/NotFound.vue'),
     meta: {
       title: 'Page Not Found',
       hideInMenu: true,

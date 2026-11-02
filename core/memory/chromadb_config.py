@@ -7,8 +7,12 @@ Provides ChromaDB configurations optimized for different operating systems
 import platform
 import logging
 import os
-import chromadb
-from chromadb.config import Settings
+try:
+    import chromadb
+    from chromadb.config import Settings
+except ImportError:
+    chromadb = None
+    Settings = None
 
 logger = logging.getLogger(__name__)
 

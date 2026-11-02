@@ -1,3 +1,4 @@
+from . import contracts as _contracts
 # tradingagents/core/__init__.py
 """
 Core module - Stock analysis engine core components

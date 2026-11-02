@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { reviewApi, type PeriodType } from '@/api/review'
+import { reviewApi, type PeriodType } from '@/api/portfolio'
 
 const props = withDefaults(defineProps<{
   modelValue: boolean

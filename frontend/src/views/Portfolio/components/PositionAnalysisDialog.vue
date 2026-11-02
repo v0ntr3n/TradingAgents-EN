@@ -313,7 +313,7 @@ import { portfolioApi, type PositionItem, type PositionAnalysisResult, type Posi
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { renderMarkdown as safeMarkdown } from '@/utils/markdown'
-import { getMarketByStockCode } from '@/utils/market'
+import { getMarketByStockCode } from '@/utils/stock'
 import { workflowApi, isSelectableAnalysisWorkflow, type WorkflowSummary } from '@/api/workflow'
 import PositionAnalysisHistoryDialog from './PositionAnalysisHistoryDialog.vue'
 

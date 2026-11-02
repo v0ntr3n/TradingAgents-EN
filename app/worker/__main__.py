@@ -1,3 +1,346 @@
+from __future__ import annotations
+import sys as _sys
+_self_mod = _sys.modules[__name__]
+for _sub in ['launcher', 'worker_app', '__main__']:
+    _sys.modules[f"app.worker.{_sub}"] = _self_mod
+    setattr(_self_mod, _sub.split(".")[0], _self_mod)
+
+# === launcher.py ===
+"""
+Worker Launcher (main process)
+Used to start and monitor Worker sub-processes, capture sub-process exits and record logs
+
+🔥 Solve the problem: When the Worker is forcibly killed by taskkill /F or the task manager,
+   Worker The internal exit hook cannot be executed, but the main process can detect the exit of the child process.
+"""
+
+import subprocess
+import sys
+import os
+import time
+import signal
+from pathlib import Path
+from datetime import datetime
+
+# Add project root directory to path
+project_root = Path(__file__).parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+
+def write_log(message: str, level: str = "INFO"):
+    """write log"""
+    try:
+        log_dir = Path("logs")
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / "worker.log"
+        
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"{timestamp} - LAUNCHER - {level} - {message}\n")
+            f.flush()
+        
+        # Also print to console
+        print(f"[{timestamp}] [{level}] {message}")
+    except Exception as e:
+        print(f"Failed to write log: {e}")
+
+
+def write_exit_report(pid: int, returncode: int, runtime_seconds: float):
+    """Write child process exit report"""
+    try:
+        log_dir = Path("logs")
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / "worker.log"
+        
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Interpret exit code
+        if returncode == 0:
+            exit_reason = "Exit normally"
+        elif returncode < 0:
+            # A negative number indicates termination by a signal (Unix)
+            exit_reason = f"terminated by signal (signal {-returncode})"
+        elif returncode == 1:
+            exit_reason = "General error"
+        elif returncode == -1073741510:  # Windows: STATUS_CONTROL_C_EXIT
+            exit_reason = "Ctrl+C interrupt"
+        elif returncode == -1073741819:  # Windows: STATUS_ACCESS_VIOLATION
+            exit_reason = "Access violation (crash)"
+        elif returncode == -1073740791:  # Windows: Killed by taskkill
+            exit_reason = "Forced to terminate (taskkill /F or task manager)"
+        elif returncode == 1:
+            exit_reason = "General error exit"
+        else:
+            exit_reason = f"Unknown exit code: {returncode}"
+        
+        # Format run time
+        hours, remainder = divmod(int(runtime_seconds), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        runtime_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"\n{'='*60}\n")
+            f.write(f"{timestamp} - LAUNCHER - Worker Child process exit report\n")
+            f.write(f"{'='*60}\n")
+            f.write(f"child process PID: {pid}\n")
+            f.write(f"exit code: {returncode}\n")
+            f.write(f"Reason for exit: {exit_reason}\n")
+            f.write(f"Running time: {runtime_str}\n")
+            f.write(f"{'='*60}\n\n")
+            f.flush()
+        
+        print(f"\n{'='*60}")
+        print("Worker Child process exit report")
+        print(f"{'='*60}")
+        print(f"child process PID: {pid}")
+        print(f"exit code: {returncode}")
+        print(f"Reason for exit: {exit_reason}")
+        print(f"Running time: {runtime_str}")
+        print(f"{'='*60}\n")
+        
+    except Exception as e:
+        print(f"Writing exit report failed: {e}")
+
+
+def main():
+    """Main function: start and monitor Worker subprocess"""
+    write_log("=" * 50)
+    write_log("Worker Launcher starts running")
+    write_log(f"Python: {sys.executable}")
+    write_log(f"working directory: {os.getcwd()}")
+    write_log(f"launcher PID: {os.getpid()}")
+    
+    # Build startup command
+    python_exe = sys.executable
+    worker_module = "app.worker"
+    
+    write_log(f"Start Worker child process: {python_exe} -m {worker_module}")
+    
+    start_time = time.time()
+    
+    # Start child process
+    process = subprocess.Popen(
+        [python_exe, "-m", worker_module],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,  # line buffer
+        encoding='utf-8',
+        errors='replace'
+    )
+    
+    child_pid = process.pid
+    write_log(f"Worker Child process started, PID: {child_pid}")
+    
+    try:
+        # Real-time output of logs of child processes
+        while True:
+            line = process.stdout.readline()
+            if line:
+                print(line.rstrip())
+            
+            # Check if the child process exited
+            returncode = process.poll()
+            if returncode is not None:
+                # Child process has exited
+                runtime = time.time() - start_time
+                write_log(f"Worker child process exit detected, exit code: {returncode}", "WARNING")
+                write_exit_report(child_pid, returncode, runtime)
+                break
+            
+            # If there is no output and no exit, wait briefly.
+            if not line:
+                time.sleep(0.1)
+                
+    except KeyboardInterrupt:
+        write_log("received Ctrl+C, Terminating Worker child process...", "WARNING")
+        process.terminate()
+        process.wait(timeout=5)
+        runtime = time.time() - start_time
+        write_exit_report(child_pid, process.returncode or -1, runtime)
+    
+    write_log("Worker Launcher exits")
+
+
+if __name__ == "__main__":
+    main()
+
+
+# === worker_app.py ===
+"""
+Worker Service - Analysis task processing service based on FastAPI
+
+Run using Uvicorn, which has the same architecture as Backend and is more stable and reliable.
+
+Start method:
+    python -m uvicorn app.worker.worker_app:app --host 0.0.0.0 --port 8001
+"""
+
+import asyncio
+import logging
+import sys
+from pathlib import Path
+from datetime import datetime
+from contextlib import asynccontextmanager
+from typing import Optional
+
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
+# Add project root directory to path
+project_root = Path(__file__).parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from app.core.database import init_database, close_database
+from app.core.config import settings
+from app.worker.analysis_worker import AnalysisWorker
+
+logger = logging.getLogger(__name__)
+
+# Worker Example
+_worker: Optional[AnalysisWorker] = None
+_worker_task: Optional[asyncio.Task] = None
+_start_time: Optional[datetime] = None
+
+
+async def start_worker():
+    """Start Worker task processing loop"""
+    global _worker, _worker_task
+    
+    logger.info("🚀 Start Worker task processing...")
+    
+    _worker = AnalysisWorker()
+    
+    # Run in background worker
+    _worker_task = asyncio.create_task(_worker.start())
+    
+    logger.info("✅ Worker Task processing started")
+
+
+async def stop_worker():
+    """stop Worker"""
+    global _worker, _worker_task
+    
+    logger.info("🛑 stop Worker...")
+    
+    if _worker:
+        _worker.running = False
+    
+    if _worker_task:
+        _worker_task.cancel()
+        try:
+            await _worker_task
+        except asyncio.CancelledError:
+            pass
+    
+    logger.info("✅ Worker Stopped")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI life cycle management"""
+    global _start_time
+    _start_time = datetime.now()
+    
+    # On startup
+    logger.info("=" * 60)
+    logger.info("🔧 Worker Service starting...")
+    logger.info(f"   Python: {sys.executable}")
+    logger.info(f"   working directory: {Path.cwd()}")
+    logger.info("=" * 60)
+    
+    # Initializing the database and unifying the Redis life cycle
+    await init_database()
+    
+    # start Worker
+    await start_worker()
+    
+    logger.info("✅ Worker Service startup completed")
+    
+    yield
+    
+    # when closed
+    logger.info("🛑 Worker Service is closed...")
+    
+    await stop_worker()
+    await close_database()
+    
+    logger.info("✅ Worker Service is down")
+
+
+# Create a FastAPI application
+app = FastAPI(
+    title="TradingAgents Worker Service",
+    description="Analysis task processing service",
+    version="2.0.0",
+    lifespan=lifespan,
+)
+
+
+@app.get("/")
+async def root():
+    """root path"""
+    return {"service": "worker", "status": "running"}
+
+
+@app.get("/health")
+async def health_check():
+    """health check"""
+    global _worker, _worker_task, _start_time
+
+    status = "healthy"
+    worker_status = "unknown"
+
+    if _worker:
+        if _worker.running:
+            worker_status = "running"
+        elif _worker_task and not _worker_task.done():
+            worker_status = "initializing"
+            status = "starting"
+        else:
+            worker_status = "stopped"
+            status = "degraded"
+    else:
+        status = "starting"
+        worker_status = "not_created"
+
+    uptime = None
+    if _start_time:
+        uptime = (datetime.now() - _start_time).total_seconds()
+
+    return {
+        "status": status,
+        "worker_status": worker_status,
+        "uptime_seconds": uptime,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+@app.get("/status")
+async def worker_status():
+    """Worker detailed status"""
+    global _worker, _start_time
+    
+    if not _worker:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Worker not initialized"}
+        )
+    
+    return {
+        "worker_id": _worker.worker_id,
+        "running": _worker.running,
+        "current_task": str(_worker.current_task) if _worker.current_task else None,
+        "running_tasks_count": len(_worker.running_tasks) if hasattr(_worker, 'running_tasks') else 0,
+        "max_concurrent_tasks": _worker.max_concurrent_tasks,
+        "start_time": _start_time.isoformat() if _start_time else None,
+        "uptime_seconds": (datetime.now() - _start_time).total_seconds() if _start_time else None,
+    }
+
+
+# === __main__.py ===
 """
 Worker Module startup entrance
 Support using python -m app.worker to start Worker

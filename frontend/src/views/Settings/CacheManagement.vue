@@ -209,7 +209,7 @@ import {
   Delete,
   Refresh
 } from '@element-plus/icons-vue'
-import * as cacheApi from '@/api/cache'
+import * as cacheApi from '@/api/system'
 
 // Responsive data
 const statsLoading = ref(false)

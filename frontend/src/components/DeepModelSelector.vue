@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { encodeModelSelection, getModelOptionLabel } from '@/utils/modelSelection'
+import { encodeModelSelection, getModelOptionLabel } from '@/utils/config'
 
 interface Props {
   modelValue: string

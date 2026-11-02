@@ -157,10 +157,10 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { DataAnalysis } from '@element-plus/icons-vue'
 import { portfolioApi, type PositionChange } from '@/api/portfolio'
-import { reviewApi, type TradeReviewReport } from '@/api/review'
-import * as tradingSystemApi from '@/api/tradingSystem'
-import type { TradingSystem } from '@/api/tradingSystem'
-import { getMarketByStockCode } from '@/utils/market'
+import { reviewApi, type TradeReviewReport } from '@/api/portfolio'
+import * as tradingSystemApi from '@/api/portfolio'
+import type { TradingSystem } from '@/api/portfolio'
+import { getMarketByStockCode } from '@/utils/stock'
 
 interface StockInfo {
   code: string

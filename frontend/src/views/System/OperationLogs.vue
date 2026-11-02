@@ -325,7 +325,7 @@ import {
   getActionTypeName,
   getActionTypeTagColor,
   formatDateTime
-} from '@/api/operationLogs'
+} from '@/api/system'
 
 // Responsive data
 const loading = ref(false)

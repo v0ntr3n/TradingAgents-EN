@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Database connection management module
 Enhanced version with support for connection pooling, health checking and error recovery
@@ -6,13 +7,24 @@ Enhanced version with support for connection pooling, health checking and error 
 import logging
 import asyncio
 from typing import Callable, Optional, Tuple, Dict
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
-from pymongo import MongoClient
-from pymongo.database import Database
-from redis.asyncio import Redis, ConnectionPool
-from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
-from redis.exceptions import ConnectionError as RedisConnectionError
-from redis.exceptions import AuthenticationError as RedisAuthenticationError
+try:
+    from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
+except ImportError:
+    AsyncIOMotorClient = AsyncIOMotorCollection = AsyncIOMotorDatabase = object
+try:
+    from pymongo import MongoClient
+    from pymongo.database import Database
+    from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
+except ImportError:
+    MongoClient = Database = object
+    ServerSelectionTimeoutError = ConnectionFailure = Exception
+try:
+    from redis.asyncio import Redis, ConnectionPool
+    from redis.exceptions import ConnectionError as RedisConnectionError
+    from redis.exceptions import AuthenticationError as RedisAuthenticationError
+except ImportError:
+    Redis = ConnectionPool = object
+    RedisConnectionError = RedisAuthenticationError = Exception
 from .config import settings
 
 # Synchronous Redis client types (lazy import to avoid circular dependencies)

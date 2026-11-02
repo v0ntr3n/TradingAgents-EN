@@ -35,7 +35,7 @@ import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = REPO_ROOT / "results"
-REPORTS_DIR = REPO_ROOT / "reports"
+REPORTS_DIR = REPO_ROOT / "results"
 sys.path.insert(0, str(REPO_ROOT))
 
 try:
@@ -2376,7 +2376,7 @@ def render_regime_weight_figure(weight_log: List[Dict[str, Any]], out_path: Path
     ax2.set_xticklabels([dates[i] for i in range(0, len(dates), step)], rotation=25, ha="right")
 
     plt.tight_layout()
-    reports_dir = REPO_ROOT / "reports"
+    reports_dir = REPO_ROOT / "results"
     _save_dual_vector_and_png(fig, [out_path, reports_dir / "regime_weight_trajectories"])
     plt.close(fig)
 
@@ -2444,7 +2444,7 @@ def render_equity_and_drawdown_figure(
         ax_dd.set_xticklabels([dates[i] for i in range(0, len(dates), step)], rotation=25, ha="right")
 
     plt.tight_layout()
-    reports_dir = REPO_ROOT / "reports"
+    reports_dir = REPO_ROOT / "results"
     results_dir = REPO_ROOT / "results"
     _save_dual_vector_and_png(
         fig,
@@ -3100,7 +3100,7 @@ def main():
                 )
 
     results_dir = REPO_ROOT / "results"
-    reports_dir = REPO_ROOT / "reports"
+    reports_dir = REPO_ROOT / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
     reports_dir.mkdir(parents=True, exist_ok=True)
 

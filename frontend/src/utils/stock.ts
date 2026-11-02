@@ -1,182 +1,295 @@
-/**
- * Stock symbol field compatibility tool function
- * 
- * Used to deal with compatibility issues in the front-end and back-end field standardization process
- */
+
+
+// ============================================================================
+// Module: stockValidator.ts
+// ============================================================================
 
 /**
- * Get the stock code from the object (compatible with old and new fields)
- * @param obj Object containing a stock symbol
- * @returns Stock code (6 digits)
+ * Stock code format verification tool
+ * Support code format verification for A-shares and ETFs
  */
-export function getStockSymbol(obj: any): string {
-  return obj?.symbol || obj?.stock_code || obj?.code || ''
+
+export interface StockValidationResult {
+  valid: boolean
+  market?: 'A shares' | 'US stocks' | 'Hong Kong stocks' | 'ETF'
+  message?: string
+  normalizedCode?: string
 }
 
 /**
- * Get the full stock code (e.g. 000001.SZ) from the object
- * @param obj Object containing a stock symbol
- * @returns Full ticker
+ * A Stock code format verification
+ * Format: 6 digits
+ * - 60xxxx: Shanghai Main Board
+ * - 68xxxx: Science and Technology Innovation Board
+ * - 00xxxx: Shenzhen motherboard
+ * - 30xxxx: GEM
+ * - 43xxxx/83xxxx/87xxxx/89xxxx/92xxxx: Beijing Exchange (920 is the unified number section starting from October 2025)
  */
-export function getFullSymbol(obj: any): string {
-  return obj?.full_symbol || obj?.symbol || obj?.stock_code || obj?.code || ''
-}
-
-/**
- * Create a ticker object containing compatible fields
- * @param symbol 6 stock code
- * @param fullSymbol Full code (optional)
- * @returns Object containing old and new fields
- */
-export function createSymbolObject(symbol: string, fullSymbol?: string) {
-  return {
-    symbol,
-    stock_code: symbol,  // Compatible fields
-    code: symbol,        // Compatible fields
-    ...(fullSymbol && { full_symbol: fullSymbol })
-  }
-}
-
-/**
- * Standardized stock code list (duplication removal, compatibility with old and new fields)
- * @param symbols List of stock symbols (may contain old and new fields)
- * @returns Standardized code list
- */
-export function normalizeSymbols(symbols: (string | { symbol?: string; stock_code?: string; code?: string })[]): string[] {
-  const result = new Set<string>()
+export function validateAStock(code: string): StockValidationResult {
+  // Remove spaces and special characters
+  const cleanCode = code.trim().replace(/[^0-9]/g, '')
   
-  for (const item of symbols) {
-    if (typeof item === 'string') {
-      if (item) result.add(item)
-    } else if (item && typeof item === 'object') {
-      const symbol = getStockSymbol(item)
-      if (symbol) result.add(symbol)
+  // Must be 6 digits
+  if (!/^\d{6}$/.test(cleanCode)) {
+    return {
+      valid: false,
+      message: 'A Stock code must be 6 digits'
     }
   }
   
-  return Array.from(result)
+  // Authentication prefix
+  const prefix = cleanCode.substring(0, 2)
+  const validPrefixes = ['60', '68', '00', '30', '43', '83', '87', '89', '92']
+  
+  if (!validPrefixes.includes(prefix)) {
+    return {
+      valid: false,
+      message: 'A The stock code prefix is incorrect (supported: starting with 60/68/00/30/43/83/87/89/92)'
+    }
+  }
+  
+  return {
+    valid: true,
+    market: 'A shares',
+    normalizedCode: cleanCode
+  }
 }
 
 /**
- * Validate ticker format
- * @param symbol Stock code
- * @param market Market type (optional)
- * @returns Is it valid?
+ * ETF Code format verification
+ * Format: 6 digits, starting with 50/51/52 (Shanghai stock market) or 15/16 (Shenzhen stock market)
  */
-export function validateSymbol(symbol: string, market?: string): boolean {
-  if (!symbol) return false
+export function validateETF(code: string): StockValidationResult {
+  const cleanCode = code.trim().replace(/[^0-9]/g, '')
+  if (!/^\d{6}$/.test(cleanCode)) {
+    return { valid: false, message: 'ETF Code must be 6 digits' }
+  }
+  const prefix = cleanCode.substring(0, 2)
+  const validPrefixes = ['50', '51', '52', '15', '16']
+  if (!validPrefixes.includes(prefix)) {
+    return { valid: false, message: 'ETF The code prefix is incorrect (supported: starting with 50/51/52/15/16)' }
+  }
+  return { valid: true, market: 'ETF', normalizedCode: cleanCode }
+}
+
+/**
+ * U.S. stock code format verification
+ * Format: 1-5 uppercase letters
+ * Example:AAPL, MSFT, GOOGL, TSLA, BRK.B
+ */
+export function validateUSStock(code: string): StockValidationResult {
+  // Remove spaces, keep letters and periods
+  const cleanCode = code.trim().toUpperCase().replace(/[^A-Z.]/g, '')
   
-  const trimmed = symbol.trim()
-  
-  if (market === 'A shares' || market === 'CN') {
-    // A Share: 6 digits
-    return /^\d{6}$/.test(trimmed)
+  // Basic format: 1-5 letters, may include a period
+  if (!/^[A-Z]{1,5}(\.[A-Z])?$/.test(cleanCode)) {
+    return {
+      valid: false,
+      message: 'The US stock code format is incorrect (1-5 letters, such as: AAPL, BRK.B)'
+    }
   }
   
-  // When no market is specified, universal validation is attempted
-  return /^\d{6}$/.test(trimmed) // A shares
+  // It can t all be dots
+  if (cleanCode.replace(/\./g, '').length === 0) {
+    return {
+      valid: false,
+      message: 'US stock code cannot be empty'
+    }
+  }
+  
+  return {
+    valid: true,
+    market: 'US stocks',
+    normalizedCode: cleanCode
+  }
+}
+
+/**
+ * Hong Kong stock code format verification
+ * Format: 5 digits (may have 0 in front)
+ * Example: 00700 (Tencent), 09988 (Alibaba), 01810 (Xiaomi)
+ * Also supported are formats without leading 0s: 700, 9988,1810
+ */
+export function validateHKStock(code: string): StockValidationResult {
+  // Remove spaces and special characters
+  const cleanCode = code.trim().replace(/[^0-9]/g, '')
+  
+  // Must be 1-5 digits
+  if (!/^\d{1,5}$/.test(cleanCode)) {
+    return {
+      valid: false,
+      message: 'Hong Kong stock code must be 1-5 digits'
+    }
+  }
+  
+  // Convert to 5-bit format (padded with leading 0s)
+  const normalizedCode = cleanCode.padStart(5, '0')
+  
+  return {
+    valid: true,
+    market: 'Hong Kong stocks',
+    normalizedCode: normalizedCode
+  }
+}
+
+/**
+ * Automatically identify and verify stock symbol formats
+ * @param code Stock code
+ * @param marketHint Market tip (optional), if provided the market will be verified first
+ */
+export function validateStockCode(
+  code: string,
+  marketHint?: 'A shares' | 'ETF'
+): StockValidationResult {
+  if (!code || !code.trim()) {
+    return {
+      valid: false,
+      message: 'Please enter stock code'
+    }
+  }
+  
+  const trimmedCode = code.trim()
+  
+  // If a market tip is provided, verify that market first
+  if (marketHint) {
+    switch (marketHint) {
+      case 'A shares':
+        return validateAStock(trimmedCode)
+      case 'ETF':
+        return validateETF(trimmedCode)
+    }
+  }
+  
+  // Automatic recognition: first determine whether they are all numbers
+  const isNumeric = /^\d+$/.test(trimmedCode.replace(/[^0-9]/g, ''))
+  
+  if (isNumeric) {
+    const cleanCode = trimmedCode.replace(/[^0-9]/g, '')
+    
+    // 6 digits -> Judge ETF (50/51/52/15/16) first, otherwise A shares
+    if (cleanCode.length === 6) {
+      const etfResult = validateETF(cleanCode)
+      if (etfResult.valid) return etfResult
+      return validateAStock(cleanCode)
+    }
+    
+    return {
+      valid: false,
+      message: 'The numeric code length is incorrect (A shares must be 6 digits)'
+    }
+  }
+  
+  return {
+    valid: false,
+    message: 'Unrecognized ticker format'
+  }
+}
+
+/**
+ * Get stock symbol format instructions
+ */
+export function getStockCodeFormatHelp(market: 'A shares' | 'US stocks' | 'Hong Kong stocks' | 'ETF'): string {
+  switch (market) {
+    case 'A shares':
+      return '6 digits, such as: 000001 (Ping An Bank), 600519 (Kweichow Moutai)'
+    case 'US stocks':
+      return '1-5 letters, such as: AAPL (Apple), TSLA (Tesla)'
+    case 'Hong Kong stocks':
+      return '1-5 digits, such as: 700 (Tencent), 9988 (Alibaba)'
+    case 'ETF':
+      return '6 Digits, such as: 510050 (Shanghai 50ETF), 159919 (CSI 300ETF)'
+    default:
+      return ''
+  }
+}
+
+/**
+ * Get stock symbol examples
+ */
+export function getStockCodeExamples(market: 'A shares' | 'US stocks' | 'Hong Kong stocks' | 'ETF'): string[] {
+  switch (market) {
+    case 'A shares':
+      return ['000001', '600519', '000858', '300750', '920985']
+    case 'ETF':
+      return ['510050', '159919', '512690', '515000']
+    case 'US stocks':
+      return ['AAPL', 'MSFT', 'GOOGL', 'TSLA']
+    case 'Hong Kong stocks':
+      return ['00700', '09988', '01810', '03690']
+    default:
+      return []
+  }
 }
 
 /**
  * Formatting stock symbol display
- * @param symbol Stock code
- * @param market Market type (optional)
- * @returns Formatted code
+ * @param code original code
+ * @param market market type
  */
-export function formatSymbol(symbol: string, _market?: string): string {
-  if (!symbol) return ''
-  
-  return symbol.trim()
+export function formatStockCode(code: string, market: 'A shares' | 'ETF'): string {
+  const validation = validateStockCode(code, market)
+  return validation.normalizedCode || code
+}
+
+// ============================================================================
+// Module: market.ts
+// ============================================================================
+
+// Standardization of market parameters: V3.0 focuses on A shares, Hong Kong and US stocks have been suspended
+export const normalizeMarketForAnalysis = (market: any): string => {
+  const raw = String(market ?? '').trim()
+  const upper = raw.toUpperCase()
+  const cn = raw
+  const isETF = ['ETF', 'On-exchange funds'].includes(cn) || upper === 'ETF'
+  const isA = [
+    'A shares', 'motherboard', 'GEM', 'Science and Technology Innovation Board', 'Small and medium board', 'Shanghai Stock Exchange', 'Shenzhen City', 'Shanghai Stock Exchange', 'Shenzhen Stock Exchange', 'Beijing Exchange'
+  ].includes(cn) || ['CN', 'SH', 'SZ', 'SSE', 'SZSE'].includes(upper)
+  if (isETF) return 'ETF'
+  if (isA) return 'A shares'
+  // By default, it is processed as A shares
+  return 'A shares'
 }
 
 /**
- * Extract 6-digit code from complete code
- * @param fullSymbol Complete code (such as 000001.SZ)
- * @returns 6 bit code
+ * Convert exchange symbol to market type
+ * @param exchangeCode exchange code (e.g. "sz", "sh", "hk", "us") 
+ * @returns market type ("A shares", "Hong Kong stocks", "US stocks") 
  */
-export function extractSymbol(fullSymbol: string): string {
-  if (!fullSymbol) return ''
-  
-  // Remove market suffix (.SZ, .SH, .BJ, .HK etc.)
-  return fullSymbol.split('.')[0]
+export const exchangeCodeToMarket = (exchangeCode: string): string => {
+  const code = String(exchangeCode ?? '').toLowerCase().trim()
+
+  // A stock exchange code
+  if (['sz', 'sh', 'bj', 'sse', 'szse', 'bse'].includes(code)) {
+    return 'A shares'
+  }
+
+  // Return to A shares by default
+  return 'A shares'
 }
 
 /**
- * Infer market code from 6-digit code
- * @param symbol 6 stock code
- * @returns Market code (SZ/SH/BJ) or null
+ * Determine market type based on stock code
+ * @param stockCode Stock code
+ * @returns market type ("A shares", "Hong Kong stocks", "US stocks", "ETF") 
  */
-export function inferMarketCode(symbol: string): string | null {
-  if (!symbol || !/^\d{6}$/.test(symbol)) return null
-  
-  const code = symbol.substring(0, 3)
-  
-  // Shenzhen market
-  if (['000', '001', '002', '003', '300', '301'].includes(code)) {
-    return 'SZ'
-  }
-  
-  // Shanghai market
-  if (['600', '601', '603', '605', '688', '689'].includes(code)) {
-    return 'SH'
-  }
-  
-  // beijing market
-  if (['430', '830', '870'].includes(code)) {
-    return 'BJ'
-  }
-  
-  return null
-}
+export const getMarketByStockCode = (stockCode: string): string => {
+  const code = String(stockCode ?? '').trim().toUpperCase()
 
-/**
- * Build a complete ticker
- * @param symbol 6 stock code
- * @param marketCode Market code (optional, automatically inferred if not provided)
- * @returns Complete code (such as 000001.SZ)
- */
-export function buildFullSymbol(symbol: string, marketCode?: string): string {
-  if (!symbol) return ''
-  
-  const market = marketCode || inferMarketCode(symbol)
-  
-  if (market) {
-    return `${symbol}.${market}`
-  }
-  
-  return symbol
-}
-
-/**
- * Batch convert ticker fields in objects
- * @param obj Object containing a stock symbol
- * @returns Converted object (contains old and new fields)
- */
-export function normalizeStockObject<T extends Record<string, any>>(obj: T): T {
-  if (!obj) return obj
-  
-  const symbol = getStockSymbol(obj)
-  
-  if (symbol) {
-    return {
-      ...obj,
-      symbol,
-      stock_code: symbol,  // Compatible fields
-      code: symbol         // Compatible fields
+  // 6 Digits: Determine ETF first, otherwise A shares
+  if (/^\d{6}$/.test(code)) {
+    const prefix = code.substring(0, 2)
+    if (['50', '51', '52', '56', '58', '15', '16', '18'].includes(prefix)) {
+      return 'ETF'
     }
+    return 'A shares'
   }
-  
-  return obj
+
+  // Return to A shares by default
+  return 'A shares'
 }
 
-/**
- * Batch convert stock code fields in object array
- * @param arr object array
- * @returns converted array
- */
-export function normalizeStockArray<T extends Record<string, any>>(arr: T[]): T[] {
-  if (!Array.isArray(arr)) return arr
-  
-  return arr.map(item => normalizeStockObject(item))
+export default {
+  normalizeMarketForAnalysis,
+  exchangeCodeToMarket,
+  getMarketByStockCode
 }
-

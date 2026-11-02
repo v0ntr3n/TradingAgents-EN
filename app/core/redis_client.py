@@ -1,9 +1,13 @@
+from __future__ import annotations
 """Redis Compatibility layer.
 
 Historical callers can still import interfaces from this module, but the actual connection life cycle is delegated to app.core.database.
 """
 
-import redis.asyncio as redis
+try:
+    import redis.asyncio as redis
+except ImportError:
+    redis = None
 import logging
 from typing import Optional
 

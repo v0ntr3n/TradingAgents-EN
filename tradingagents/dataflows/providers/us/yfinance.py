@@ -1,6 +1,9 @@
 # gets data/stats
 
-import yfinance as yf
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
 from typing import Annotated, Callable, Any, Optional
 from pandas import DataFrame
 import pandas as pd

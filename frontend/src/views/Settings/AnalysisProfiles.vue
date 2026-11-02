@@ -380,7 +380,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChatDotRound, Delete, Edit, MagicStick, Plus, Promotion, RefreshRight, User } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { analysisProfilesApi, type GeneratePreview, type IndustryProfile } from '@/api/analysisProfiles'
+import { analysisProfilesApi, type GeneratePreview, type IndustryProfile } from '@/api/analysis'
 
 type ElTagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 type ElAlertType = 'success' | 'info' | 'warning' | 'error'

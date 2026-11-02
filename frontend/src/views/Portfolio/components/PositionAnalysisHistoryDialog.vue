@@ -128,7 +128,7 @@ import { ref, watch, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { portfolioApi, type PositionItem, type PositionAnalysisResult } from '@/api/portfolio'
 import PositionAnalysisDetailDialog from './PositionAnalysisDetailDialog.vue'
-import { getMarketByStockCode } from '@/utils/market'
+import { getMarketByStockCode } from '@/utils/stock'
 
 const props = defineProps<{
   modelValue: boolean

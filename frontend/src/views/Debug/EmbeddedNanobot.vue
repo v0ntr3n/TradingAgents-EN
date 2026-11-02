@@ -219,7 +219,7 @@ import embeddedNanobotApi, {
   type EmbeddedNanobotStreamCallbacks,
   type EmbeddedNanobotStatusResponse,
   type EmbeddedNanobotThreadItem,
-} from '@/api/embeddedNanobot'
+} from '@/api/assistant'
 
 type DebugMessage = {
   role: 'user' | 'assistant'

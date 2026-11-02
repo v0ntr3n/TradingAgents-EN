@@ -2,7 +2,7 @@
 Unit Tests for Phase 5:
   - Step 5.1: Real 2025-2026 Point-in-Time Market Dataset (12 equities, CN CSI 300 & US Tech)
   - Step 5.2: Dual-Backbone 2x4 Cross-Architecture CPH Evaluation (MR-1 to MR-7)
-  - Step 5.3: Prompt Seed Structured JSON Posterior Contract (`system_prompt_seed_service.py`)
+  - Step 5.3: Prompt Seed Structured JSON Posterior Contract (`config_and_prompt_services.py`)
 """
 
 import csv
@@ -64,7 +64,7 @@ class TestPhase5RealMarketAndPromptSeed(unittest.TestCase):
         self.assertGreater(us_m4_llm, 0.50)
 
     def test_step_5_3_system_prompt_seed_service_json_contract(self):
-        seed_path = REPO_ROOT / "app" / "services" / "system_prompt_seed_service.py"
+        seed_path = REPO_ROOT / "app" / "services" / "config_and_prompt_services.py"
         content = seed_path.read_text(encoding="utf-8")
         self.assertIn("append a single-line JSON posterior block", content)
         self.assertIn("p_optimistic", content)

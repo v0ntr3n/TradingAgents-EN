@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ReviewListItem, ReviewStatus } from '@/api/review'
+import type { ReviewListItem, ReviewStatus } from '@/api/portfolio'
 import { formatDateTime } from '@/utils/datetime'
 
 type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'

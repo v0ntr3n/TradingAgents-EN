@@ -87,7 +87,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { reviewApi, type TradeRecord, type ReviewType } from '@/api/review'
+import { reviewApi, type TradeRecord, type ReviewType } from '@/api/portfolio'
 import { formatDateTime } from '@/utils/datetime'
 
 const props = defineProps<{

@@ -61,7 +61,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import { portfolioApi, type PositionItem, type PositionCreatePayload } from '@/api/portfolio'
 import { stocksApi } from '@/api/stocks'
-import { getMarketByStockCode } from '@/utils/market'
+import { getMarketByStockCode } from '@/utils/stock'
 import { formatLocalDate } from '@/utils/datetime'
 
 const props = defineProps<{

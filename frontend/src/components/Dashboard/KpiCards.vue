@@ -68,8 +68,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Calendar, DataAnalysis, Wallet, Coin, Loading, ArrowRight } from '@element-plus/icons-vue'
-import { paperApi, type PaperAccountSummary } from '@/api/paper'
-import { getUsageStatistics } from '@/api/usage'
+import { paperApi, type PaperAccountSummary } from '@/api/analysis'
+import { getUsageStatistics } from '@/api/system'
 
 interface Props {
   recentTasks?: any[]

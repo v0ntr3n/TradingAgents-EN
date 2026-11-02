@@ -11,7 +11,10 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from typing import Optional, Dict, Any
-import yfinance as yf
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
 import pandas as pd
 
 # Import cache manager (supports old and new paths)

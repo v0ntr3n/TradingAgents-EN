@@ -56,7 +56,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Search, Loading } from '@element-plus/icons-vue'
-import { searchStocks, type StockInfo } from '@/api/multiMarket'
+import { searchStocks, type StockInfo } from '@/api/stocks'
 import { ElMessage } from 'element-plus'
 import MarketSelector from './MarketSelector.vue'
 

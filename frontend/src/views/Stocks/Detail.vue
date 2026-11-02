@@ -310,23 +310,23 @@ import {
   stockSyncApi,
   type SingleStockSyncResponse,
   type StockSyncTaskStatus,
-} from '@/api/stockSync'
-import { clearAllCache } from '@/api/cache'
+} from '@/api/sync'
+import { clearAllCache } from '@/api/system'
 import { use as echartsUse } from 'echarts/core'
 import { CandlestickChart } from 'echarts/charts'
 
 import { GridComponent, TooltipComponent, DataZoomComponent, LegendComponent, TitleComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { EChartsOption } from 'echarts'
-import { favoritesApi } from '@/api/favorites'
+import { favoritesApi } from '@/api/portfolio'
 import { useAuthStore } from '@/stores/auth'
 import type { StockInfo } from '@/types/analysis'
-import { getFactorDiagnosticEntries, getFactorWarningEntries } from '@/utils/factorPresentation'
-import { loadManualSyncSourceState, type ManualSyncDataSource } from '@/utils/dataSource'
+import { getFactorDiagnosticEntries, getFactorWarningEntries } from '@/utils/reportPresentation'
+import { loadManualSyncSourceState, type ManualSyncDataSource } from '@/utils/config'
 import { isJdyunMode } from '@/utils/config'
 import { getReportName } from '@/utils/reportPresentation'
-import { getTaskList, getTaskDetail, TaskType, TaskStatus } from '@/api/unifiedTasks'
-import { reviewApi } from '@/api/review'
+import { getTaskList, getTaskDetail, TaskType, TaskStatus } from '@/api/system'
+import { reviewApi } from '@/api/portfolio'
 import { portfolioApi } from '@/api/portfolio'
 
 // New version of stock details page sub-component

@@ -132,9 +132,9 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { InfoFilled } from '@element-plus/icons-vue'
-import { reviewApi, type TradeRecord } from '@/api/review'
-import * as tradingSystemApi from '@/api/tradingSystem'
-import type { TradingSystem } from '@/api/tradingSystem'
+import { reviewApi, type TradeRecord } from '@/api/portfolio'
+import * as tradingSystemApi from '@/api/portfolio'
+import type { TradingSystem } from '@/api/portfolio'
 import { useLicenseStore } from '@/stores/license'
 import { workflowApi, isSelectableAnalysisWorkflow, type WorkflowSummary } from '@/api/workflow'
 

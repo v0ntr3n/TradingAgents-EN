@@ -176,7 +176,7 @@
 import { ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { portfolioApi, type PositionChange, type PositionChangeType } from '@/api/portfolio'
-import { getMarketByStockCode } from '@/utils/market'
+import { getMarketByStockCode } from '@/utils/stock'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits(['update:modelValue', 'refresh'])

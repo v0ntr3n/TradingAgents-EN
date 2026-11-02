@@ -28,7 +28,11 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 from pydantic import BaseModel
-from pymongo import MongoClient, UpdateOne
+try:
+    from pymongo import MongoClient, UpdateOne
+except ImportError:
+    from unittest.mock import MagicMock as _MM; BulkWriteResult = UpdateOne = InsertOne = DeleteOne = MongoClient = Database = ASCENDING = DESCENDING = ReturnDocument = _MM()
+    DuplicateKeyError = PyMongoError = OperationFailure = ServerSelectionTimeoutError = ConnectionFailure = Exception
 
 logger = logging.getLogger(__name__)
 

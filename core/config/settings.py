@@ -46,7 +46,7 @@ class LLMProviderSettings(BaseModel):
     deep_think_llm: str = Field(default="deepseek-reasoner")
     request_timeout_seconds: int = Field(default=120)
     max_retries: int = Field(default=3)
-    models_registry_path: str = Field(default="configs/models_registry.yaml")
+    models_registry_path: str = Field(default="config/models_registry.yaml")
 
 
 class DataSourceSettings(BaseModel):

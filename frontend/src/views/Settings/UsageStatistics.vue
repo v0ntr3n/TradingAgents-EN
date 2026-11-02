@@ -148,7 +148,7 @@ import {
   deleteOldRecords,
   type UsageRecord,
   type UsageStatistics
-} from '@/api/usage'
+} from '@/api/system'
 
 // data
 const selectedDays = ref(7)

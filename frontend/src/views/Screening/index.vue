@@ -773,12 +773,12 @@ import { Search, Refresh, TrendCharts, Download, Star, Connection, Warning, User
 import { renderMarkdown } from '@/utils/markdown'
 import type { StockInfo } from '@/types/analysis'
 import { screeningApi, type FieldConfigResponse, type FieldInfo, type ScreeningConditionItem, type ScreeningConversationSummary, type ScreeningMessageItem, type ScreeningPreset, type ScreeningWsEnvelope, type ScreeningWsProgressData, type StockRecommendation } from '@/api/screening'
-import { favoritesApi } from '@/api/favorites'
+import { favoritesApi } from '@/api/portfolio'
 import { useAuthStore } from '@/stores/auth'
-import { createWebSocket, type ManagedWebSocket } from '@/utils/createWebSocket'
-import { getFactorDiagnosticEntries, getFactorWarningEntries } from '@/utils/factorPresentation'
-import { loadCurrentDataSourceInfo } from '@/utils/dataSource'
-import { normalizeMarketForAnalysis, exchangeCodeToMarket, getMarketByStockCode } from '@/utils/market'
+import { createWebSocket, type ManagedWebSocket } from '@/utils/fetchSSE'
+import { getFactorDiagnosticEntries, getFactorWarningEntries } from '@/utils/reportPresentation'
+import { loadCurrentDataSourceInfo } from '@/utils/config'
+import { normalizeMarketForAnalysis, exchangeCodeToMarket, getMarketByStockCode } from '@/utils/stock'
 
 // Markdown rendering
 // marked The configuration has been @/utils/markdown Unified management

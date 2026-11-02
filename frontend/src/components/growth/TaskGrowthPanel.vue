@@ -161,7 +161,7 @@ import {
   type TaskGrowthContextPayload,
   type GrowthMemoryItem,
   type GrowthSuggestion
-} from '@/api/workflowGrowth'
+} from '@/api/workflow'
 
 type GrowthHighlight = {
   label: string

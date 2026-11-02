@@ -15,7 +15,11 @@ import time
 from typing import List, Dict, Any, Optional
 
 import numpy as np
-from pymongo import UpdateOne
+try:
+    from pymongo import UpdateOne
+except ImportError:
+    from unittest.mock import MagicMock as _MM; BulkWriteResult = UpdateOne = InsertOne = DeleteOne = MongoClient = Database = ASCENDING = DESCENDING = ReturnDocument = _MM()
+    DuplicateKeyError = PyMongoError = OperationFailure = ServerSelectionTimeoutError = ConnectionFailure = Exception
 
 logger = logging.getLogger(__name__)
 

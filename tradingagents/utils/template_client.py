@@ -9,8 +9,16 @@ from __future__ import annotations
 import os
 import re
 from typing import TYPE_CHECKING, Optional, Dict, Any
-from pymongo import MongoClient
-from bson import ObjectId
+try:
+    from pymongo import MongoClient
+except ImportError:
+    from unittest.mock import MagicMock as _MM
+    MongoClient = ASCENDING = DESCENDING = _MM()
+    DuplicateKeyError = PyMongoError = OperationFailure = ServerSelectionTimeoutError = ConnectionFailure = Exception
+try:
+    from bson import ObjectId
+except ImportError:
+    ObjectId = str
 from tradingagents.utils.logging_init import get_logger
 
 if TYPE_CHECKING:

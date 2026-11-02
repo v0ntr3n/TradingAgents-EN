@@ -712,7 +712,7 @@ import {
   GeneralTaskStatusColors,
   type GeneralTaskListItem,
   type GeneralTaskListParams,
-} from '@/api/unifiedTasks'
+} from '@/api/system'
 import { useAuthStore } from '@/stores/auth'
 import { isJdyunMode, JDYUN_CHAT_MODELS, loadJdyunChatModels } from '@/utils/config'
 import { renderMarkdown as safeMarkdown } from '@/utils/markdown'

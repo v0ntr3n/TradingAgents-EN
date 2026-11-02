@@ -76,7 +76,7 @@ site/
 config/*.json
 !config/*.json.example
 web/config/*.json
-data/
+/data/
 web/data/
 eval_results/
 eval_data/

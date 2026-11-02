@@ -702,7 +702,7 @@ import {
   type JobHistory,
   type JobExecution,
   type SchedulerStats
-} from '@/api/scheduler'
+} from '@/api/system'
 import { formatDateTime, formatRelativeTime } from '@/utils/datetime'
 
 // data

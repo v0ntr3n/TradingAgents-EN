@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { reviewApi, type PeriodicReviewReport, type PeriodType } from '@/api/review'
+import { reviewApi, type PeriodicReviewReport, type PeriodType } from '@/api/portfolio'
 
 const props = defineProps<{
   modelValue: boolean

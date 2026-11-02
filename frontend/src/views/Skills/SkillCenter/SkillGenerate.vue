@@ -285,7 +285,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { skillGenerationApi } from '@/api/skillGeneration'
+import { skillGenerationApi } from '@/api/skills'
 
 const router = useRouter()
 const recentSkills = ref<any[]>([])

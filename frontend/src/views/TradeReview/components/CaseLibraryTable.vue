@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ReviewListItem } from '@/api/review'
+import type { ReviewListItem } from '@/api/portfolio'
 import { formatDateTime } from '@/utils/datetime'
 
 const props = defineProps<{

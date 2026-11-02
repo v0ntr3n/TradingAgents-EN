@@ -294,7 +294,7 @@ with $\tau_{\text{scale}} = 0.25$, coupled with an identical cost-aware no-trade
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{reports/cph_ablation_brier_mae.pdf}
+\includegraphics[width=\columnwidth]{results/cph_ablation_brier_mae.pdf}
 \caption{\textbf{Phase 4 Multi-Regime Ablation}: (a) Multiclass Brier Score and Probability MAE across protocols; (b) Annualized Sharpe Ratio under 15 bps A-Share friction and 10 bps institutional friction ($r_f=0$).}
 \label{fig:cph_ablation_brier_mae}
 \end{figure}
@@ -355,7 +355,7 @@ Table~\ref{tab:phase5_cph_real_market} reports the audited $2\times 4$ factorial
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{reports/regime_weight_trajectories.pdf}
+\includegraphics[width=\columnwidth]{results/regime_weight_trajectories.pdf}
 \caption{\textbf{Causal ($t-1 \to t$) Regime Weight Trajectories}: Online specialist weights $w_{i,t}^{(r_t)}$ on China CSI 300 A-Shares (2025--2026) strongly elevate macro/policy news ($0.620$) during bear regimes, fundamentals ($0.433$) during bull regimes, and technicals ($0.359$) during sideways regimes.}
 \label{fig:regime_weights}
 \end{figure}
@@ -445,7 +445,7 @@ US (5bp) & \textbf{CARE-Agents (Ours, Full)} & 130,290 & +30,290 & +29,080 & +31
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.96\textwidth]{reports/phase5_sota_pnl_comparison.pdf}
+\includegraphics[width=0.96\textwidth]{results/phase5_sota_pnl_comparison.pdf}
 \caption{\textbf{Phase 5 Out-of-Sample SOTA Equity \& Underwater Drawdown Trajectories (2025--2026, \texttt{deepseek-v4-pro} Frontier Tier)}: Top panels show cumulative net-of-cost return (\%); bottom panels show underwater drawdown (\%) across China CSI 300 A-Shares (15.0 bps friction) and US Tech (5.0 bps friction).}
 \label{fig:sota_pnl_comparison}
 \end{figure*}
@@ -723,9 +723,9 @@ To evaluate selective verification under strict iso-budget and simulator-symmetr
   \item \textbf{Stage 4 (Selective Execution \& Turnover Gate):} Triggers verification only when $\widehat{\text{VOI}}_{i,t} > 0$ (or top-$B$ quantile under iso-budget matching), enforcing $a_{i,t}^{\text{final}} = (1 - G_{i,t}) a_{i,t}^0 + G_{i,t} a_{i,t}^1$ under an identical \texttt{PortfolioSimulator} across all 12 baselines (\texttt{B01}--\texttt{B12}) and \textbf{Ours}.
 \end{enumerate}
 
-Table~\ref{tab:e1_main_results} and Table~\ref{tab:e3_ablation} report the main iso-budget comparison ($B = 25\%$) and component ablation on \texttt{EXTERNAL\_TEST\_2025}. Across all 13 methods, \textbf{Ours} achieves the highest Net Return ($-1.74\%$), lowest Maximum Drawdown ($2.78\%$), highest Paired $\Delta$Utility ($+6.61\text{ bps/decision}$), $8.77\%$ Beneficial Flip Rate (BFR) with $0.00\%$ Harmful Flip Rate (HFR), $+26.46\text{ bps/call}$ Verification Efficiency, and $+\$1,460$ Net Agentic Value (NAV), while also leading on \texttt{TEST\_2023} ($+5.60\%$ Net Return, $1.040$ Sharpe, $2.534$ Sortino, $+5.18\text{ bps}$ Paired $\Delta$Utility, $+\$895$ NAV). Full multi-model (28-LLM registry), KTD robustness, regime, FF5+Momentum factor attribution, and Pareto budget curves are generated in \texttt{results/e1\_main\_results.csv}--\texttt{results/e7\_cost\_sensitivity.csv} and \texttt{reports/tab\_e1\_main\_results.tex}--\texttt{reports/tab\_e7\_cost\_sensitivity.tex}.
+Table~\ref{tab:e1_main_results} and Table~\ref{tab:e3_ablation} report the main iso-budget comparison ($B = 25\%$) and component ablation on \texttt{EXTERNAL\_TEST\_2025}. Across all 13 methods, \textbf{Ours} achieves the highest Net Return ($-1.74\%$), lowest Maximum Drawdown ($2.78\%$), highest Paired $\Delta$Utility ($+6.61\text{ bps/decision}$), $8.77\%$ Beneficial Flip Rate (BFR) with $0.00\%$ Harmful Flip Rate (HFR), $+26.46\text{ bps/call}$ Verification Efficiency, and $+\$1,460$ Net Agentic Value (NAV), while also leading on \texttt{TEST\_2023} ($+5.60\%$ Net Return, $1.040$ Sharpe, $2.534$ Sortino, $+5.18\text{ bps}$ Paired $\Delta$Utility, $+\$895$ NAV). Full multi-model (28-LLM registry), KTD robustness, regime, FF5+Momentum factor attribution, and Pareto budget curves are generated in \texttt{results/e1\_main\_results.csv}--\texttt{results/e7\_cost\_sensitivity.csv} and \texttt{results/tab\_e1\_main\_results.tex}--\texttt{results/tab\_e7\_cost\_sensitivity.tex}.
 
-\input{reports/tab_e1_main_results.tex}
-\input{reports/tab_e3_ablation.tex}
+\input{results/tab_e1_main_results.tex}
+\input{results/tab_e3_ablation.tex}
 
 \end{document}

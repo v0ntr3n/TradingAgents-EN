@@ -420,7 +420,7 @@ import {
   formatUptime,
   type DatabaseStatus,
   type DatabaseStats
-} from '@/api/database'
+} from '@/api/system'
 
 // Responsive data
 const loading = ref(false)

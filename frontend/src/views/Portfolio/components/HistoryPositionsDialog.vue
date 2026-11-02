@@ -85,7 +85,7 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { portfolioApi, type HistoryPositionItem } from '@/api/portfolio'
-import { getMarketByStockCode } from '@/utils/market'
+import { getMarketByStockCode } from '@/utils/stock'
 
 const router = useRouter()
 

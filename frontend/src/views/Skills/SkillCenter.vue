@@ -636,7 +636,7 @@ import {
   UploadFilled
 } from '@element-plus/icons-vue'
 import SkillGenerate from './SkillCenter/SkillGenerate.vue'
-import { skillCenterApi } from '@/api/skillCenter'
+import { skillCenterApi } from '@/api/skills'
 import { skillsApi } from '@/api/skills'
 import { ApiClient } from '@/api/request'
 
@@ -993,7 +993,7 @@ async function confirmTest() {
 
 function handleToggleStatus(skill: SkillSummary) {
   if (skill.source === 'ai_generated') {
-    import('@/api/skillGeneration').then(api => {
+    import('@/api/skills').then(api => {
       api.skillGenerationApi.updateSkillStatus(skill.skill_id, skill.status === 'active' ? 'disabled' : 'active')
         .then(() => loadSkills())
     })
@@ -1040,7 +1040,7 @@ async function handleUninstall(skill: SkillSummary) {
   try {
     if (skill.source === 'ai_generated') {
       // AI Generated Skill usage skill-generation API
-      const { skillGenerationApi } = await import('@/api/skillGeneration')
+      const { skillGenerationApi } = await import('@/api/skills')
       const result = await skillGenerationApi.deleteSkill(skill.skill_id)
       ElMessage.success(result.message || result.data?.message || `Skill "${skill.display_name}" Uninstalled`)
     } else {

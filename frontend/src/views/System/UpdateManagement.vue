@@ -210,7 +210,7 @@ import {
   type VersionInfo,
   type UpdateInfo,
   type DownloadProgress
-} from '@/api/update'
+} from '@/api/system'
 import DOMPurify from 'dompurify'
 
 // ── Status ──────────────────────────────────────────────

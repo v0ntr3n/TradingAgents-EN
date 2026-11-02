@@ -225,7 +225,7 @@ import {
   type TaskListItem,
   type TaskStatistics,
   type TaskDetail
-} from '@/api/unifiedTasks'
+} from '@/api/system'
 import { analysisApi } from '@/api/analysis'
 import TaskDetailDialog from './components/TaskDetailDialog.vue'
 import ExecutionTraceDialog from './components/ExecutionTraceDialog.vue'

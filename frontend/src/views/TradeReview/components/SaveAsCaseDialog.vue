@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { reviewApi } from '@/api/review'
+import { reviewApi } from '@/api/portfolio'
 
 const props = defineProps<{
   modelValue: boolean

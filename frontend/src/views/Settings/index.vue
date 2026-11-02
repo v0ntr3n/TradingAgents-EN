@@ -698,7 +698,7 @@ import {
   Collection,
   DataBoard
 } from '@element-plus/icons-vue'
-import { getCapabilityIndexState, rebuildCapabilityIndex, type CapabilityIndexState } from '@/api/capabilityIndex'
+import { getCapabilityIndexState, rebuildCapabilityIndex, type CapabilityIndexState } from '@/api/skills'
 import request from '@/api/request'
 
 const router = useRouter()

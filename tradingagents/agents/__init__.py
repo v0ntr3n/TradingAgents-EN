@@ -1,3 +1,4 @@
+from . import analysts, managers, researchers, risk_mgmt, trader
 from .utils.agent_utils import Toolkit, create_msg_delete
 from .utils.agent_states import AgentState, InvestDebateState, RiskDebateState
 from .utils import memory as _legacy_memory_module

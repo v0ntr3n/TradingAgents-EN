@@ -1,9 +1,18 @@
+import { ApiClient, request } from './request'
+import { fetchSSE } from '@/utils/fetchSSE'
+import { request } from './request'
+import { ApiClient, type ApiResponse } from './request'
+
+// ============================================================================
+// Module: assistant.ts
+// ============================================================================
+
 /**
  * Smart Assistant API
  */
 
-import { ApiClient, request } from './request'
-import { fetchSSE } from '@/utils/fetchSSE'
+
+
 
 export interface StockScopeReport {
   task_id?: string
@@ -442,4 +451,396 @@ export const assistantApi = {
       signature?: string
     }
   },
+}
+
+// ============================================================================
+// Module: embeddedNanobot.ts
+// ============================================================================
+
+export interface EmbeddedNanobotStatusResponse {
+  enabled: boolean
+  user_id: string
+  workspace: string
+}
+
+export interface EmbeddedNanobotChatRequest {
+  message: string
+  display_message?: string
+  session_key?: string
+  model?: string
+  channel?: string
+  chat_id?: string
+  media?: string[]
+  skill_names?: string[]
+  thread_context?: EmbeddedNanobotThreadContext
+}
+
+export interface EmbeddedNanobotThreadContext {
+  spec_id?: string
+  spec_name?: string
+  workshop_session_id?: string
+  version_id?: string
+  version_status?: string
+  workflow_id?: string
+  node_id?: string
+  preference_id?: string
+  debug_template_id?: string
+  has_blocking_gaps?: boolean
+  evaluation_status?: string
+  intent?: Record<string, any>
+}
+
+export interface EmbeddedNanobotChatResponse {
+  content: string
+  session_key: string
+  thread_id?: string
+  stop_reason?: string
+  tools_used: string[]
+  usage: Record<string, number>
+  tool_events: Array<Record<string, any>>
+  thread_context?: EmbeddedNanobotThreadContext
+}
+
+export interface EmbeddedNanobotThreadItem {
+  thread_id: string
+  title: string
+  session_key: string
+  channel: string
+  archived: boolean
+  message_count: number
+  last_user_message: string
+  summary: string
+  created_at?: string
+  updated_at?: string
+  thread_context?: EmbeddedNanobotThreadContext
+}
+
+export interface EmbeddedNanobotMessageItem {
+  message_id: string
+  role: string
+  content: string
+  tools_used: string[]
+  stop_reason?: string
+  usage: Record<string, number>
+  tool_events: Array<Record<string, any>>
+  created_at?: string
+}
+
+export interface EmbeddedNanobotStreamCallbacks {
+  onStarted?: (data: { message?: string; session_key?: string }) => void
+  onProgress?: (data: { message?: string; session_key?: string }) => void
+  onToken?: (content: string) => void
+  onToolEvent?: (event: Record<string, any>) => void
+  onStepEvent?: (event: Record<string, any>) => void
+  onDone?: (data: EmbeddedNanobotChatResponse) => void
+  onError?: (message: string) => void
+  onAbort?: () => void
+}
+
+function createEmbeddedNanobotStream(
+  path: string,
+  payload: EmbeddedNanobotChatRequest,
+  callbacks?: EmbeddedNanobotStreamCallbacks,
+): AbortController {
+  return fetchSSE(path, {
+    method: 'POST',
+    body: payload,
+    onEvent: (eventType, data) => {
+      switch (eventType) {
+        case 'started':
+          callbacks?.onStarted?.(data)
+          break
+        case 'progress':
+          callbacks?.onProgress?.(data)
+          break
+        case 'token':
+          callbacks?.onToken?.(data.content || '')
+          break
+        case 'tool_event':
+          callbacks?.onToolEvent?.(data)
+          break
+        case 'step_event':
+          callbacks?.onStepEvent?.(data)
+          break
+      }
+    },
+    onDone: (data) => {
+      callbacks?.onDone?.(data as EmbeddedNanobotChatResponse)
+    },
+    onError: (message) => {
+      callbacks?.onError?.(message)
+    },
+    onAbort: () => {
+      callbacks?.onAbort?.()
+    },
+  })
+}
+
+export const embeddedNanobotApi = {
+  async getStatus(): Promise<EmbeddedNanobotStatusResponse> {
+    return await request.get('/api/embedded-nanobot/status') as unknown as EmbeddedNanobotStatusResponse
+  },
+
+  async listThreads(limit = 50, archivedOnly = false): Promise<{ items: EmbeddedNanobotThreadItem[]; total: number }> {
+    return await request.get(`/api/embedded-nanobot/threads?limit=${limit}&archived_only=${archivedOnly}`) as unknown as { items: EmbeddedNanobotThreadItem[]; total: number }
+  },
+
+  async getThreadMessages(threadId: string): Promise<{ thread: EmbeddedNanobotThreadItem | null; messages: EmbeddedNanobotMessageItem[] }> {
+    return await request.get(`/api/embedded-nanobot/threads/${encodeURIComponent(threadId)}/messages`) as unknown as { thread: EmbeddedNanobotThreadItem | null; messages: EmbeddedNanobotMessageItem[] }
+  },
+
+  async deleteThread(threadId: string): Promise<{ archived: boolean; thread_id: string; deleted_messages: number }> {
+    return await request.delete(`/api/embedded-nanobot/threads/${encodeURIComponent(threadId)}`) as unknown as { archived: boolean; thread_id: string; deleted_messages: number }
+  },
+
+  async restoreThread(threadId: string): Promise<{ restored: boolean; thread_id: string; archived: boolean }> {
+    return await request.post(`/api/embedded-nanobot/threads/${encodeURIComponent(threadId)}/restore`) as unknown as { restored: boolean; thread_id: string; archived: boolean }
+  },
+
+  async updateThreadContext(
+    threadId: string,
+    payload: { session_key?: string; channel?: string; thread_context: EmbeddedNanobotThreadContext },
+  ): Promise<{ thread: EmbeddedNanobotThreadItem | null; messages: EmbeddedNanobotMessageItem[] }> {
+    return await request.put(
+      `/api/embedded-nanobot/threads/${encodeURIComponent(threadId)}/context`,
+      payload,
+      {
+        skipAuthError: true,
+        skipErrorHandler: true,
+      },
+    ) as unknown as { thread: EmbeddedNanobotThreadItem | null; messages: EmbeddedNanobotMessageItem[] }
+  },
+
+  async chat(payload: EmbeddedNanobotChatRequest): Promise<EmbeddedNanobotChatResponse> {
+    return await request.post('/api/embedded-nanobot/chat', payload) as unknown as EmbeddedNanobotChatResponse
+  },
+
+  chatStream(payload: EmbeddedNanobotChatRequest, callbacks?: EmbeddedNanobotStreamCallbacks): AbortController {
+    return createEmbeddedNanobotStream('/api/embedded-nanobot/chat/stream', payload, callbacks)
+  },
+}
+
+export default embeddedNanobotApi
+
+// ============================================================================
+// Module: memory.ts
+// ============================================================================
+
+/**
+ * mem0 unified memory layer API
+ */
+
+
+
+export interface MemoryItem {
+  id: string
+  memory: string
+  user_id: string
+  agent_id: string
+  scope: string
+  score: number
+  metadata: Record<string, any>
+  created_at: string
+  updated_at: string
+  object_type?: string
+  object_key?: string
+  symbol?: string
+  market?: string
+  memory_kind?: string
+}
+
+export interface MemoryQueryParams {
+  scope?: string
+  page?: number
+  page_size?: number
+  object_type?: string
+  symbol?: string
+  market?: string
+  memory_kind?: string
+}
+
+export interface MemoryStatsData {
+  enabled: boolean
+  available?: boolean
+  user_id?: string
+  total?: number
+  scopes?: Record<string, number>
+  message?: string
+}
+
+export interface MemoryListData {
+  items: MemoryItem[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface MemoryRecallData {
+  count: number
+  items: MemoryItem[]
+}
+
+/** Intelligent Assistant Fact Memory (assistant_memory_facts) */
+export interface AssistantFactItem {
+  id: string
+  topic: string
+  content: string
+  symbol?: string
+  related_terms?: string[]
+  tool_id?: string
+  fetched_at?: string
+  category?: string
+  valid_until?: string
+  thread_id?: string
+}
+
+export interface AssistantFactListData {
+  items: AssistantFactItem[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export const FACT_CATEGORY_LABELS: Record<string, string> = {
+  realtime_quote: 'Real-time quotes',
+  industry_metric: 'Industry indicators',
+  company_financial: 'corporate finance',
+  company_static: 'Company information',
+  default: 'Universal',
+}
+
+export const SCOPE_LABELS: Record<string, string> = {
+  conversation: 'dialogue memory',
+  user_preference: 'User preferences',
+  analysis_insight: 'Analytical Insights',
+  skill_lesson: 'Skills experience',
+  agent_experience: 'Agent experience',
+  trade_pattern: 'trading model',
+}
+
+export const SCOPE_COLORS: Record<string, string> = {
+  conversation: '',
+  user_preference: 'success',
+  analysis_insight: 'warning',
+  skill_lesson: 'danger',
+  agent_experience: 'info',
+  trade_pattern: 'success',
+}
+
+export const memoryApi = {
+  async getHealth() {
+    try {
+      const res = await ApiClient.get<{ ok: boolean; mem0_version?: string; error?: string }>(
+        '/api/memory/health',
+        undefined,
+        { skipErrorHandler: true },
+      )
+      return (res as any)?.data ?? res
+    } catch (error: any) {
+      const responseData = error?.response?.data
+      return responseData?.data ?? {
+        ok: false,
+        error: responseData?.message || error?.message || 'Memory layer is not available',
+      }
+    }
+  },
+
+  async getStats(): Promise<MemoryStatsData> {
+    const res: any = await request.get('/api/memory/stats')
+    return res?.data ?? res
+  },
+
+  async getList(params: MemoryQueryParams = {}): Promise<MemoryListData> {
+    const res: any = await request.get('/api/memory/list', { params })
+    return res?.data ?? res
+  },
+
+  async recall(query: string, params: MemoryQueryParams = {}, limit = 10): Promise<MemoryRecallData> {
+    const res: any = await request.get('/api/memory/recall', {
+      params: { query, limit, ...params },
+    })
+    return res?.data ?? res
+  },
+
+  async deleteMemory(memoryId: string): Promise<boolean> {
+    const res: any = await request.delete(`/api/memory/${encodeURIComponent(memoryId)}`)
+    return res?.success ?? false
+  },
+
+  async batchDelete(memoryIds: string[]): Promise<{ deleted: number; requested: number }> {
+    const res: any = await request.post('/api/memory/batch-delete', { memory_ids: memoryIds })
+    return res?.data ?? { deleted: 0, requested: memoryIds.length }
+  },
+
+  async deleteAll(): Promise<{ deleted: number }> {
+    const res: any = await request.delete('/api/memory/clear-all')
+    return res?.data ?? { deleted: 0 }
+  },
+
+  // ── Intelligent Assistant Fact Memory (assistant_memory_facts)───────────────────────────
+  async getAssistantFacts(
+    params: { q?: string; symbol?: string; category?: string; page?: number; page_size?: number } = {},
+  ): Promise<AssistantFactListData> {
+    const res: any = await request.get('/api/memory/assistant-facts', { params })
+    return res?.data ?? res
+  },
+
+  async deleteAssistantFact(factId: string): Promise<boolean> {
+    const res: any = await request.delete(`/api/memory/assistant-facts/${encodeURIComponent(factId)}`)
+    return res?.success ?? false
+  },
+
+  async batchDeleteAssistantFacts(factIds: string[]): Promise<{ deleted: number; requested: number }> {
+    const res: any = await request.post('/api/memory/assistant-facts/batch-delete', { fact_ids: factIds })
+    return res?.data ?? { deleted: 0, requested: factIds.length }
+  },
+}
+
+// ============================================================================
+// Module: advancedCourses.ts
+// ============================================================================
+
+export interface AdvancedLessonContentPayload {
+  filename: string
+  content: string
+}
+
+export interface AdvancedSampleContentPayload {
+  sample_id: string
+  filename: string
+  content: string
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+
+export function getAdvancedLessonContent(filename: string): Promise<ApiResponse<AdvancedLessonContentPayload>> {
+  return ApiClient.get('/api/learning/advanced-courses/lessons/content', { filename })
+}
+
+export function downloadAdvancedLesson(filename: string) {
+  return ApiClient.download(
+    `/api/learning/advanced-courses/lessons/download?filename=${encodeURIComponent(filename)}`,
+    filename
+  )
+}
+
+export function getAdvancedSampleContent(sampleId: string): Promise<ApiResponse<AdvancedSampleContentPayload>> {
+  return ApiClient.get(`/api/learning/advanced-courses/samples/${encodeURIComponent(sampleId)}`)
+}
+
+export function downloadAdvancedSample(sampleId: string, filename: string) {
+  return ApiClient.download(
+    `/api/learning/advanced-courses/samples/${encodeURIComponent(sampleId)}/download`,
+    filename
+  )
+}
+
+export function getAdvancedCourseImageUrl(imagePath: string) {
+  const encodedPath = imagePath
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')
+
+  return `${API_BASE_URL}/api/learning/advanced-courses/images/${encodedPath}`
 }

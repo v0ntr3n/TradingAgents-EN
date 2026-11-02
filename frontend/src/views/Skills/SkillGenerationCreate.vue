@@ -704,7 +704,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, ArrowDown, User, MagicStick, Loading, CircleCheck, MoreFilled, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { renderMarkdown as safeMarkdown } from '@/utils/markdown'
-import { skillGenerationApi } from '@/api/skillGeneration'
+import { skillGenerationApi } from '@/api/skills'
 import type {
   BoundaryCheck,
   ConfirmResult,
@@ -719,7 +719,7 @@ import type {
   SkillGenerationRecommendations,
   StockDataCatalogCollection,
   TestResult,
-} from '@/api/skillGeneration'
+} from '@/api/skills'
 
 // marked The configuration has been @/utils/markdown Unified management
 const renderMarkdown = (content: string): string => {

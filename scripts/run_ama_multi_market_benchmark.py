@@ -53,7 +53,7 @@ from core.backtest.result_evaluator import evaluate_ama_metrics
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = REPO_ROOT / "results"
-REPORTS_DIR = REPO_ROOT / "reports"
+REPORTS_DIR = REPO_ROOT / "results"
 
 AMA_BACKBONES: Tuple[str, ...] = (
     "gpt-4o",
@@ -417,7 +417,7 @@ def run_ama_benchmark(include_extended: bool = True) -> Dict[str, Any]:
 
     # Export CSV to both results/ and reports/
     fieldnames = list(rows[0].keys())
-    for folder in (RESULTS_DIR, REPORTS_DIR):
+    for folder in (RESULTS_DIR,):
         csv_path = folder / "ama_multi_market_results.csv"
         with csv_path.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -455,7 +455,7 @@ def run_ama_benchmark(include_extended: bool = True) -> Dict[str, Any]:
             )
     tex_lines.extend(["\\bottomrule", "\\end{tabular}%", "}", "\\end{table*}"])
     tex_content = "\n".join(tex_lines) + "\n"
-    for folder in (RESULTS_DIR, REPORTS_DIR):
+    for folder in (RESULTS_DIR,):
         (folder / "ama_table1_comparison.tex").write_text(tex_content, encoding="utf-8")
 
     # Plot AMA Equity Curves (2x2 grid for TSLA, BMRN, BTC, ETH)
@@ -478,7 +478,7 @@ def run_ama_benchmark(include_extended: bool = True) -> Dict[str, Any]:
         ax.grid(True, alpha=0.25)
         ax.legend(fontsize=7.5, loc="best")
     fig.tight_layout()
-    for folder in (RESULTS_DIR, REPORTS_DIR):
+    for folder in (RESULTS_DIR,):
         fig.savefig(folder / "ama_equity_curves.pdf", bbox_inches="tight", dpi=300)
         fig.savefig(folder / "ama_equity_curves.png", bbox_inches="tight", dpi=220)
     plt.close(fig)

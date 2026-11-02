@@ -4,7 +4,11 @@ Unified API response format tool
 from datetime import datetime
 from typing import Any, Dict
 
-from bson import ObjectId
+try:
+    from bson import ObjectId
+except ImportError:
+    ObjectId = str
+    errors = object
 
 from app.services.database.serialization import serialize_document
 from app.utils.timezone import now_tz

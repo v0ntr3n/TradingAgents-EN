@@ -1,5 +1,8 @@
 import pandas as pd
-import yfinance as yf
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
 from stockstats import wrap
 from typing import Annotated
 import os

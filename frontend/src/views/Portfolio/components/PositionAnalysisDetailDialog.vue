@@ -93,7 +93,7 @@ import { computed, ref, watch } from 'vue'
 import { type PositionAnalysisResult } from '@/api/portfolio'
 import { renderMarkdown as safeMarkdown } from '@/utils/markdown'
 import TaskGrowthPanel from '@/components/growth/TaskGrowthPanel.vue'
-import { getMarketByStockCode } from '@/utils/market'
+import { getMarketByStockCode } from '@/utils/stock'
 
 type PositionSnapshot = {
   code?: string

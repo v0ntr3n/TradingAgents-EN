@@ -12,7 +12,7 @@ Verifies:
   4. `test_decision_flip_and_nav_math`: Verify `Paired_Delta_Utility_Bps`, `BFR`, `HFR`,
      `VOI_Calibration_Error`, `Net_Agentic_Value_USD`, and `FF5_Momentum_Alpha` against analytical
      hand-computed fixtures.
-  5. `test_existing_care_agents_suite`: Verify 28-LLM registry (`configs/models_registry.yaml`),
+  5. `test_existing_care_agents_suite`: Verify 28-LLM registry (`config/models_registry.yaml`),
      `MissingAPIKeyError` guard, and that all 6 existing `tests/test_*.py` suites pass 100%.
 """
 

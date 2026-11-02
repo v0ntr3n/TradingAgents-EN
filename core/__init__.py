@@ -83,3 +83,6 @@ __all__ = [
     "check_compatibility",
 ]
 
+
+from . import arena as _arena  # registers core.finben compatibility alias
+from . import data as _data  # registers core.data.benchmark_loader & core.data.ktd_perturbation aliases

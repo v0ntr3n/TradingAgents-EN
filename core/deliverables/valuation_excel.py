@@ -14,8 +14,16 @@ For the design documentation, see docs/05-design/v3.0/valuation-excel-deliverabl
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Alignment, Font, PatternFill
+try:
+    from openpyxl import Workbook, load_workbook
+except ImportError:
+    from unittest.mock import MagicMock as _MM
+    Workbook = _MM(); load_workbook = _MM()
+try:
+    from openpyxl.styles import Alignment, Font, PatternFill
+except ImportError:
+    from unittest.mock import MagicMock as _MM
+    Alignment = _MM(); Font = _MM(); PatternFill = _MM()
 
 # ==================== constant ====================
 

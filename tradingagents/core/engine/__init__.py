@@ -1,3 +1,4 @@
+from . import phase_executors as _phase_executors
 # tradingagents/core/engine/__init__.py
 """
 Engine module - Stock analysis engine

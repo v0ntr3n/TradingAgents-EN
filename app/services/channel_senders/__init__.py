@@ -1,2 +1,0 @@
-# Channel senders package
-
