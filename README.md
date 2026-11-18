@@ -1,3 +1,10 @@
+> ### 🌐 English Edition & Engineering Highlights (`v0ntr3n/TradingAgents-EN`)
+> Full English localization, multi-market benchmark suite, and architectural refactoring built upon the TradingAgents multi-agent framework:
+> - **End-to-End English Localization:** Translated and adapted agent prompts, tool schemas, CLI workflows, and Vue 3 / TypeScript frontend interfaces.
+> - **Quantitative Evaluation & Benchmarking:** Added reproducible multi-timeframe evaluation harnesses and peer-review readiness auditing for equity research workflows.
+
+---
+
 # TradingAgents-EN (Community Edition)
 
 **English**: TradingAgents-CN Community Edition is a hybrid-licensed (Apache-2.0 core engine + proprietary source-available application layer) multi-agent stock research assistant for the Chinese A-share market. It orchestrates LLM-based analyst agents for debate-style research, natural-language stock screening, paper trading and study courses. For learning and research only — **not investment advice**.
